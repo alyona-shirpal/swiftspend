@@ -1,26 +1,62 @@
 import React from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
-import { DEFAULT_CURRENCY } from '@swiftspend/types';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { AuthProvider } from './context/AuthProvider';
+import { AppShell } from './components/layout/AppShell';
+import { ProtectedRoute } from './components/layout/ProtectedRoute';
 
-function App() {
+// Pages
+import LoginPage from './pages/auth/LoginPage';
+import SignUpPage from './pages/auth/SignUpPage';
+import DashboardPage from './pages/dashboard/DashboardPage';
+import AddExpensePage from './pages/expenses/AddExpensePage';
+import ExpenseListPage from './pages/expenses/ExpenseListPage';
+import CategoriesPage from './pages/categories/CategoriesPage';
+import DailyReportPage from './pages/reports/DailyReportPage';
+import MonthlyReportPage from './pages/reports/MonthlyReportPage';
+import YearlyReportPage from './pages/reports/YearlyReportPage';
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: {
+      refetchOnWindowFocus: false,
+      retry: 1,
+    },
+  },
+});
+
+const App: React.FC = () => {
   return (
-    <Router>
-      <div className="min-h-screen bg-gray-100 flex items-center justify-center p-4">
-        <div className="bg-white p-8 rounded-2xl shadow-xl max-w-md w-full text-center">
-          <h1 className="text-4xl font-extrabold text-blue-600 mb-4 tracking-tight">SwiftSpend</h1>
-          <p className="text-gray-600 mb-6 text-lg">Your minimal personal expense tracker.</p>
-          <div className="bg-blue-50 border border-blue-100 p-4 rounded-xl">
-            <p className="text-sm text-blue-800 font-medium">
-              Base Currency: <span className="font-bold">{DEFAULT_CURRENCY}</span>
-            </p>
-          </div>
-        </div>
-      </div>
-      <Routes>
-        <Route path="/" element={<div />} />
-      </Routes>
-    </Router>
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>
+        <BrowserRouter>
+          <Routes>
+            {/* Public Routes */}
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignUpPage />} />
+
+            {/* Private Routes */}
+            <Route element={<ProtectedRoute />}>
+              <Route element={<AppShell />}>
+                <Route path="/" element={<DashboardPage />} />
+                <Route path="/expenses" element={<ExpenseListPage />} />
+                <Route path="/expenses/new" element={<AddExpensePage />} />
+                <Route path="/categories" element={<CategoriesPage />} />
+                
+                {/* Reports */}
+                <Route path="/reports/daily" element={<DailyReportPage />} />
+                <Route path="/reports/monthly" element={<MonthlyReportPage />} />
+                <Route path="/reports/yearly" element={<YearlyReportPage />} />
+              </Route>
+            </Route>
+
+            {/* Fallback */}
+            <Route path="*" element={<Navigate to="/" replace />} />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </QueryClientProvider>
   );
-}
+};
 
 export default App;
