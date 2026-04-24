@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;family=Manrope:wght@200;400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+          darkMode: "class",
+          theme: {
+            extend: {
+              "colors": {
+                      "secondary-container": "#c2dcff",
+                      "on-tertiary-fixed": "#002113",
+                      "on-surface": "#191c1e",
+                      "on-error-container": "#93000a",
+                      "on-primary-container": "#79849d",
+                      "on-secondary-fixed-variant": "#2f4865",
+                      "tertiary": "#000000",
+                      "on-error": "#ffffff",
+                      "secondary": "#47607e",
+                      "on-secondary": "#ffffff",
+                      "inverse-primary": "#bbc6e2",
+                      "surface-variant": "#e0e3e5",
+                      "on-tertiary": "#ffffff",
+                      "on-primary": "#ffffff",
+                      "surface-container-high": "#e6e8ea",
+                      "on-surface-variant": "#44474c",
+                      "on-tertiary-fixed-variant": "#005236",
+                      "tertiary-container": "#002113",
+                      "primary-container": "#101b30",
+                      "surface-container": "#eceef0",
+                      "inverse-surface": "#2d3133",
+                      "surface": "#f7f9fb",
+                      "on-secondary-fixed": "#001d36",
+                      "tertiary-fixed": "#6ffbbe",
+                      "outline-variant": "#c4c6cc",
+                      "on-primary-fixed-variant": "#3c475d",
+                      "on-secondary-container": "#48617e",
+                      "inverse-on-surface": "#eff1f3",
+                      "error": "#ba1a1a",
+                      "on-background": "#191c1e",
+                      "surface-container-highest": "#e0e3e5",
+                      "on-primary-fixed": "#101b30",
+                      "outline": "#74777d",
+                      "primary": "#000000",
+                      "surface-dim": "#d8dadc",
+                      "surface-container-low": "#f2f4f6",
+                      "secondary-fixed-dim": "#afc9ea",
+                      "surface-tint": "#545e76",
+                      "primary-fixed-dim": "#bbc6e2",
+                      "tertiary-fixed-dim": "#4edea3",
+                      "surface-bright": "#f7f9fb",
+                      "on-tertiary-container": "#009668",
+                      "background": "#f7f9fb",
+                      "surface-container-lowest": "#ffffff",
+                      "secondary-fixed": "#d1e4ff",
+                      "primary-fixed": "#d7e2ff",
+                      "error-container": "#ffdad6"
+              },
+              "borderRadius": {
+                      "DEFAULT": "0.125rem",
+                      "lg": "0.25rem",
+                      "xl": "0.5rem",
+                      "full": "0.75rem"
+              },
+              "fontFamily": {
+                      "headline": ["Manrope"],
+                      "display": ["Manrope"],
+                      "body": ["Inter"],
+                      "label": ["Inter"]
+              }
+            },
+          },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 300, 'GRAD' 0, 'opsz' 24;
+        }
+        .editorial-focus:focus-within {
+            border-bottom-color: #009668 !important;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+</head>
+<body class="bg-surface text-on-surface font-body min-h-screen flex flex-col">
+<!-- TopAppBar - Suppressed active nav for transactional screen -->
+<header class="flex items-center justify-between px-6 py-8 w-full sticky top-0 z-50 bg-surface">
+<div class="font-headline font-black text-primary text-3xl tracking-tighter">Spend</div>
+<a class="text-secondary font-label text-[10px] uppercase tracking-widest hover:text-primary transition-colors" href="#">
+            Support
+        </a>
+</header>
+<main class="flex-grow flex flex-col items-center justify-center px-6 pb-20 max-w-2xl mx-auto w-full">
+<!-- Hero Section - Asymmetric Layout -->
+<section class="w-full mb-12">
+<h1 class="font-display font-extrabold text-primary text-5xl md:text-6xl tracking-tight leading-none mb-4">
+                Join the <br/>Evolution.
+            </h1>
+<p class="font-body text-on-surface-variant text-lg max-w-sm">
+                Create your digital ledger and start tracking today.
+            </p>
+</section>
+<!-- Form Section -->
+<form class="w-full space-y-10 mb-12">
+<!-- Input Field: Full Name -->
+<div class="group">
+<label class="block font-label text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-2">Full Name</label>
+<div class="editorial-focus border-b-2 border-surface-container-highest transition-all duration-300">
+<input class="w-full py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base" placeholder="Enter your name" type="text"/>
+</div>
+</div>
+<!-- Input Field: Email -->
+<div class="group">
+<label class="block font-label text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-2">Email Address</label>
+<div class="editorial-focus border-b-2 border-surface-container-highest transition-all duration-300">
+<input class="w-full py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base" placeholder="name@domain.com" type="email"/>
+</div>
+</div>
+<!-- Input Field: Password -->
+<div class="group">
+<label class="block font-label text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-2">Create Password</label>
+<div class="editorial-focus border-b-2 border-surface-container-highest transition-all duration-300">
+<input class="w-full py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base" placeholder="Min. 8 characters" type="password"/>
+</div>
+</div>
+<button class="w-full bg-primary text-on-primary font-label font-bold py-4 px-6 rounded-lg text-xs tracking-[0.2em] transition-all hover:opacity-90 active:scale-[0.98] mt-6" type="submit">
+                CREATE ACCOUNT
+            </button>
+</form>
+<!-- Social Divider -->
+<div class="w-full flex items-center gap-4 mb-8">
+<div class="h-[1px] flex-grow bg-surface-container-high"></div>
+<span class="font-label text-[10px] uppercase tracking-widest text-on-surface-variant">Or continue with</span>
+<div class="h-[1px] flex-grow bg-surface-container-high"></div>
+</div>
+<!-- Social Buttons - Bento Style Layout -->
+<div class="w-full grid grid-cols-2 gap-4 mb-16">
+<button class="flex items-center justify-center gap-2 py-4 bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-lg"><svg class="shrink-0" height="18" viewbox="0 0 18 18" width="18">
+<path d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.874 2.684-6.615z" fill="#4285F4"></path>
+<path d="M9 18c2.43 0 4.467-.806 5.956-2.184l-2.908-2.258c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z" fill="#34A853"></path>
+<path d="M3.964 10.711c-.18-.54-.282-1.117-.282-1.711 0-.594.102-1.17.282-1.711V4.957H.957C.347 6.173 0 7.548 0 9s.347 2.827.957 4.043l3.007-2.332z" fill="#FBBC05"></path>
+<path d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.957l3.007 2.332c.708-2.127 2.692-3.71 5.036-3.71z" fill="#EA4335"></path>
+</svg>
+<span class="font-label text-[10px] font-bold uppercase tracking-widest text-primary">Google</span></button>
+<button class="flex items-center justify-center gap-2 py-4 bg-surface-container-lowest hover:bg-surface-container transition-colors rounded-lg"><svg class="text-primary shrink-0" fill="currentColor" height="19" viewbox="0 0 16 19" width="16">
+<path d="M13.805 11.026c-.023-2.613 2.13-3.864 2.224-3.921-1.21-1.77-3.097-2.011-3.771-2.04-1.611-.164-3.144.95-3.96 0.95-.815 0-2.088-.931-3.426-.903-1.76.027-3.385 1.027-4.29 2.599-1.826 3.17-.468 7.857 1.31 10.428 0.869 1.256 1.899 2.664 3.256 2.614 1.306-.05 1.801-.84 3.379-.84 1.577 0 2.023.84 3.398.814 1.401-.025 2.298-1.275 3.161-2.531 0.996-1.455 1.407-2.863 1.429-2.936-.03-.013-2.753-1.054-2.78-4.234zM11.385 3.376c0.722-.875 1.209-2.091 1.076-3.306-1.044.043-2.308.697-3.057 1.571-.672.775-1.261 2.016-1.103 3.205 1.166.09 2.361-.595 3.084-1.47z"></path>
+</svg>
+<span class="font-label text-[10px] font-bold uppercase tracking-widest text-primary">Apple</span></button>
+</div>
+<!-- Footnote -->
+<div class="w-full text-center">
+<p class="font-body text-sm text-on-surface-variant">
+                Already have an account? 
+                <a class="text-primary font-bold hover:underline underline-offset-4 decoration-tertiary" href="#">Sign In</a>
+</p>
+</div>
+</main>
+<!-- Content-Focused Backdrop Decoration -->
+<div class="fixed top-0 right-0 -z-10 w-1/3 h-full overflow-hidden opacity-10 pointer-events-none">
+<div class="absolute top-1/4 right-0 transform translate-x-1/2">
+<div class="w-[800px] h-[800px] rounded-full bg-gradient-to-br from-surface-container-highest to-surface"></div>
+</div>
+</div>
+<!-- Responsive Decorative Element -->
+<div class="hidden lg:block fixed left-12 bottom-12">
+<div class="w-32 h-32 bg-surface-container-lowest p-6 rounded-lg shadow-sm flex flex-col justify-between">
+<span class="material-symbols-outlined text-on-tertiary-container" style="font-variation-settings: 'FILL' 1;">verified_user</span>
+<span class="font-label text-[8px] font-bold uppercase tracking-tighter text-on-surface-variant">Encrypted Ledger Technology</span>
+</div>
+</div>
+</body></html>

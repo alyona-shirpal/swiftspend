@@ -1,8 +1,8 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { ExchangeRateService } from '../services/exchangeRate';
 
-export const getLatestRates = async (req: AuthRequest, res: Response, next: any) => {
+export const getLatestRates = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { rates, fetchedAt } = await ExchangeRateService.getCachedRates();
     
