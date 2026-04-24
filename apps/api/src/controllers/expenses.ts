@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { ExchangeRateService } from '../services/exchangeRate';
@@ -13,7 +13,7 @@ const ExpenseSchema = z.object({
   currency: z.nativeEnum(Currency)
 });
 
-export const getExpenses = async (req: AuthRequest, res: Response, next: any) => {
+export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to, category_id, currency, search, page = '1', limit = '50' } = req.query;
 
@@ -48,7 +48,7 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: any) =>
   }
 };
 
-export const getExpense = async (req: AuthRequest, res: Response, next: any) => {
+export const getExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
     const { data, error } = await supabaseAdmin
@@ -69,7 +69,7 @@ export const getExpense = async (req: AuthRequest, res: Response, next: any) => 
   }
 };
 
-export const createExpense = async (req: AuthRequest, res: Response, next: any) => {
+export const createExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = ExpenseSchema.parse(req.body);
 
@@ -94,7 +94,7 @@ export const createExpense = async (req: AuthRequest, res: Response, next: any) 
   }
 };
 
-export const updateExpense = async (req: AuthRequest, res: Response, next: any) => {
+export const updateExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = ExpenseSchema.partial().parse(req.body);
     const { id } = req.params;
@@ -108,7 +108,7 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: any) 
 
     if (!existing) return res.status(404).json({ error: 'Not found' });
 
-    let updatePayload: any = { ...validated };
+    let updatePayload: Record<string, unknown> = { ...validated };
 
     // Re-convert if amount or currency changed
     if (
@@ -142,7 +142,7 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: any) 
   }
 };
 
-export const deleteExpense = async (req: AuthRequest, res: Response, next: any) => {
+export const deleteExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 

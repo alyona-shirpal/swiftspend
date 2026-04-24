@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { z } from 'zod';
@@ -9,7 +9,7 @@ const CreateCategorySchema = z.object({
   color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a valid hex color')
 });
 
-export const getCategories = async (req: AuthRequest, res: Response, next: any) => {
+export const getCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { data, error } = await supabaseAdmin
       .from('categories')
@@ -24,7 +24,7 @@ export const getCategories = async (req: AuthRequest, res: Response, next: any) 
   }
 };
 
-export const createCategory = async (req: AuthRequest, res: Response, next: any) => {
+export const createCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = CreateCategorySchema.parse(req.body);
 
@@ -44,7 +44,7 @@ export const createCategory = async (req: AuthRequest, res: Response, next: any)
   }
 };
 
-export const updateCategory = async (req: AuthRequest, res: Response, next: any) => {
+export const updateCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = CreateCategorySchema.partial().parse(req.body);
     const { id } = req.params;
@@ -73,7 +73,7 @@ export const updateCategory = async (req: AuthRequest, res: Response, next: any)
   }
 };
 
-export const deleteCategory = async (req: AuthRequest, res: Response, next: any) => {
+export const deleteCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
 

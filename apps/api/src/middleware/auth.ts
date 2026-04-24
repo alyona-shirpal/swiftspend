@@ -1,18 +1,17 @@
-import { Request, Response, NextFunction } from 'express';
+import { Response, NextFunction } from 'express';
 import { supabaseAdmin } from '../services/supabase';
-
-export interface AuthRequest extends Request {
-  user?: {
-    id: string;
-    email?: string;
-  };
-}
+import { AuthRequest } from '../types/auth';
+export { AuthRequest };
 
 export const requireAuth = async (req: AuthRequest, res: Response, next: NextFunction) => {
   const authHeader = req.headers.authorization;
 
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
-    return res.status(401).json({ error: 'Unauthorized', code: 'MISSING_TOKEN' });
+    return res.status(401).json({ 
+      error: 'Unauthorized', 
+      code: 'MISSING_TOKEN',
+      message: 'Authentication token is required'
+    });
   }
 
   const token = authHeader.split(' ')[1];
@@ -21,7 +20,11 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
     const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
 
     if (error || !user) {
-      return res.status(401).json({ error: 'Unauthorized', code: 'INVALID_TOKEN' });
+      return res.status(401).json({ 
+        error: 'Unauthorized', 
+        code: 'INVALID_TOKEN',
+        message: 'Invalid or expired authentication token'
+      });
     }
 
     req.user = {
@@ -31,7 +34,11 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
 
     next();
   } catch (error) {
-    console.error('Auth middleware error', error);
-    return res.status(401).json({ error: 'Unauthorized', code: 'INTERNAL_AUTH_ERROR' });
+    console.error('Auth middleware error:', error);
+    return res.status(401).json({ 
+      error: 'Unauthorized', 
+      code: 'INTERNAL_AUTH_ERROR',
+      message: 'An error occurred during authentication'
+    });
   }
 };

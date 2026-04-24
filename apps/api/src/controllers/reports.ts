@@ -1,4 +1,4 @@
-import { Response } from 'express';
+import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { z } from 'zod';
@@ -16,7 +16,7 @@ const YearlyReportSchema = z.object({
   year: z.string().regex(/^\d{4}$/)
 });
 
-export const getDailyReport = async (req: AuthRequest, res: Response, next: any) => {
+export const getDailyReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { date } = DailyReportSchema.parse(req.query);
     
@@ -32,7 +32,7 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: any)
   }
 };
 
-export const getMonthlyReport = async (req: AuthRequest, res: Response, next: any) => {
+export const getMonthlyReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { year, month } = MonthlyReportSchema.parse(req.query);
     
@@ -49,7 +49,7 @@ export const getMonthlyReport = async (req: AuthRequest, res: Response, next: an
   }
 };
 
-export const getYearlyReport = async (req: AuthRequest, res: Response, next: any) => {
+export const getYearlyReport = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { year } = YearlyReportSchema.parse(req.query);
     
