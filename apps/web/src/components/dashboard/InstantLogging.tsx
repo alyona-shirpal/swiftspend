@@ -16,7 +16,7 @@ const DEFAULT_CATEGORIES: Category[] = [
 
 export const InstantLogging: React.FC = () => {
   const [amountStr, setAmountStr] = useState<string>('');
-  const [currency, setCurrency] = useState<Currency>(Currency.EUR);
+  const [currency, setCurrency] = useState<Currency>(Currency.ALL);
   const [categoryId, setCategoryId] = useState<string>('');
   const [description, setDescription] = useState<string>('');
 
