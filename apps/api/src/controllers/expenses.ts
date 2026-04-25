@@ -3,14 +3,18 @@ import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { ExchangeRateService } from '../services/exchangeRate';
 import { Currency } from '../types';
+import {
+  RecentExpenseJoinRow,
+  MonthlyAmountsRow,
+  PrevMonthEurRow
+} from '../types/supabase';
 import { z } from 'zod';
 
 const ExpenseSchema = z.object({
-  category_id: z.string().uuid(),
-  description: z.string().optional().nullable(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Must be YYYY-MM-DD format'),
   amount: z.number().positive(),
-  currency: z.nativeEnum(Currency)
+  currency: z.nativeEnum(Currency),
+  category_id: z.string().uuid().optional().nullable(),
+  description: z.string().max(200).optional().nullable()
 });
 
 export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -21,7 +25,7 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: NextFun
       .from('expenses')
       .select('*', { count: 'exact' })
       .eq('user_id', req.user!.id)
-      .order('date', { ascending: false });
+      .order('created_at', { ascending: false });
 
     if (from) query = query.gte('date', from);
     if (to) query = query.lte('date', to);
@@ -74,15 +78,16 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
     const validated = ExpenseSchema.parse(req.body);
 
     const { rates } = await ExchangeRateService.getCachedRates();
-    const convertedAmounts = ExchangeRateService.convertAmount(validated.amount, validated.currency, rates);
+    const convertedData = ExchangeRateService.convertToAll(validated.amount, validated.currency, rates);
 
     const { data, error } = await supabaseAdmin
       .from('expenses')
       .insert({
         user_id: req.user!.id,
+        date: new Date().toISOString().split('T')[0],
+        // created_at is automatically set by the DB
         ...validated,
-        ...convertedAmounts,
-        exchange_rate_snapshot: rates
+        ...convertedData
       })
       .select()
       .single();
@@ -119,12 +124,11 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
       const finalCurrency = validated.currency ?? existing.currency;
 
       const { rates } = await ExchangeRateService.getCachedRates();
-      const convertedAmounts = ExchangeRateService.convertAmount(finalAmount, finalCurrency, rates);
+      const convertedData = ExchangeRateService.convertToAll(finalAmount, finalCurrency, rates);
 
       updatePayload = {
         ...updatePayload,
-        ...convertedAmounts,
-        exchange_rate_snapshot: rates
+        ...convertedData
       };
     }
 
@@ -162,6 +166,141 @@ export const deleteExpense = async (req: AuthRequest, res: Response, next: NextF
 
     if (error) throw error;
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getRecentExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Top 10 most recent expenses with category data
+    const { data, error } = await supabaseAdmin
+      .from('expenses')
+      .select(`
+        id,
+        description,
+        date,
+        created_at,
+        amount,
+        currency,
+        amount_eur,
+        categories (
+          id,
+          name,
+          icon,
+          color
+        )
+      `)
+      .eq('user_id', req.user!.id)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
+    if (error) throw error;
+
+    // Map to the requested response shape
+    const rows = (data ?? []) as unknown as RecentExpenseJoinRow[];
+
+    const formattedData = rows.map((item) => ({
+      id: item.id,
+      description: item.description,
+      date: item.date,
+      time: item.created_at, // Map created_at to time
+      amount: item.amount,
+      currency: item.currency,
+      amount_eur: item.amount_eur,
+      category: item.categories ? {
+        id: item.categories.id,
+        name: item.categories.name,
+        icon: item.categories.icon,
+        color: item.categories.color
+      } : null
+    }));
+
+    res.json(formattedData);
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { year, month } = req.query;
+    
+    const now = new Date();
+    const targetYear = year ? parseInt(year as string) : now.getFullYear();
+    const targetMonth = month ? parseInt(month as string) : now.getMonth() + 1; // 1-12
+    
+    // Calculate start and end dates for the target month
+    const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
+    const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
+
+    // Calculate start and end dates for the previous month
+    const prevMonthDate = new Date(targetYear, targetMonth - 2, 1);
+    const prevYear = prevMonthDate.getFullYear();
+    const prevMonth = prevMonthDate.getMonth() + 1;
+    const prevStartDate = new Date(prevYear, prevMonth - 1, 1).toISOString().split('T')[0];
+    const prevEndDate = new Date(prevYear, prevMonth, 0).toISOString().split('T')[0];
+
+    // Get current month expenses
+    const { data: currentMonthData, error: currentError } = await supabaseAdmin
+      .from('expenses')
+      .select('amount_uah, amount_all, amount_eur, amount_usd')
+      .eq('user_id', req.user!.id)
+      .gte('date', startDate)
+      .lte('date', endDate);
+
+    if (currentError) throw currentError;
+
+    // Get previous month expenses for comparison
+    const { data: prevMonthData, error: prevError } = await supabaseAdmin
+      .from('expenses')
+      .select('amount_eur')
+      .eq('user_id', req.user!.id)
+      .gte('date', prevStartDate)
+      .lte('date', prevEndDate);
+
+    if (prevError) throw prevError;
+
+    const currentRows = (currentMonthData ?? []) as unknown as MonthlyAmountsRow[];
+    const prevRows = (prevMonthData ?? []) as unknown as PrevMonthEurRow[];
+
+    const totals = currentRows.reduce(
+      (acc, curr) => {
+        acc.UAH += curr.amount_uah ?? 0;
+        acc.ALL += curr.amount_all ?? 0;
+        acc.EUR += curr.amount_eur ?? 0;
+        acc.USD += curr.amount_usd ?? 0;
+        return acc;
+      },
+      { UAH: 0, ALL: 0, EUR: 0, USD: 0 }
+    );
+
+    const prevMonthEurTotal = prevRows.reduce((sum, curr) => sum + (curr.amount_eur ?? 0), 0);
+
+    let changePercent = 0;
+    let direction: 'up' | 'down' | 'same' = 'same';
+
+    if (prevMonthEurTotal > 0) {
+      changePercent = ((totals.EUR - prevMonthEurTotal) / prevMonthEurTotal) * 100;
+      if (changePercent > 0) direction = 'up';
+      else if (changePercent < 0) direction = 'down';
+    } else if (totals.EUR > 0) {
+      // If previous month was 0 but this month is > 0, it's a 100% increase essentially
+      changePercent = 100;
+      direction = 'up';
+    }
+
+    res.json({
+      year: targetYear,
+      month: targetMonth,
+      default_currency: 'EUR',
+      totals,
+      comparison: {
+        previous_month_eur: prevMonthEurTotal,
+        change_percent: Number(Math.abs(changePercent).toFixed(1)), // Make it positive and 1 decimal place
+        direction
+      }
+    });
   } catch (err) {
     next(err);
   }

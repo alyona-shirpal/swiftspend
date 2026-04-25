@@ -1,0 +1,26 @@
+# Dashboard Implementation Tasks
+
+- [x] 1. Backend: Update Exchange Rate Service (`src/services/exchangeRate.ts`)
+- [x] 2. Backend: Update Expenses Controller (`src/controllers/expenses.ts`)
+  - [x] 2.1 Update `createExpense` endpoint
+  - [x] 2.2 Implement `getRecentExpenses`
+  - [x] 2.3 Implement `getMonthlyTotal`
+- [x] 3. Backend: Update Categories Controller (`src/controllers/categories.ts`)
+  - [x] 3.1 Implement `getRecentCategories`
+- [x] 4. Frontend: Add utilities and types
+  - [x] 4.1 Add `formatCurrency` utility
+  - [x] 4.2 Define API response interfaces in `types/api.ts`
+- [x] 5. Frontend: Implement React Query hooks
+  - [x] 5.1 `useMonthlyTotal.ts`
+  - [x] 5.2 `useRecentExpenses.ts`
+  - [x] 5.3 `useRecentCategories.ts`
+  - [x] 5.4 `useAddExpense.ts`
+  - [x] 5.5 `useExchangeRates.ts`
+- [x] 6. Frontend: Build UI Components
+  - [x] 6.1 `MonthlyHero.tsx`
+  - [x] 6.2 `CategoryPill.tsx`
+  - [x] 6.3 `InstantLogging.tsx`
+  - [x] 6.4 `ExpenseRow.tsx`
+  - [x] 6.5 `RecentSpend.tsx`
+- [x] 7. Frontend: Assemble `DashboardPage.tsx`
+- [x] 8. Verify and refine styling/tailwind configuration.

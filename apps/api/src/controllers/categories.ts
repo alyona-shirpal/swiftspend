@@ -1,6 +1,7 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
+import { RecentExpenseCategoryJoinRow, CategoryRow } from '../types/supabase';
 import { z } from 'zod';
 
 const CreateCategorySchema = z.object({
@@ -93,6 +94,44 @@ export const deleteCategory = async (req: AuthRequest, res: Response, next: Next
 
     if (error) throw error;
     res.status(204).send();
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getRecentCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Get unique categories from recent expenses
+    const { data, error } = await supabaseAdmin
+      .from('expenses')
+      .select(`
+        category_id,
+        created_at,
+        categories (
+          id,
+          name,
+          icon,
+          color
+        )
+      `)
+      .eq('user_id', req.user!.id)
+      .not('category_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    const rows = (data ?? []) as unknown as RecentExpenseCategoryJoinRow[];
+
+    const uniqueCategories = new Map<string, CategoryRow>();
+    for (const item of rows) {
+      if (item.category_id && item.categories && !uniqueCategories.has(item.category_id)) {
+        uniqueCategories.set(item.category_id, item.categories);
+        if (uniqueCategories.size >= 4) break;
+      }
+    }
+
+    res.json(Array.from(uniqueCategories.values()));
   } catch (err) {
     next(err);
   }
