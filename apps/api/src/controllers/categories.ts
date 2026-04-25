@@ -1,20 +1,8 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
+import { RecentExpenseCategoryJoinRow, CategoryRow } from '../types/supabase';
 import { z } from 'zod';
-
-type CategoryRow = {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-};
-
-type RecentExpenseCategoryJoinRow = {
-  category_id: string | null;
-  created_at: string;
-  categories: CategoryRow | null;
-};
 
 const CreateCategorySchema = z.object({
   name: z.string().min(1),

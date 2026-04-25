@@ -3,36 +3,12 @@ import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { ExchangeRateService } from '../services/exchangeRate';
 import { Currency } from '../types';
+import {
+  RecentExpenseJoinRow,
+  MonthlyAmountsRow,
+  PrevMonthEurRow
+} from '../types/supabase';
 import { z } from 'zod';
-
-type CategoryRow = {
-  id: string;
-  name: string;
-  icon: string;
-  color: string;
-};
-
-type RecentExpenseJoinRow = {
-  id: string;
-  description: string | null;
-  date: string;
-  created_at: string;
-  amount: number;
-  currency: Currency;
-  amount_eur: number | null;
-  categories: CategoryRow | null;
-};
-
-type MonthlyAmountsRow = {
-  amount_uah: number | null;
-  amount_all: number | null;
-  amount_eur: number | null;
-  amount_usd: number | null;
-};
-
-type PrevMonthEurRow = {
-  amount_eur: number | null;
-};
 
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
