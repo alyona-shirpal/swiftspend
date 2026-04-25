@@ -97,3 +97,40 @@ export const deleteCategory = async (req: AuthRequest, res: Response, next: Next
     next(err);
   }
 };
+
+export const getRecentCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    // Get unique categories from recent expenses
+    const { data, error } = await supabaseAdmin
+      .from('expenses')
+      .select(`
+        category_id,
+        created_at,
+        categories (
+          id,
+          name,
+          icon,
+          color
+        )
+      `)
+      .eq('user_id', req.user!.id)
+      .not('category_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(50);
+
+    if (error) throw error;
+
+    const uniqueCategories = new Map();
+    for (const item of data) {
+      // @ts-ignore - Supabase types are nested but sometimes not fully inferred
+      if (item.categories && !uniqueCategories.has(item.category_id)) {
+        uniqueCategories.set(item.category_id, item.categories);
+        if (uniqueCategories.size >= 4) break;
+      }
+    }
+
+    res.json(Array.from(uniqueCategories.values()));
+  } catch (err) {
+    next(err);
+  }
+};

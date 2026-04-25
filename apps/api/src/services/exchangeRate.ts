@@ -8,8 +8,15 @@ interface ExchangeRateAPIResponse {
   rates: Record<string, number>;
 }
 
+export interface RateSnapshot {
+  base: 'EUR';
+  rates: ConversionSnapshot;
+  fetched_at: string;
+}
+
 export class ExchangeRateService {
-  private static readonly API_URL = 'https://open.er-api.com/v6/latest/USD';
+  // Using open.er-api.com with EUR base
+  private static readonly API_URL = 'https://open.er-api.com/v6/latest/EUR';
   private static readonly CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
 
   /**
@@ -17,18 +24,13 @@ export class ExchangeRateService {
    */
   private static async fetchRatesFromAPI(): Promise<ConversionSnapshot> {
     const response = await axios.get<ExchangeRateAPIResponse>(this.API_URL);
-
-    // openexchangerates base is USD by default.
     const rates = response.data.rates;
 
-    // We only care about our 4 currencies.
-    // If base is USD, rate for USD is 1. We just normalize it below if needed, 
-    // but the snapshot will store rates relative to USD.
     const snapshot: ConversionSnapshot = {
       UAH: rates['UAH'] || 0,
       ALL: rates['ALL'] || 0,
-      EUR: rates['EUR'] || 0,
-      USD: rates['USD'] || 1, // Fallback if USD isn't explicitly returned
+      EUR: rates['EUR'] || 1, // Base is EUR
+      USD: rates['USD'] || 0,
     };
 
     return snapshot;
@@ -66,13 +68,12 @@ export class ExchangeRateService {
     // Store in cache
     const { data: inserted, error: insertError } = await supabaseAdmin
       .from('exchange_rate_cache')
-      .insert({ base: 'USD', rates: newRates }) // Base is USD for OpenExchangeRates
+      .insert({ base: 'EUR', rates: newRates }) // Base is EUR
       .select()
       .single();
 
     if (insertError) {
       console.error('Failed to update exchange rate cache', insertError);
-      // Even if cache fails to save, we can return the fetched rates
       return { rates: newRates, fetchedAt: now.toISOString() };
     }
 
@@ -85,19 +86,20 @@ export class ExchangeRateService {
   /**
    * Convert amount across all 4 currencies
    */
-  public static convertAmount(amount: number, currency: Currency, rates: ConversionSnapshot) {
-    // OpenExchangeRates uses USD as base.
-    // To convert X logic: 
-    // USD_Amount = amount / rate_of(currency)
-    // Target_Amount = USD_Amount * rate_of(target_currency)
-
-    const baseAmountUSD = amount / rates[currency];
+  public static convertToAll(amount: number, currency: Currency, rates: ConversionSnapshot) {
+    // Base is EUR
+    const baseAmountEUR = amount / rates[currency];
 
     return {
-      amount_uah: Number((baseAmountUSD * rates.UAH).toFixed(4)),
-      amount_all: Number((baseAmountUSD * rates.ALL).toFixed(4)),
-      amount_eur: Number((baseAmountUSD * rates.EUR).toFixed(4)),
-      amount_usd: Number((baseAmountUSD * rates.USD).toFixed(4))
+      amount_uah: Number((baseAmountEUR * rates.UAH).toFixed(4)),
+      amount_all: Number((baseAmountEUR * rates.ALL).toFixed(4)),
+      amount_eur: Number((baseAmountEUR * rates.EUR).toFixed(4)),
+      amount_usd: Number((baseAmountEUR * rates.USD).toFixed(4)),
+      exchange_rate_snapshot: {
+        base: 'EUR',
+        rates,
+        fetched_at: new Date().toISOString()
+      }
     };
   }
 }
