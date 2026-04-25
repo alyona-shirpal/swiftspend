@@ -3,6 +3,19 @@ import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { z } from 'zod';
 
+type CategoryRow = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+};
+
+type RecentExpenseCategoryJoinRow = {
+  category_id: string | null;
+  created_at: string;
+  categories: CategoryRow | null;
+};
+
 const CreateCategorySchema = z.object({
   name: z.string().min(1),
   icon: z.string().min(1),
@@ -120,10 +133,11 @@ export const getRecentCategories = async (req: AuthRequest, res: Response, next:
 
     if (error) throw error;
 
-    const uniqueCategories = new Map();
-    for (const item of data) {
-      // @ts-ignore - Supabase types are nested but sometimes not fully inferred
-      if (item.categories && !uniqueCategories.has(item.category_id)) {
+    const rows = (data ?? []) as unknown as RecentExpenseCategoryJoinRow[];
+
+    const uniqueCategories = new Map<string, CategoryRow>();
+    for (const item of rows) {
+      if (item.category_id && item.categories && !uniqueCategories.has(item.category_id)) {
         uniqueCategories.set(item.category_id, item.categories);
         if (uniqueCategories.size >= 4) break;
       }

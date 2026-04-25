@@ -5,6 +5,35 @@ import { ExchangeRateService } from '../services/exchangeRate';
 import { Currency } from '../types';
 import { z } from 'zod';
 
+type CategoryRow = {
+  id: string;
+  name: string;
+  icon: string;
+  color: string;
+};
+
+type RecentExpenseJoinRow = {
+  id: string;
+  description: string | null;
+  date: string;
+  created_at: string;
+  amount: number;
+  currency: Currency;
+  amount_eur: number | null;
+  categories: CategoryRow | null;
+};
+
+type MonthlyAmountsRow = {
+  amount_uah: number | null;
+  amount_all: number | null;
+  amount_eur: number | null;
+  amount_usd: number | null;
+};
+
+type PrevMonthEurRow = {
+  amount_eur: number | null;
+};
+
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
   currency: z.nativeEnum(Currency),
@@ -193,7 +222,9 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
     if (error) throw error;
 
     // Map to the requested response shape
-    const formattedData = data.map((item: any) => ({
+    const rows = (data ?? []) as unknown as RecentExpenseJoinRow[];
+
+    const formattedData = rows.map((item) => ({
       id: item.id,
       description: item.description,
       date: item.date,
@@ -254,15 +285,21 @@ export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: Nex
 
     if (prevError) throw prevError;
 
-    const totals = currentMonthData.reduce((acc: any, curr: any) => {
-      acc.UAH += curr.amount_uah;
-      acc.ALL += curr.amount_all;
-      acc.EUR += curr.amount_eur;
-      acc.USD += curr.amount_usd;
-      return acc;
-    }, { UAH: 0, ALL: 0, EUR: 0, USD: 0 });
+    const currentRows = (currentMonthData ?? []) as unknown as MonthlyAmountsRow[];
+    const prevRows = (prevMonthData ?? []) as unknown as PrevMonthEurRow[];
 
-    const prevMonthEurTotal = prevMonthData.reduce((sum: number, curr: any) => sum + curr.amount_eur, 0);
+    const totals = currentRows.reduce(
+      (acc, curr) => {
+        acc.UAH += curr.amount_uah ?? 0;
+        acc.ALL += curr.amount_all ?? 0;
+        acc.EUR += curr.amount_eur ?? 0;
+        acc.USD += curr.amount_usd ?? 0;
+        return acc;
+      },
+      { UAH: 0, ALL: 0, EUR: 0, USD: 0 }
+    );
+
+    const prevMonthEurTotal = prevRows.reduce((sum, curr) => sum + (curr.amount_eur ?? 0), 0);
 
     let changePercent = 0;
     let direction: 'up' | 'down' | 'same' = 'same';
