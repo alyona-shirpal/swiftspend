@@ -3,28 +3,74 @@ import { Currency } from '@swiftspend/types';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAddExpense } from '../../hooks/useAddExpense';
-import { MOCK_CATEGORIES } from '../../services/mockExpenses';
+import { getMockCategories, getQuickCategories, MOCK_CATEGORIES } from '../../services/mockExpenses';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const CURRENCY_OPTIONS = [Currency.USD, Currency.EUR, Currency.ALL, Currency.UAH];
 const KEYS = ['1', '2', '3', '4', '5', '6', '7', '8', '9', '.', '0', 'backspace'] as const;
+const CATEGORY_DRAFT_KEY = 'swiftspend.add-expense.selected-category';
+const NOTE_DRAFT_KEY = 'swiftspend.add-expense.note';
+const AMOUNT_DRAFT_KEY = 'swiftspend.add-expense.amount';
+const DATE_DRAFT_KEY = 'swiftspend.add-expense.date';
+const CURRENCY_DRAFT_KEY = 'swiftspend.add-expense.currency';
 
 export const AddExpensePage: React.FC = () => {
   const navigate = useNavigate();
   const { mutateAsync: addExpense } = useAddExpense();
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const [currency, setCurrency] = useState<Currency>(Currency.ALL);
-  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(MOCK_CATEGORIES[0]?.id ?? '');
-  const [note, setNote] = useState('');
-  const [amountInput, setAmountInput] = useState('0.00');
-  const [selectedDate, setSelectedDate] = useState(() => new Date().toISOString().split('T')[0] ?? '');
+  const categories = getMockCategories();
+  const savedCategoryDraft = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
+  const [currency, setCurrency] = useState<Currency>(() => {
+    const saved = sessionStorage.getItem(CURRENCY_DRAFT_KEY) as Currency | null;
+    return saved && CURRENCY_OPTIONS.includes(saved) ? saved : Currency.ALL;
+  });
+  const [quickCategoriesRefresh, setQuickCategoriesRefresh] = useState(0);
+    const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
+    () => savedCategoryDraft ?? getQuickCategories()[0]?.id ?? MOCK_CATEGORIES[0]?.id ?? ''
+  );
+  const [note, setNote] = useState(() => sessionStorage.getItem(NOTE_DRAFT_KEY) ?? '');
+  const [amountInput, setAmountInput] = useState(() => sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00');
+  const [selectedDate, setSelectedDate] = useState(
+    () => sessionStorage.getItem(DATE_DRAFT_KEY) ?? new Date().toISOString().split('T')[0] ?? ''
+  );
   const [isSaving, setIsSaving] = useState(false);
+  const quickCategories = useMemo(() => getQuickCategories(), [quickCategoriesRefresh]);
 
   useEffect(() => {
-    if (!selectedCategoryId && MOCK_CATEGORIES[0]) {
-      setSelectedCategoryId(MOCK_CATEGORIES[0].id);
+    // Only set from sessionStorage on initial load
+    if (!selectedCategoryId && categories[0]) {
+      const savedCategoryId = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
+      if (savedCategoryId) {
+        setSelectedCategoryId(savedCategoryId);
+        // Refresh quick categories if we have a saved category (likely from AllCategoriesPage)
+        setQuickCategoriesRefresh(prev => prev + 1);
+      } else {
+        setSelectedCategoryId(categories[0].id);
+      }
+    }
+  }, [categories]);
+
+  useEffect(() => {
+    if (selectedCategoryId) {
+      sessionStorage.setItem(CATEGORY_DRAFT_KEY, selectedCategoryId);
     }
   }, [selectedCategoryId]);
+
+  useEffect(() => {
+    sessionStorage.setItem(NOTE_DRAFT_KEY, note);
+  }, [note]);
+
+  useEffect(() => {
+    sessionStorage.setItem(AMOUNT_DRAFT_KEY, amountInput);
+  }, [amountInput]);
+
+  useEffect(() => {
+    sessionStorage.setItem(DATE_DRAFT_KEY, selectedDate);
+  }, [selectedDate]);
+
+  useEffect(() => {
+    sessionStorage.setItem(CURRENCY_DRAFT_KEY, currency);
+  }, [currency]);
 
   const amountValue = Number(amountInput) || 0;
   const dateLabel = useMemo(() => {
@@ -94,6 +140,11 @@ export const AddExpensePage: React.FC = () => {
         date: selectedDate || undefined,
       });
 
+      sessionStorage.removeItem(CATEGORY_DRAFT_KEY);
+      sessionStorage.removeItem(NOTE_DRAFT_KEY);
+      sessionStorage.removeItem(AMOUNT_DRAFT_KEY);
+      sessionStorage.removeItem(DATE_DRAFT_KEY);
+      sessionStorage.removeItem(CURRENCY_DRAFT_KEY);
       toast.success('Mock expense saved');
       navigate('/', { replace: true });
     } catch {
@@ -185,28 +236,36 @@ export const AddExpensePage: React.FC = () => {
             <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
               Quick Category
             </h2>
-            <span className="text-[10px] font-medium text-secondary underline underline-offset-4">
-              Mocked Data
-            </span>
+            <button
+              type="button"
+              onClick={() => navigate('/expenses/categories')}
+              className="text-[10px] font-medium text-secondary underline underline-offset-4"
+            >
+              View All
+            </button>
           </div>
 
           <div className="grid grid-cols-4 gap-3">
-            {MOCK_CATEGORIES.map((category) => {
+            {quickCategories.map((category) => {
               const isActive = category.id === selectedCategoryId;
               return (
                 <button
                   key={category.id}
                   type="button"
                   onClick={() => setSelectedCategoryId(category.id)}
-                  className={`aspect-square rounded-xl border-2 bg-white shadow-sm transition-all ${
+                  className={`aspect-square rounded-xl border-2 bg-white transition-all ${
                     isActive
-                      ? 'border-primary shadow-[0_12px_25px_-18px_rgba(0,0,0,0.8)]'
-                      : 'border-transparent hover:-translate-y-0.5 hover:border-outline-variant'
+                      ? 'border-primary shadow-lg'
+                      : 'border-transparent hover:border-outline-variant'
                   }`}
                 >
                   <div className="flex h-full flex-col items-center justify-center gap-2">
-                    <span className="material-symbols-outlined text-secondary">{category.icon}</span>
-                    <span className="text-[10px] font-bold uppercase tracking-tighter">{category.name}</span>
+                    <span className={`material-symbols-outlined transition-colors ${
+                      isActive ? 'text-primary' : 'text-secondary'
+                    }`}>{category.icon}</span>
+                    <span className={`px-1 text-center text-[10px] font-semibold uppercase tracking-tighter ${
+                      isActive ? 'text-primary' : ''
+                    }`}>{category.name}</span>
                   </div>
                 </button>
               );

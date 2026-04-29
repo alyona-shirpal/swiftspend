@@ -19,9 +19,10 @@ export const errorHandler = (
   }
 
   const fallbackErr = err as Record<string, unknown>;
+  const statusCode = typeof fallbackErr?.statusCode === 'number' ? fallbackErr.statusCode : 500;
 
   // Generic fallback
-  return res.status(500).json({
+  return res.status(statusCode).json({
     error: typeof fallbackErr?.message === 'string' ? fallbackErr.message : 'Internal Server Error',
     code: 'INTERNAL_SERVER_ERROR'
   });

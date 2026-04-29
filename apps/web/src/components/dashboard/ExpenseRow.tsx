@@ -36,7 +36,8 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense }) => {
   const title = expense.description || categoryName;
 
   // Amount is always shown as negative EUR value per design
-  const formattedEur = `-${formatCurrency(expense.amount_eur, Currency.EUR)}`;
+  const eurAmount = expense.amounts?.[Currency.EUR] ?? 0;
+  const formattedEur = `-${formatCurrency(eurAmount, Currency.EUR)}`;
   
   // Show original currency if different from EUR
   const hasOriginalCurrency = expense.currency !== Currency.EUR;

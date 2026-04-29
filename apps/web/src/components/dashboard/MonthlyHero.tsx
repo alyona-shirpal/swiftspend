@@ -29,11 +29,11 @@ export const MonthlyHero: React.FC = () => {
               Monthly Statement
             </span>
             <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary dark:text-white opacity-50">
-              —
+              {formatCurrency(0, Currency.EUR)}
             </h2>
             <div className="flex items-center gap-2 mt-4 opacity-50">
               <span className="font-label text-sm font-semibold text-secondary">
-                Could not load total
+                No expenses yet for this month
               </span>
             </div>
           </div>

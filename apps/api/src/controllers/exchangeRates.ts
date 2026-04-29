@@ -4,12 +4,12 @@ import { ExchangeRateService } from '../services/exchangeRate';
 
 export const getLatestRates = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { rates, fetchedAt } = await ExchangeRateService.getCachedRates();
+    const snapshot = await ExchangeRateService.getCachedRates();
     
     res.json({
-      base: 'EUR', // Per prompt, default UI response is EUR or rather, the rates object
-      rates,
-      fetched_at: fetchedAt
+      base: snapshot.base,
+      rates: snapshot.rates,
+      fetched_at: snapshot.fetched_at
     });
   } catch (error) {
     next(error);

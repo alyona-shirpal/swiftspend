@@ -2,19 +2,18 @@ import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { ExchangeRateService } from '../services/exchangeRate';
-import { Currency } from '../types';
+import { ensureUserCurrencies } from '../services/userCurrencies';
 import {
-  RecentExpenseJoinRow,
-  MonthlyAmountsRow,
-  PrevMonthEurRow
+  RecentExpenseJoinRow
 } from '../types/supabase';
 import { z } from 'zod';
+import { Currency } from '../types';
 
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
-  currency: z.nativeEnum(Currency),
-  category_id: z.string().uuid().optional().nullable(),
-  description: z.string().max(200).optional().nullable()
+  currency: z.enum(['UAH', 'ALL', 'EUR', 'USD']),
+  category_id: z.string().uuid().optional(),
+  description: z.string().max(200).optional(),
 });
 
 export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -76,18 +75,34 @@ export const getExpense = async (req: AuthRequest, res: Response, next: NextFunc
 export const createExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = ExpenseSchema.parse(req.body);
+    const userId = req.user!.id;
 
-    const { rates } = await ExchangeRateService.getCachedRates();
-    const convertedData = ExchangeRateService.convertToAll(validated.amount, validated.currency, rates);
+    const currencyRows = await ensureUserCurrencies(userId);
+    const userCurrencies = currencyRows
+      .map((r) => r.currency)
+      .filter((c): c is Currency => Object.values(Currency).includes(c as Currency))
+      .map((c) => c as Currency);
+
+    const snapshot = await ExchangeRateService.getCachedRates();
+    const amounts = await ExchangeRateService.convertToUserCurrencies(
+      validated.amount,
+      validated.currency as Currency,
+      userCurrencies,
+      snapshot
+    );
 
     const { data, error } = await supabaseAdmin
       .from('expenses')
       .insert({
-        user_id: req.user!.id,
+        user_id: userId,
         date: new Date().toISOString().split('T')[0],
         // created_at is automatically set by the DB
-        ...validated,
-        ...convertedData
+        category_id: validated.category_id ?? null,
+        description: validated.description ?? null,
+        amount: validated.amount,
+        currency: validated.currency,
+        amounts,
+        exchange_rate_snapshot: snapshot
       })
       .select()
       .single();
@@ -113,22 +128,37 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
 
     if (!existing) return res.status(404).json({ error: 'Not found' });
 
-    let updatePayload: Record<string, unknown> = { ...validated };
+    let updatePayload: Record<string, unknown> = {
+      ...(validated.category_id !== undefined ? { category_id: validated.category_id } : {}),
+      ...(validated.description !== undefined ? { description: validated.description } : {}),
+      ...(validated.amount !== undefined ? { amount: validated.amount } : {}),
+      ...(validated.currency !== undefined ? { currency: validated.currency } : {}),
+    };
 
     // Re-convert if amount or currency changed
-    if (
-      (validated.amount !== undefined && validated.amount !== existing.amount) ||
-      (validated.currency !== undefined && validated.currency !== existing.currency)
-    ) {
-      const finalAmount = validated.amount ?? existing.amount;
-      const finalCurrency = validated.currency ?? existing.currency;
+    if (validated.amount !== undefined || validated.currency !== undefined) {
+      const userId = req.user!.id;
+      const currencyRows = await ensureUserCurrencies(userId);
+      const userCurrencies = currencyRows
+        .map((r) => r.currency)
+        .filter((c): c is Currency => Object.values(Currency).includes(c as Currency))
+        .map((c) => c as Currency);
 
-      const { rates } = await ExchangeRateService.getCachedRates();
-      const convertedData = ExchangeRateService.convertToAll(finalAmount, finalCurrency, rates);
+      const finalAmount = validated.amount ?? existing.amount;
+      const finalCurrency = (validated.currency ?? existing.currency) as Currency;
+
+      const snapshot = await ExchangeRateService.getCachedRates();
+      const amounts = await ExchangeRateService.convertToUserCurrencies(
+        finalAmount,
+        finalCurrency,
+        userCurrencies,
+        snapshot
+      );
 
       updatePayload = {
         ...updatePayload,
-        ...convertedData
+        amounts,
+        exchange_rate_snapshot: snapshot,
       };
     }
 
@@ -183,7 +213,7 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
         created_at,
         amount,
         currency,
-        amount_eur,
+        amounts,
         categories (
           id,
           name,
@@ -198,7 +228,7 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
     if (error) throw error;
 
     // Map to the requested response shape
-    const rows = (data ?? []) as unknown as RecentExpenseJoinRow[];
+    const rows = (data ?? []) as unknown as (RecentExpenseJoinRow & { amounts: Record<string, number> | null })[];
 
     const formattedData = rows.map((item) => ({
       id: item.id,
@@ -207,7 +237,7 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
       time: item.created_at, // Map created_at to time
       amount: item.amount,
       currency: item.currency,
-      amount_eur: item.amount_eur,
+      amounts: item.amounts ?? {},
       category: item.categories ? {
         id: item.categories.id,
         name: item.categories.name,
@@ -222,86 +252,4 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
   }
 };
 
-export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: NextFunction) => {
-  try {
-    const { year, month } = req.query;
-    
-    const now = new Date();
-    const targetYear = year ? parseInt(year as string) : now.getFullYear();
-    const targetMonth = month ? parseInt(month as string) : now.getMonth() + 1; // 1-12
-    
-    // Calculate start and end dates for the target month
-    const startDate = new Date(targetYear, targetMonth - 1, 1).toISOString().split('T')[0];
-    const endDate = new Date(targetYear, targetMonth, 0).toISOString().split('T')[0];
-
-    // Calculate start and end dates for the previous month
-    const prevMonthDate = new Date(targetYear, targetMonth - 2, 1);
-    const prevYear = prevMonthDate.getFullYear();
-    const prevMonth = prevMonthDate.getMonth() + 1;
-    const prevStartDate = new Date(prevYear, prevMonth - 1, 1).toISOString().split('T')[0];
-    const prevEndDate = new Date(prevYear, prevMonth, 0).toISOString().split('T')[0];
-
-    // Get current month expenses
-    const { data: currentMonthData, error: currentError } = await supabaseAdmin
-      .from('expenses')
-      .select('amount_uah, amount_all, amount_eur, amount_usd')
-      .eq('user_id', req.user!.id)
-      .gte('date', startDate)
-      .lte('date', endDate);
-
-    if (currentError) throw currentError;
-
-    // Get previous month expenses for comparison
-    const { data: prevMonthData, error: prevError } = await supabaseAdmin
-      .from('expenses')
-      .select('amount_eur')
-      .eq('user_id', req.user!.id)
-      .gte('date', prevStartDate)
-      .lte('date', prevEndDate);
-
-    if (prevError) throw prevError;
-
-    const currentRows = (currentMonthData ?? []) as unknown as MonthlyAmountsRow[];
-    const prevRows = (prevMonthData ?? []) as unknown as PrevMonthEurRow[];
-
-    const totals = currentRows.reduce(
-      (acc, curr) => {
-        acc.UAH += curr.amount_uah ?? 0;
-        acc.ALL += curr.amount_all ?? 0;
-        acc.EUR += curr.amount_eur ?? 0;
-        acc.USD += curr.amount_usd ?? 0;
-        return acc;
-      },
-      { UAH: 0, ALL: 0, EUR: 0, USD: 0 }
-    );
-
-    const prevMonthEurTotal = prevRows.reduce((sum, curr) => sum + (curr.amount_eur ?? 0), 0);
-
-    let changePercent = 0;
-    let direction: 'up' | 'down' | 'same' = 'same';
-
-    if (prevMonthEurTotal > 0) {
-      changePercent = ((totals.EUR - prevMonthEurTotal) / prevMonthEurTotal) * 100;
-      if (changePercent > 0) direction = 'up';
-      else if (changePercent < 0) direction = 'down';
-    } else if (totals.EUR > 0) {
-      // If previous month was 0 but this month is > 0, it's a 100% increase essentially
-      changePercent = 100;
-      direction = 'up';
-    }
-
-    res.json({
-      year: targetYear,
-      month: targetMonth,
-      default_currency: 'EUR',
-      totals,
-      comparison: {
-        previous_month_eur: prevMonthEurTotal,
-        change_percent: Number(Math.abs(changePercent).toFixed(1)), // Make it positive and 1 decimal place
-        direction
-      }
-    });
-  } catch (err) {
-    next(err);
-  }
-};
+// NOTE: monthly totals have moved to /reports endpoints (jsonb-backed).

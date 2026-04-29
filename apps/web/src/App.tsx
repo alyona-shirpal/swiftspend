@@ -6,6 +6,7 @@ import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { AddExpensePage } from './pages/expenses/AddExpensePage';
+import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
 import { supabase } from './services/supabase.ts';
 import { Toaster } from 'react-hot-toast';
 
@@ -67,6 +68,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AddExpensePage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expenses/categories"
+            element={
+              <ProtectedRoute>
+                <AllCategoriesPage />
               </ProtectedRoute>
             }
           />

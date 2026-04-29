@@ -19,6 +19,7 @@ type StoredExpense = RecentExpense;
 
 const EXPENSES_KEY = 'swiftspend.mock.expenses';
 const CATEGORIES_KEY = 'swiftspend.mock.categories';
+const QUICK_CATEGORIES_KEY = 'swiftspend.mock.quick-categories';
 
 const FX_TO_EUR: Record<Currency, number> = {
   [Currency.EUR]: 1,
@@ -28,14 +29,24 @@ const FX_TO_EUR: Record<Currency, number> = {
 };
 
 export const MOCK_CATEGORIES: Category[] = [
-  { id: 'mock-food', name: 'Food', icon: 'restaurant', color: '#FF6B35' },
+  { id: 'mock-food', name: 'Food', icon: 'lunch_dining', color: '#FF6B35' },
   { id: 'mock-restaurants', name: 'Restaurants', icon: 'dining', color: '#9B59B6' },
   { id: 'mock-home', name: 'Home', icon: 'home', color: '#2196F3' },
   { id: 'mock-travel', name: 'Travel', icon: 'flight', color: '#0EA5A4' },
   { id: 'mock-health', name: 'Health', icon: 'medical_services', color: '#16A34A' },
-  { id: 'mock-beauty', name: 'Beauty', icon: 'content_cut', color: '#E91E63' },
+  { id: 'mock-beauty', name: 'Beauty', icon: 'face', color: '#E91E63' },
   { id: 'mock-clothing', name: 'Clothing', icon: 'checkroom', color: '#F59E0B' },
   { id: 'mock-childcare', name: 'Childcare', icon: 'child_care', color: '#8B5CF6' },
+  { id: 'mock-utilities', name: 'Utilities', icon: 'bolt', color: '#0F766E' },
+  { id: 'mock-education', name: 'Education', icon: 'school', color: '#2563EB' },
+  { id: 'mock-entertainment', name: 'Entertainment', icon: 'theater_comedy', color: '#D97706' },
+  { id: 'mock-transport', name: 'Transport', icon: 'directions_car', color: '#475569' },
+  { id: 'mock-electronics', name: 'Electronics', icon: 'devices', color: '#7C3AED' },
+  { id: 'mock-gifts', name: 'Gifts', icon: 'redeem', color: '#DB2777' },
+  { id: 'mock-sport', name: 'Sport', icon: 'sports_basketball', color: '#0EA5E9' },
+  { id: 'mock-work', name: 'Work', icon: 'work', color: '#334155' },
+  { id: 'mock-pets', name: 'Pets', icon: 'pets', color: '#059669' },
+  { id: 'mock-other', name: 'Other', icon: 'more_horiz', color: '#6B7280' },
 ];
 
 function canUseStorage() {
@@ -74,6 +85,29 @@ export function getMockCategories(): Category[] {
   return [...MOCK_CATEGORIES, ...customCategories];
 }
 
+export function getQuickCategories(limit = 8): Category[] {
+  const categories = getMockCategories();
+  const savedIds = readJson<string[]>(QUICK_CATEGORIES_KEY, []);
+  const quick = savedIds
+    .map((id) => categories.find((category) => category.id === id))
+    .filter((category): category is Category => Boolean(category));
+
+  if (quick.length >= limit) {
+    return quick.slice(0, limit);
+  }
+
+  const fallback = categories.filter((category) => !quick.some((item) => item.id === category.id));
+  return [...quick, ...fallback].slice(0, limit);
+}
+
+export function pinQuickCategory(categoryId: string) {
+  if (!categoryId) return;
+
+  const existing = readJson<string[]>(QUICK_CATEGORIES_KEY, []);
+  const next = [categoryId, ...existing.filter((id) => id !== categoryId)].slice(0, 8);
+  writeJson(QUICK_CATEGORIES_KEY, next);
+}
+
 export function getMockExpenses(): StoredExpense[] {
   const expenses = readJson<StoredExpense[]>(EXPENSES_KEY, []);
   return expenses.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime());
@@ -89,12 +123,16 @@ export async function createMockCategory(payload: CreateCategoryPayload): Promis
 
   const categories = readJson<Category[]>(CATEGORIES_KEY, []);
   writeJson(CATEGORIES_KEY, [nextCategory, ...categories]);
+  pinQuickCategory(nextCategory.id);
   return nextCategory;
 }
 
 export async function addMockExpense(payload: AddExpensePayload): Promise<RecentExpense> {
   const categories = getMockCategories();
   const category = categories.find((item) => item.id === payload.category_id) ?? null;
+  if (payload.category_id) {
+    pinQuickCategory(payload.category_id);
+  }
   const now = new Date();
   const [year, month, day] = (payload.date ?? now.toISOString().split('T')[0] ?? '').split('-');
   const createdAt = year && month && day

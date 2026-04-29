@@ -1,17 +1,12 @@
 import axios from 'axios';
 import { supabaseAdmin } from './supabase';
-import { ConversionSnapshot, Currency } from '../types';
+import { Currency } from '../types';
+import type { RateSnapshot, CurrencyAmounts } from '@swiftspend/types';
 
 interface ExchangeRateAPIResponse {
   result: string;
   base_code: string;
   rates: Record<string, number>;
-}
-
-export interface RateSnapshot {
-  base: 'EUR';
-  rates: ConversionSnapshot;
-  fetched_at: string;
 }
 
 export class ExchangeRateService {
@@ -22,24 +17,15 @@ export class ExchangeRateService {
   /**
    * Fetch live exchange rates from the external API
    */
-  private static async fetchRatesFromAPI(): Promise<ConversionSnapshot> {
+  private static async fetchRatesFromAPI(): Promise<Record<string, number>> {
     const response = await axios.get<ExchangeRateAPIResponse>(this.API_URL);
-    const rates = response.data.rates;
-
-    const snapshot: ConversionSnapshot = {
-      UAH: rates['UAH'] || 0,
-      ALL: rates['ALL'] || 0,
-      EUR: rates['EUR'] || 1, // Base is EUR
-      USD: rates['USD'] || 0,
-    };
-
-    return snapshot;
+    return response.data.rates;
   }
 
   /**
    * Check cache or fetch new ones if stale
    */
-  public static async getCachedRates(): Promise<{ rates: ConversionSnapshot; fetchedAt: string }> {
+  public static async getCachedRates(): Promise<RateSnapshot> {
     const { data, error } = await supabaseAdmin
       .from('exchange_rate_cache')
       .select('*')
@@ -56,8 +42,9 @@ export class ExchangeRateService {
       // If fresh (< 1 hour), return cached
       if (ageMs < this.CACHE_TTL_MS) {
         return {
-          rates: data.rates as ConversionSnapshot,
-          fetchedAt: data.fetched_at
+          base: (data.base ?? 'EUR') as unknown as RateSnapshot['base'],
+          rates: data.rates as Record<string, number>,
+          fetched_at: data.fetched_at
         };
       }
     }
@@ -74,32 +61,54 @@ export class ExchangeRateService {
 
     if (insertError) {
       console.error('Failed to update exchange rate cache', insertError);
-      return { rates: newRates, fetchedAt: now.toISOString() };
+      return { base: Currency.EUR as unknown as RateSnapshot['base'], rates: newRates, fetched_at: now.toISOString() };
     }
 
     return {
-      rates: inserted.rates as ConversionSnapshot,
-      fetchedAt: inserted.fetched_at
+      base: (inserted.base ?? 'EUR') as unknown as RateSnapshot['base'],
+      rates: inserted.rates as Record<string, number>,
+      fetched_at: inserted.fetched_at
     };
   }
 
   /**
-   * Convert amount across all 4 currencies
+   * Converts one amount+currency into all of the user's active currencies
    */
-  public static convertToAll(amount: number, currency: Currency, rates: ConversionSnapshot) {
-    // Base is EUR
-    const baseAmountEUR = amount / rates[currency];
+  public static async convertToUserCurrencies(
+    amount: number,
+    fromCurrency: Currency,
+    userCurrencies: Currency[],
+    snapshot: RateSnapshot
+  ): Promise<CurrencyAmounts> {
+    const fromRate = snapshot.rates[fromCurrency];
+    if (!fromRate) throw new Error(`Missing rate for ${fromCurrency}`);
 
-    return {
-      amount_uah: Number((baseAmountEUR * rates.UAH).toFixed(4)),
-      amount_all: Number((baseAmountEUR * rates.ALL).toFixed(4)),
-      amount_eur: Number((baseAmountEUR * rates.EUR).toFixed(4)),
-      amount_usd: Number((baseAmountEUR * rates.USD).toFixed(4)),
-      exchange_rate_snapshot: {
-        base: 'EUR',
-        rates,
-        fetched_at: new Date().toISOString()
-      }
-    };
+    const baseAmount = amount / fromRate; // base is EUR
+
+    const result: CurrencyAmounts = {};
+    for (const target of userCurrencies) {
+      const targetRate = snapshot.rates[target];
+      if (!targetRate) continue;
+      result[target] = Number((baseAmount * targetRate).toFixed(2));
+    }
+    return result;
+  }
+
+  /**
+   * Backfill: calculate one currency amount from an existing snapshot
+   */
+  public static calculateFromSnapshot(
+    originalAmount: number,
+    originalCurrency: Currency,
+    targetCurrency: Currency,
+    snapshot: RateSnapshot
+  ): number {
+    const originalRate = snapshot.rates[originalCurrency];
+    const targetRate = snapshot.rates[targetCurrency];
+    if (!originalRate) throw new Error(`Missing rate for ${originalCurrency}`);
+    if (!targetRate) throw new Error(`Missing rate for ${targetCurrency}`);
+
+    const baseAmount = originalAmount / originalRate;
+    return Number((baseAmount * targetRate).toFixed(2));
   }
 }
