@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import api from '../services/api';
 import { Category } from '../types/api';
+import { createMockCategory } from '../services/mockExpenses';
 
 interface CreateCategoryPayload {
   name: string;
@@ -12,10 +12,7 @@ export function useCreateCategory() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (payload: CreateCategoryPayload): Promise<Category> => {
-      const { data } = await api.post<Category>('/categories', payload);
-      return data;
-    },
+    mutationFn: async (payload: CreateCategoryPayload): Promise<Category> => createMockCategory(payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['categories', 'recent'] });
     },

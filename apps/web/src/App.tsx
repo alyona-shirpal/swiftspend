@@ -5,18 +5,45 @@ import { ProtectedRoute } from './components/layout/ProtectedRoute';
 import LoginPage from './pages/auth/LoginPage';
 import SignUpPage from './pages/auth/SignUpPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
+import { AddExpensePage } from './pages/expenses/AddExpensePage';
 import { supabase } from './services/supabase.ts';
 import { Toaster } from 'react-hot-toast';
 
 // Callback component to handle OAuth redirection
 const AuthCallback = () => {
   useEffect(() => {
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN') {
+    let isMounted = true;
+
+    const finishSignIn = async () => {
+      const url = new URL(window.location.href);
+      const code = url.searchParams.get('code');
+
+      if (code) {
+        const { error } = await supabase.auth.exchangeCodeForSession(code);
+        if (error) {
+          console.error('OAuth callback exchange failed:', error);
+        }
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+
+      if (isMounted && session) {
+        window.location.href = '/';
+      }
+    };
+
+    finishSignIn();
+
+    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_IN' && session) {
         window.location.href = '/';
       }
     });
-    return () => subscription.unsubscribe();
+
+    return () => {
+      isMounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   return (
@@ -35,6 +62,14 @@ function App() {
           <Route path="/login" element={<LoginPage />} />
           <Route path="/signup" element={<SignUpPage />} />
           <Route path="/auth/callback" element={<AuthCallback />} />
+          <Route
+            path="/expenses/new"
+            element={
+              <ProtectedRoute>
+                <AddExpensePage />
+              </ProtectedRoute>
+            }
+          />
           <Route 
             path="/" 
             element={

@@ -1,4 +1,4 @@
-import { Currency } from '@swiftspend/types';
+import { Currency, CurrencyAmounts } from '@swiftspend/types';
 
 export interface Category {
   id: string;
@@ -14,7 +14,7 @@ export interface RecentExpense {
   time: string;
   amount: number;
   currency: Currency;
-  amount_eur: number;
+  amounts: CurrencyAmounts;
   category: Category | null;
 }
 
