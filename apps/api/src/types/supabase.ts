@@ -1,4 +1,4 @@
-import { Currency } from './index';
+import { Currency } from '@swiftspend/types';
 
 export type CategoryRow = {
   id: string;
@@ -20,7 +20,7 @@ export type RecentExpenseJoinRow = {
   created_at: string;
   amount: number;
   currency: Currency;
-  amount_eur: number | null;
+  amounts: Record<string, unknown> | null;
   categories: CategoryRow | null;
 };
 

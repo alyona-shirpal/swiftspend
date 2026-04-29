@@ -1,11 +1,23 @@
-import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import React, { useEffect, useState } from 'react';
+import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AuthForm } from '../../components/auth/AuthForm.tsx';
 import { OAuthButtons } from '../../components/auth/OAuthButtons.tsx';
+import { useAuth } from '../../hooks/useAuth';
 
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
   const [error, setError] = useState<string | null>(null);
+  const { session, isLoading } = useAuth();
+
+  useEffect(() => {
+    if (session) {
+      navigate('/', { replace: true });
+    }
+  }, [navigate, session]);
+
+  if (!isLoading && session) {
+    return <Navigate to="/" replace />;
+  }
 
   return (
     <div className="bg-surface text-on-surface min-h-screen flex flex-col relative overflow-hidden">
@@ -37,7 +49,7 @@ const LoginPage: React.FC = () => {
 
             <AuthForm 
               type="login" 
-              onSuccess={() => navigate('/')} 
+              onSuccess={() => navigate('/', { replace: true })} 
             />
 
             <div className="mt-16 space-y-8">
@@ -49,7 +61,7 @@ const LoginPage: React.FC = () => {
 
               <OAuthButtons 
                 onError={setError} 
-                onSuccess={() => navigate('/')}
+                onSuccess={() => navigate('/', { replace: true })}
               />
 
               <div className="text-center pt-8">

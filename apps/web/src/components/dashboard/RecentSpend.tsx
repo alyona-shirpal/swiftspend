@@ -4,6 +4,7 @@ import { ExpenseRow } from './ExpenseRow';
 
 export const RecentSpend: React.FC = () => {
   const { data: expenses, isLoading, isError } = useRecentExpenses();
+  const hasExpenses = Boolean(expenses && expenses.length > 0);
 
   return (
     <section className="lg:col-span-7 space-y-8 order-2 lg:order-1">
@@ -35,22 +36,16 @@ export const RecentSpend: React.FC = () => {
           ))
         )}
 
-        {!isLoading && !isError && expenses && expenses.length === 0 && (
+        {!isLoading && !hasExpenses && (
           <div className="text-center py-10">
             <p className="text-secondary opacity-70">No expenses yet — add your first one above</p>
           </div>
         )}
 
-        {!isLoading && !isError && expenses && expenses.length > 0 && (
+        {!isLoading && !isError && expenses && hasExpenses && (
           expenses.map((expense) => (
             <ExpenseRow key={expense.id} expense={expense} />
           ))
-        )}
-
-        {isError && (
-          <div className="text-center py-10">
-            <p className="text-error opacity-70">Could not load expenses</p>
-          </div>
         )}
       </div>
     </section>
