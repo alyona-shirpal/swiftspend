@@ -1,9 +1,14 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { MonthlyHero } from '../../components/dashboard/MonthlyHero';
 import { InstantLogging } from '../../components/dashboard/InstantLogging';
 import { RecentSpend } from '../../components/dashboard/RecentSpend';
+import { useAuth } from '../../hooks/useAuth';
 
 export const DashboardPage: React.FC = () => {
+  const { signOut } = useAuth();
+  const navigate = useNavigate();
+
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen pb-32">
       {/* TopAppBar */}
@@ -13,13 +18,13 @@ export const DashboardPage: React.FC = () => {
             SwiftSpend
           </h1>
         </div>
-        <div className="w-10 h-10 rounded-full bg-surface-container-highest overflow-hidden">
-          <img
-            alt="User profile"
-            className="w-full h-full object-cover"
-            src="https://lh3.googleusercontent.com/aida-public/AB6AXuB9sw_PC6URaEqEck0XMcn2-3_nsW7_4bLwCSGU8IbOhgwpldmwisHBKt2g46fyqqDoYiWnfK-vWdyJhlsCaKjQ_hwAzbB7xOFZoJ26iSjtu4bnMdvm9--L7gjmQWXylDNG_LokkDP0YGAQBc2Jm4vfw3UAoq_xkW0IqdsMp4w5Tl65rdQfk0W8tr4RMMiv44GmuPF-UxPnr2M230y-v6HgVyLqgep0e0-iTNawX5zTp-6kd7yC2uq3E_xw784DMBHOOVr0UsXmYus"
-          />
-        </div>
+        <button
+          type="button"
+          onClick={() => void signOut()}
+          className="rounded-full border border-outline-variant/30 px-4 py-2 text-xs font-bold uppercase tracking-widest text-secondary hover:bg-surface-container-low transition-colors"
+        >
+          Sign Out
+        </button>
       </header>
 
       <main className="max-w-screen-xl mx-auto px-6 py-8 space-y-12">
@@ -50,10 +55,7 @@ export const DashboardPage: React.FC = () => {
         {/* Large Elevated FAB button in center */}
         <div className="relative -top-6">
           <button 
-            onClick={() => {
-              window.scrollTo({ top: 0, behavior: 'smooth' });
-              (document.querySelector('input[type="number"]') as HTMLInputElement)?.focus();
-            }}
+            onClick={() => navigate('/expenses/new')}
             className="w-16 h-16 bg-primary dark:bg-white text-on-primary dark:text-black rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] dark:shadow-[0_10px_25px_-5px_rgba(255,255,255,0.2)] flex items-center justify-center active:scale-90 transition-transform"
           >
             <span className="material-symbols-outlined text-3xl font-bold">add</span>

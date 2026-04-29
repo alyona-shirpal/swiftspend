@@ -6,22 +6,24 @@ interface AuthFormProps {
   onSuccess?: () => void;
 }
 
-export const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
+export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [fullName, setFullName] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError(null);
+    setSuccessMessage(null);
 
     try {
       if (type === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email,
           password,
           options: {
@@ -31,14 +33,37 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
           },
         });
         if (error) throw error;
+
+        if (data.session) {
+          const { data: sessionData } = await supabase.auth.getSession();
+          if (!sessionData.session) {
+            throw new Error('Account created but no active session was found.');
+          }
+
+          window.location.assign('/');
+          return;
+        } else {
+          setSuccessMessage('Account created. Please check your email to confirm your account before signing in.');
+        }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+
+        if (!data.session) {
+          throw new Error('Sign-in completed but no active session was created.');
+        }
+
+        const { data: sessionData } = await supabase.auth.getSession();
+        if (!sessionData.session) {
+          throw new Error('Signed in but could not restore the active session.');
+        }
+
+        window.location.assign('/');
+        return;
       }
-      onSuccess?.();
     } catch (err: unknown) {
       if (err instanceof Error) {
         setError(err.message);
@@ -123,6 +148,12 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type, onSuccess }) => {
       {error && (
         <div className="text-sm text-error bg-error-container/20 p-3 rounded-lg border border-error-container">
           {error}
+        </div>
+      )}
+
+      {successMessage && (
+        <div className="text-sm text-green-700 bg-green-50 p-3 rounded-lg border border-green-200">
+          {successMessage}
         </div>
       )}
 
