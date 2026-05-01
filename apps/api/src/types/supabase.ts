@@ -20,17 +20,14 @@ export type RecentExpenseJoinRow = {
   created_at: string;
   amount: number;
   currency: Currency;
-  amounts: Record<string, unknown> | null;
+  amounts: Record<string, number>;
   categories: CategoryRow | null;
 };
 
 export type MonthlyAmountsRow = {
-  amount_uah: number | null;
-  amount_all: number | null;
-  amount_eur: number | null;
-  amount_usd: number | null;
+  amounts: Record<string, number>;
 };
 
 export type PrevMonthEurRow = {
-  amount_eur: number | null;
+  amounts: Record<string, number>;
 };

@@ -11,7 +11,7 @@ import { Currency } from '../types';
 
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
-  currency: z.enum(['UAH', 'ALL', 'EUR', 'USD']),
+  currency: z.string().min(3).max(3),
   category_id: z.string().uuid().optional(),
   description: z.string().max(200).optional(),
 });
@@ -76,12 +76,8 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
   try {
     const validated = ExpenseSchema.parse(req.body);
     const userId = req.user!.id;
-
-    const currencyRows = await ensureUserCurrencies(userId);
-    const userCurrencies = currencyRows
-      .map((r) => r.currency)
-      .filter((c): c is Currency => Object.values(Currency).includes(c as Currency))
-      .map((c) => c as Currency);
+    const currencies = await ensureUserCurrencies(userId);
+    const userCurrencies = currencies.map((r) => r.currency as Currency);
 
     const snapshot = await ExchangeRateService.getCachedRates();
     const amounts = await ExchangeRateService.convertToUserCurrencies(
@@ -95,10 +91,9 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
       .from('expenses')
       .insert({
         user_id: userId,
-        date: new Date().toISOString().split('T')[0],
-        // created_at is automatically set by the DB
         category_id: validated.category_id ?? null,
         description: validated.description ?? null,
+        date: new Date().toISOString().split('T')[0],
         amount: validated.amount,
         currency: validated.currency,
         amounts,
@@ -138,11 +133,8 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
     // Re-convert if amount or currency changed
     if (validated.amount !== undefined || validated.currency !== undefined) {
       const userId = req.user!.id;
-      const currencyRows = await ensureUserCurrencies(userId);
-      const userCurrencies = currencyRows
-        .map((r) => r.currency)
-        .filter((c): c is Currency => Object.values(Currency).includes(c as Currency))
-        .map((c) => c as Currency);
+      const currencies = await ensureUserCurrencies(userId);
+      const userCurrencies = currencies.map((r) => r.currency as Currency);
 
       const finalAmount = validated.amount ?? existing.amount;
       const finalCurrency = (validated.currency ?? existing.currency) as Currency;
@@ -234,7 +226,7 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
       id: item.id,
       description: item.description,
       date: item.date,
-      time: item.created_at, // Map created_at to time
+      time: item.created_at,
       amount: item.amount,
       currency: item.currency,
       amounts: item.amounts ?? {},
@@ -252,4 +244,107 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
   }
 };
 
-// NOTE: monthly totals have moved to /reports endpoints (jsonb-backed).
+export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+    let currency = req.query.currency as string | undefined;
+
+    if (!currency) {
+      const { data: defaultCurr } = await supabaseAdmin
+        .from('user_currencies')
+        .select('currency')
+        .eq('user_id', userId)
+        .eq('is_default', true)
+        .limit(1)
+        .single();
+      
+      currency = defaultCurr?.currency || 'EUR';
+    }
+
+    const targetYearQuery = req.query.year ? parseInt(req.query.year as string) : null;
+    const targetMonthQuery = req.query.month ? parseInt(req.query.month as string) : null;
+    
+    let year: number;
+    let month: number;
+
+    if (targetYearQuery && targetMonthQuery) {
+      year = targetYearQuery;
+      month = targetMonthQuery - 1; // Convert to 0-indexed
+    } else {
+      const targetDateStr = (req.query.date as string) || new Date().toISOString();
+      const targetDate = new Date(targetDateStr);
+      year = targetDate.getUTCFullYear();
+      month = targetDate.getUTCMonth();
+    }
+
+    const getMonthRange = (y: number, m: number) => {
+      const start = new Date(Date.UTC(y, m, 1));
+      const end = new Date(Date.UTC(y, m + 1, 0));
+      return { start: start.toISOString().split('T')[0], end: end.toISOString().split('T')[0] };
+    };
+
+    const currentRange = getMonthRange(year, month);
+    const prevRange = getMonthRange(year, month - 1);
+
+    const [{ data: currentData }, { data: prevData }] = await Promise.all([
+      supabaseAdmin
+        .from('expenses')
+        .select('amounts')
+        .eq('user_id', userId)
+        .gte('date', currentRange.start)
+        .lte('date', currentRange.end),
+      supabaseAdmin
+        .from('expenses')
+        .select('amounts')
+        .eq('user_id', userId)
+        .gte('date', prevRange.start)
+        .lte('date', prevRange.end)
+    ]);
+
+    const eurTotal = (currentData || []).reduce((sum, row) => {
+      const amounts = row.amounts as Record<string, number> | null;
+      return sum + (amounts?.['EUR'] || 0);
+    }, 0);
+
+    const eurPrevTotal = (prevData || []).reduce((sum, row) => {
+      const amounts = row.amounts as Record<string, number> | null;
+      return sum + (amounts?.['EUR'] || 0);
+    }, 0);
+
+    const currentTotal = (currentData || []).reduce((sum, row) => {
+      const amounts = row.amounts as Record<string, number> | null;
+      return sum + (amounts?.[currency as string] || 0);
+    }, 0);
+
+    const previousTotal = (prevData || []).reduce((sum, row) => {
+      const amounts = row.amounts as Record<string, number> | null;
+      return sum + (amounts?.[currency as string] || 0);
+    }, 0);
+
+    let change_percent = 0;
+    if (previousTotal > 0) {
+      change_percent = ((currentTotal - previousTotal) / previousTotal) * 100;
+    } else if (currentTotal > 0) {
+      change_percent = 100;
+    }
+
+    const direction = currentTotal > previousTotal ? 'up' : currentTotal < previousTotal ? 'down' : 'same';
+
+    res.json({
+      year,
+      month: month + 1,
+      default_currency: currency,
+      totals: { 
+        [currency as string]: currentTotal,
+        EUR: eurTotal 
+      },
+      comparison: { 
+        previous_month_eur: eurPrevTotal, 
+        change_percent: Math.round(change_percent * 100) / 100, 
+        direction 
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};

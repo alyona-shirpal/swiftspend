@@ -49,7 +49,7 @@ export const DashboardPage: React.FC = () => {
         </a>
         {/* Large Elevated FAB button in center */}
         <div className="relative -top-6">
-          <button className="w-16 h-16 bg-primary text-on-primary rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] flex items-center justify-center active:scale-90 transition-transform">
+          <button onClick={() => navigate('/expenses/new')} className="w-16 h-16 bg-primary text-on-primary rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] flex items-center justify-center active:scale-90 transition-transform">
             <span className="material-symbols-outlined text-3xl font-bold">add</span>
           </button>
         </div>

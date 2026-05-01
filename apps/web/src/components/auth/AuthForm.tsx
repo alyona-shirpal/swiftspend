@@ -22,6 +22,15 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
     setSuccessMessage(null);
 
     try {
+      // Development mode - simulate successful auth
+      if (!supabase) {
+        setSuccessMessage('Development mode: Simulated successful authentication');
+        setTimeout(() => {
+          window.location.assign('/');
+        }, 1000);
+        return;
+      }
+
       if (type === 'signup') {
         const { data, error } = await supabase.auth.signUp({
           email,

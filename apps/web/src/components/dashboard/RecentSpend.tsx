@@ -36,7 +36,13 @@ export const RecentSpend: React.FC = () => {
           ))
         )}
 
-        {!isLoading && !hasExpenses && (
+        {!isLoading && isError && (
+          <div className="text-center py-10">
+            <p className="text-error opacity-70">Failed to load recent expenses. Please try again.</p>
+          </div>
+        )}
+
+        {!isLoading && !isError && !hasExpenses && (
           <div className="text-center py-10">
             <p className="text-secondary opacity-70">No expenses yet — add your first one above</p>
           </div>

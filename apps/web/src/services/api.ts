@@ -9,6 +9,12 @@ const api = axios.create({
 });
 
 api.interceptors.request.use(async (config) => {
+  // Development mode - skip auth if supabase is not available
+  if (!supabase) {
+    config.headers.Authorization = 'Bearer dev-token';
+    return config;
+  }
+  
   const { data: { session } } = await supabase.auth.getSession();
   if (session?.access_token) {
     config.headers.Authorization = `Bearer ${session.access_token}`;
@@ -23,6 +29,12 @@ api.interceptors.request.use(async (config) => {
 api.interceptors.response.use(
   (response) => response,
   async (error) => {
+    // Development mode - handle API errors gracefully
+    if (!supabase) {
+      console.warn('Development mode: API call failed - this is expected when backend is not running');
+      return Promise.reject(error);
+    }
+
     const status = error.response?.status;
     const code = error.response?.data?.code;
 

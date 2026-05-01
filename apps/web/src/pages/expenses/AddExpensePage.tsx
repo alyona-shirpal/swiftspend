@@ -1,9 +1,10 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { Currency } from '@swiftspend/types';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useAddExpense } from '../../hooks/useAddExpense';
-import { getMockCategories, getQuickCategories, MOCK_CATEGORIES } from '../../services/mockExpenses';
+import { useCategories } from '../../hooks/useCategories';
+import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const CURRENCY_OPTIONS = [Currency.USD, Currency.EUR, Currency.ALL, Currency.UAH];
@@ -18,37 +19,43 @@ export const AddExpensePage: React.FC = () => {
   const navigate = useNavigate();
   const { mutateAsync: addExpense } = useAddExpense();
   const dateInputRef = useRef<HTMLInputElement>(null);
-  const categories = getMockCategories();
+  
+  const { data: categories = [] } = useCategories();
+  const { data: recentCategories = [] } = useRecentCategories();
+  
+  const quickCategories = useMemo(() => {
+    if (recentCategories.length >= 8) return recentCategories.slice(0, 8);
+    const fallback = categories.filter((c) => !recentCategories.some((r) => r.id === c.id));
+    return [...recentCategories, ...fallback].slice(0, 8);
+  }, [categories, recentCategories]);
+  
   const savedCategoryDraft = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
+  
   const [currency, setCurrency] = useState<Currency>(() => {
     const saved = sessionStorage.getItem(CURRENCY_DRAFT_KEY) as Currency | null;
     return saved && CURRENCY_OPTIONS.includes(saved) ? saved : Currency.ALL;
   });
-  const [quickCategoriesRefresh, setQuickCategoriesRefresh] = useState(0);
-    const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
-    () => savedCategoryDraft ?? getQuickCategories()[0]?.id ?? MOCK_CATEGORIES[0]?.id ?? ''
-  );
+  
+  const [selectedCategoryId, setSelectedCategoryId] = useState<string>(savedCategoryDraft ?? '');
+  
   const [note, setNote] = useState(() => sessionStorage.getItem(NOTE_DRAFT_KEY) ?? '');
   const [amountInput, setAmountInput] = useState(() => sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00');
   const [selectedDate, setSelectedDate] = useState(
     () => sessionStorage.getItem(DATE_DRAFT_KEY) ?? new Date().toISOString().split('T')[0] ?? ''
   );
   const [isSaving, setIsSaving] = useState(false);
-  const quickCategories = useMemo(() => getQuickCategories(), [quickCategoriesRefresh]);
 
   useEffect(() => {
-    // Only set from sessionStorage on initial load
-    if (!selectedCategoryId && categories[0]) {
-      const savedCategoryId = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
-      if (savedCategoryId) {
-        setSelectedCategoryId(savedCategoryId);
-        // Refresh quick categories if we have a saved category (likely from AllCategoriesPage)
-        setQuickCategoriesRefresh(prev => prev + 1);
-      } else {
-        setSelectedCategoryId(categories[0].id);
+    if (!selectedCategoryId) {
+      if (savedCategoryDraft) {
+        setSelectedCategoryId(savedCategoryDraft);
+      } else if (quickCategories.length > 0) {
+        setSelectedCategoryId(quickCategories[0]!.id);
+      } else if (categories.length > 0) {
+        setSelectedCategoryId(categories[0]!.id);
       }
     }
-  }, [categories]);
+  }, [selectedCategoryId, quickCategories, categories, savedCategoryDraft]);
 
   useEffect(() => {
     if (selectedCategoryId) {
@@ -145,7 +152,7 @@ export const AddExpensePage: React.FC = () => {
       sessionStorage.removeItem(AMOUNT_DRAFT_KEY);
       sessionStorage.removeItem(DATE_DRAFT_KEY);
       sessionStorage.removeItem(CURRENCY_DRAFT_KEY);
-      toast.success('Mock expense saved');
+      toast.success('Expense saved');
       navigate('/', { replace: true });
     } catch {
       toast.error('Could not save the expense.');

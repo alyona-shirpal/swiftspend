@@ -1,19 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { Currency } from '@swiftspend/types';
 import { useRecentCategories } from '../../hooks/useRecentCategories';
+import { useCategories } from '../../hooks/useCategories';
 import { useAddExpense } from '../../hooks/useAddExpense';
-import { useCreateCategory } from '../../hooks/useCreateCategory';
 import { CategoryPill } from './CategoryPill';
 import { Category } from '../../types/api';
 import toast from 'react-hot-toast';
-
-// Default categories shown when the user hasn't used any yet
-const DEFAULT_CATEGORIES: (Category & { isDefault: true })[] = [
-  { id: 'default-food',        name: 'Food',        icon: 'restaurant', color: '#FF6B35', isDefault: true },
-  { id: 'default-restaurants', name: 'Restaurants', icon: 'storefront', color: '#9B59B6', isDefault: true },
-  { id: 'default-beauty',      name: 'Beauty',      icon: 'spa',        color: '#E91E8C', isDefault: true },
-  { id: 'default-home',        name: 'Home',        icon: 'home',       color: '#2196F3', isDefault: true },
-];
 
 export const InstantLogging: React.FC = () => {
   const [amountStr, setAmountStr] = useState<string>('');
@@ -22,16 +14,16 @@ export const InstantLogging: React.FC = () => {
   const [description, setDescription] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
-  const { data: recentCategories, refetch: refetchCategories } = useRecentCategories();
+  const { data: recentCategories, refetch: refetchRecent } = useRecentCategories();
+  const { data: allCategories, refetch: refetchAll } = useCategories();
   const { mutateAsync: addExpense } = useAddExpense();
-  const { mutateAsync: createCategory } = useCreateCategory();
 
   const hasRecentCategories = recentCategories && recentCategories.length > 0;
 
-  // All categories to show: real recent ones take priority, else show defaults
+  // All categories to show: real recent ones take priority, else show all from DB
   const displayCategories: Category[] = hasRecentCategories
     ? recentCategories
-    : DEFAULT_CATEGORIES;
+    : (allCategories || []).slice(0, 10); // Show up to 10 if no recent ones
 
   const categoryLabel = hasRecentCategories ? 'Recent Categories' : 'Categories';
 
@@ -59,38 +51,15 @@ export const InstantLogging: React.FC = () => {
 
     setIsSaving(true);
     try {
-      let resolvedCategoryId: string | undefined = undefined;
-
-      if (categoryId) {
-        const isDefault = categoryId.startsWith('default-');
-
-        if (isDefault) {
-          // Find the chosen default so we can send its details to the API
-          const chosen = DEFAULT_CATEGORIES.find((c) => c.id === categoryId);
-          if (chosen) {
-            // Create the real category in the DB
-            const created = await createCategory({
-              name: chosen.name,
-              icon: chosen.icon,
-              color: chosen.color,
-            });
-            resolvedCategoryId = created.id;
-          }
-        } else {
-          // Already a real UUID
-          resolvedCategoryId = categoryId;
-        }
-      }
-
       await addExpense({
         amount,
         currency,
-        category_id: resolvedCategoryId,
+        category_id: categoryId || undefined,
         description: description || undefined,
       });
 
-      // Refresh recent categories so the label switches to "Recent Categories"
-      await refetchCategories();
+      // Refresh data
+      await Promise.all([refetchRecent(), refetchAll()]);
 
       setAmountStr('');
       setDescription('');
