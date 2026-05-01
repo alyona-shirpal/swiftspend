@@ -10,6 +10,7 @@ if (isDevelopment) {
   console.warn('Running in development mode - Supabase credentials missing. Authentication is disabled.');
 }
 
-export const supabase = isDevelopment 
-  ? null 
-  : createClient(supabaseUrl, supabaseAnonKey);
+export const supabase = createClient(
+  supabaseUrl || 'http://localhost:54321',
+  supabaseAnonKey || 'public-anon-key'
+);

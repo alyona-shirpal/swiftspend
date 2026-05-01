@@ -12,7 +12,7 @@ DECLARE
     v_categories json;
     v_expenses json;
 BEGIN
-    SELECT COALESCE(SUM(amount_uah), 0), COALESCE(SUM(amount_all), 0), COALESCE(SUM(amount_eur), 0), COALESCE(SUM(amount_usd), 0)
+    SELECT COALESCE(SUM((amounts->>'UAH')::numeric), 0), COALESCE(SUM((amounts->>'ALL')::numeric), 0), COALESCE(SUM((amounts->>'EUR')::numeric), 0), COALESCE(SUM((amounts->>'USD')::numeric), 0)
     INTO v_total_uah, v_total_all, v_total_eur, v_total_usd
     FROM expenses
     WHERE user_id = p_user_id AND date = p_date;
@@ -21,10 +21,10 @@ BEGIN
     FROM (
         SELECT 
             category_id,
-            SUM(amount_uah) as uah,
-            SUM(amount_all) as all,
-            SUM(amount_eur) as eur,
-            SUM(amount_usd) as usd
+            SUM((amounts->>'UAH')::numeric) as uah,
+            SUM((amounts->>'ALL')::numeric) as all,
+            SUM((amounts->>'EUR')::numeric) as eur,
+            SUM((amounts->>'USD')::numeric) as usd
         FROM expenses
         WHERE user_id = p_user_id AND date = p_date
         GROUP BY category_id
@@ -60,7 +60,7 @@ DECLARE
     v_categories json;
     v_daily_totals json;
 BEGIN
-    SELECT COALESCE(SUM(amount_uah), 0), COALESCE(SUM(amount_all), 0), COALESCE(SUM(amount_eur), 0), COALESCE(SUM(amount_usd), 0)
+    SELECT COALESCE(SUM((amounts->>'UAH')::numeric), 0), COALESCE(SUM((amounts->>'ALL')::numeric), 0), COALESCE(SUM((amounts->>'EUR')::numeric), 0), COALESCE(SUM((amounts->>'USD')::numeric), 0)
     INTO v_total_uah, v_total_all, v_total_eur, v_total_usd
     FROM expenses
     WHERE user_id = p_user_id 
@@ -71,10 +71,10 @@ BEGIN
     FROM (
         SELECT 
             category_id,
-            SUM(amount_uah) as uah,
-            SUM(amount_all) as all,
-            SUM(amount_eur) as eur,
-            SUM(amount_usd) as usd
+            SUM((amounts->>'UAH')::numeric) as uah,
+            SUM((amounts->>'ALL')::numeric) as all,
+            SUM((amounts->>'EUR')::numeric) as eur,
+            SUM((amounts->>'USD')::numeric) as usd
         FROM expenses
         WHERE user_id = p_user_id 
           AND EXTRACT(YEAR FROM date) = p_year 
@@ -86,10 +86,10 @@ BEGIN
     FROM (
         SELECT 
             date::text,
-            SUM(amount_uah) as uah,
-            SUM(amount_all) as all,
-            SUM(amount_eur) as eur,
-            SUM(amount_usd) as usd
+            SUM((amounts->>'UAH')::numeric) as uah,
+            SUM((amounts->>'ALL')::numeric) as all,
+            SUM((amounts->>'EUR')::numeric) as eur,
+            SUM((amounts->>'USD')::numeric) as usd
         FROM expenses
         WHERE user_id = p_user_id 
           AND EXTRACT(YEAR FROM date) = p_year 
@@ -121,7 +121,7 @@ DECLARE
     v_top_categories json;
     v_monthly_totals json;
 BEGIN
-    SELECT COALESCE(SUM(amount_uah), 0), COALESCE(SUM(amount_all), 0), COALESCE(SUM(amount_eur), 0), COALESCE(SUM(amount_usd), 0)
+    SELECT COALESCE(SUM((amounts->>'UAH')::numeric), 0), COALESCE(SUM((amounts->>'ALL')::numeric), 0), COALESCE(SUM((amounts->>'EUR')::numeric), 0), COALESCE(SUM((amounts->>'USD')::numeric), 0)
     INTO v_total_uah, v_total_all, v_total_eur, v_total_usd
     FROM expenses
     WHERE user_id = p_user_id 
@@ -131,15 +131,15 @@ BEGIN
     FROM (
         SELECT 
             category_id,
-            SUM(amount_uah) as uah,
-            SUM(amount_all) as all,
-            SUM(amount_eur) as eur,
-            SUM(amount_usd) as usd
+            SUM((amounts->>'UAH')::numeric) as uah,
+            SUM((amounts->>'ALL')::numeric) as all,
+            SUM((amounts->>'EUR')::numeric) as eur,
+            SUM((amounts->>'USD')::numeric) as usd
         FROM expenses
         WHERE user_id = p_user_id 
           AND EXTRACT(YEAR FROM date) = p_year
         GROUP BY category_id
-        ORDER BY SUM(amount_eur) DESC
+        ORDER BY SUM((amounts->>'EUR')::numeric) DESC
         LIMIT 5
     ) cat_totals;
 
@@ -147,10 +147,10 @@ BEGIN
     FROM (
         SELECT 
             EXTRACT(MONTH FROM date)::int::text as month,
-            SUM(amount_uah) as uah,
-            SUM(amount_all) as all,
-            SUM(amount_eur) as eur,
-            SUM(amount_usd) as usd
+            SUM((amounts->>'UAH')::numeric) as uah,
+            SUM((amounts->>'ALL')::numeric) as all,
+            SUM((amounts->>'EUR')::numeric) as eur,
+            SUM((amounts->>'USD')::numeric) as usd
         FROM expenses
         WHERE user_id = p_user_id 
           AND EXTRACT(YEAR FROM date) = p_year

@@ -10,6 +10,15 @@ interface OAuthButtonsProps {
 export const OAuthButtons: React.FC<OAuthButtonsProps> = ({ onError, onSuccess }) => {
   const handleOAuthLogin = async (provider: 'google' | 'apple') => {
     try {
+      // Development mode - simulate successful OAuth
+      if (!supabase) {
+        onError(`Development mode: ${provider} OAuth simulation - not configured`);
+        setTimeout(() => {
+          onSuccess?.();
+        }, 1000);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithOAuth({
         provider,
         options: {

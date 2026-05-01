@@ -1,8 +1,8 @@
-import React, { useMemo, useState } from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCreateCategory } from '../../hooks/useCreateCategory';
-import { getMockCategories, pinQuickCategory } from '../../services/mockExpenses';
+import { useCategories } from '../../hooks/useCategories';
 import type { Category } from '../../types/api';
 
 const CATEGORY_DRAFT_KEY = 'swiftspend.add-expense.selected-category';
@@ -10,15 +10,13 @@ const CATEGORY_DRAFT_KEY = 'swiftspend.add-expense.selected-category';
 export const AllCategoriesPage: React.FC = () => {
   const navigate = useNavigate();
   const { mutateAsync: createCategory, isPending } = useCreateCategory();
+  const { data: categories = [] } = useCategories();
   const [customName, setCustomName] = useState('');
-  const [refreshTick, setRefreshTick] = useState(0);
 
-  const categories = useMemo(() => getMockCategories(), [refreshTick]);
   const selectedCategoryId = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
 
   const handleSelect = (category: Category) => {
     sessionStorage.setItem(CATEGORY_DRAFT_KEY, category.id);
-    pinQuickCategory(category.id);
     navigate('/expenses/new');
   };
 
@@ -36,7 +34,6 @@ export const AllCategoriesPage: React.FC = () => {
         color: '#111827',
       });
       setCustomName('');
-      setRefreshTick((value) => value + 1);
       sessionStorage.setItem(CATEGORY_DRAFT_KEY, created.id);
       toast.success('Category created');
     } catch {

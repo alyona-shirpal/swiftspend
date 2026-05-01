@@ -18,8 +18,27 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    // If supabase is null (development mode), skip auth initialization
+    // If supabase is null (development mode), create a mock session
     if (!supabase) {
+      const mockUser = {
+        id: 'dev-user-id',
+        email: 'dev@example.com',
+        app_metadata: {},
+        user_metadata: { full_name: 'Development User' },
+        aud: 'authenticated',
+        created_at: new Date().toISOString(),
+      } as User;
+
+      const mockSession = {
+        access_token: 'dev-token',
+        token_type: 'bearer',
+        expires_in: 3600,
+        refresh_token: 'dev-refresh-token',
+        user: mockUser,
+      } as Session;
+
+      setSession(mockSession);
+      setUser(mockUser);
       setIsLoading(false);
       return;
     }
