@@ -48,18 +48,18 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense }) => {
   return (
     <div className="flex items-center justify-between group">
       <div className="flex items-center gap-5">
-        <div className="w-12 h-12 flex items-center justify-center bg-surface-container-low dark:bg-slate-800 rounded-lg group-hover:bg-surface-container-highest transition-colors">
-          <span className="material-symbols-outlined text-primary dark:text-white">{icon}</span>
+        <div className="w-12 h-12 flex items-center justify-center bg-surface-container-low rounded-lg group-hover:bg-surface-container-highest transition-colors">
+          <span className="material-symbols-outlined text-primary">{icon}</span>
         </div>
         <div>
-          <h4 className="font-body text-md font-semibold text-primary dark:text-white">{title}</h4>
+          <h4 className="font-body text-md font-semibold text-primary">{title}</h4>
           <p className="font-label text-xs text-secondary opacity-70">
             {categoryName} • {subtitleTime}
           </p>
         </div>
       </div>
       <div className="text-right flex flex-col items-end">
-        <span className="font-body font-bold text-primary dark:text-white">{formattedEur}</span>
+        <span className="font-body font-bold text-primary">{formattedEur}</span>
         {formattedOriginal && (
           <span className="font-label text-[10px] text-secondary opacity-60 mt-0.5">{formattedOriginal}</span>
         )}

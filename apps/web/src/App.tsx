@@ -7,6 +7,9 @@ import SignUpPage from './pages/auth/SignUpPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { AddExpensePage } from './pages/expenses/AddExpensePage';
 import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
+import { DailyReportPage } from './pages/reports/DailyReportPage';
+import { MonthlyReportPage } from './pages/reports/MonthlyReportPage';
+import { YearlyReportPage } from './pages/reports/YearlyReportPage';
 import { supabase } from './services/supabase.ts';
 import { Toaster } from 'react-hot-toast';
 
@@ -16,6 +19,14 @@ const AuthCallback = () => {
     let isMounted = true;
 
     const finishSignIn = async () => {
+      if (!supabase) {
+        console.warn('Supabase not available - skipping OAuth callback');
+        if (isMounted) {
+          window.location.href = '/';
+        }
+        return;
+      }
+
       const url = new URL(window.location.href);
       const code = url.searchParams.get('code');
 
@@ -35,7 +46,7 @@ const AuthCallback = () => {
 
     finishSignIn();
 
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange((event, session) => {
       if (event === 'SIGNED_IN' && session) {
         window.location.href = '/';
       }
@@ -76,6 +87,38 @@ function App() {
             element={
               <ProtectedRoute>
                 <AllCategoriesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports"
+            element={
+              <ProtectedRoute>
+                <Navigate to="/reports/daily" replace />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/daily"
+            element={
+              <ProtectedRoute>
+                <DailyReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/monthly"
+            element={
+              <ProtectedRoute>
+                <MonthlyReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/reports/yearly"
+            element={
+              <ProtectedRoute>
+                <YearlyReportPage />
               </ProtectedRoute>
             }
           />
