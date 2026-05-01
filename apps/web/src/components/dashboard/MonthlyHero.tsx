@@ -28,7 +28,7 @@ export const MonthlyHero: React.FC = () => {
             <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase mb-2 block">
               Monthly Statement
             </span>
-            <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary dark:text-white opacity-50">
+            <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary opacity-50">
               {formatCurrency(0, Currency.EUR)}
             </h2>
             <div className="flex items-center gap-2 mt-4 opacity-50">
@@ -57,7 +57,7 @@ export const MonthlyHero: React.FC = () => {
           <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase mb-2 block">
             Monthly Statement — {monthName}
           </span>
-          <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary dark:text-white">
+          <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary">
             {formatCurrency(totalAmount, Currency.EUR)}
           </h2>
           <div className="flex items-center gap-2 mt-4">
