@@ -30,6 +30,7 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
     req.user = {
       id: user.id,
       email: user.email,
+      created_at: user.created_at,
     };
 
     next();

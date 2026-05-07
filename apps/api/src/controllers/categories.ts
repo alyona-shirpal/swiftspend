@@ -182,3 +182,22 @@ export const getRecentCategories = async (req: AuthRequest, res: Response, next:
     next(err);
   }
 };
+
+export const completeCategoryOnboarding = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user!.id;
+
+    // Upsert into user_profiles to mark category onboarding as complete
+    const { error } = await supabaseAdmin
+      .from('user_profiles')
+      .upsert(
+        { user_id: userId, categories_onboarded_at: new Date().toISOString() },
+        { onConflict: 'user_id' }
+      );
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+};

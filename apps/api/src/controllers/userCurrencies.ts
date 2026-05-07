@@ -12,6 +12,11 @@ const Schema = z.object({
   is_default: z.boolean().optional(),
 })
 
+const OnboardingSchema = z.object({
+  currencies: z.array(z.string().min(3).max(3)).min(1).max(10),
+  default_currency: z.string().min(3).max(3)
+})
+
 export const getUserCurrencies = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id
@@ -22,7 +27,25 @@ export const getUserCurrencies = async (req: AuthRequest, res: Response, next: N
       .order('position', { ascending: true })
 
     if (error) throw error
-    res.json(data)
+    
+    const needs_onboarding = !data || data.length === 0
+
+    // Check if category onboarding is needed via the explicit flag in user_profiles
+    const { data: profile } = await supabaseAdmin
+      .from('user_profiles')
+      .select('categories_onboarded_at')
+      .eq('user_id', userId)
+      .single()
+
+    // User needs category onboarding if they have currencies set up
+    // but haven't completed the category onboarding step yet
+    const needs_category_onboarding = !needs_onboarding && (!profile || profile.categories_onboarded_at === null)
+
+    res.json({
+      needs_onboarding,
+      needs_category_onboarding,
+      currencies: data ?? []
+    })
   } catch (err) {
     next(err)
   }
@@ -120,6 +143,50 @@ export const createUserCurrency = async (req: AuthRequest, res: Response, next: 
     }
 
     res.status(201).json({ currency: inserted, backfilled_count })
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const onboardUserCurrencies = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { currencies, default_currency } = OnboardingSchema.parse(req.body)
+    const userId = req.user!.id
+
+    if (!currencies.includes(default_currency)) {
+      return res.status(400).json({ error: 'Default currency must be in your selected currencies' })
+    }
+
+    const snapshot = await ExchangeRateService.getCachedRates()
+    const invalidCodes = currencies.filter(code => !snapshot.rates[code])
+    if (invalidCodes.length > 0) {
+      return res.status(400).json({ error: `Invalid currency code: ${invalidCodes.join(', ')}` })
+    }
+
+    const { count, error: countErr } = await supabaseAdmin
+      .from('user_currencies')
+      .select('*', { count: 'exact', head: true })
+      .eq('user_id', userId)
+
+    if (countErr) throw countErr
+    if (count !== null && count > 0) {
+      return res.status(409).json({ error: 'Currencies already set up' })
+    }
+
+    const rows = currencies.map((currency, index) => ({
+      user_id: userId,
+      currency,
+      is_default: currency === default_currency,
+      position: index
+    }))
+
+    const { data, error: insertError } = await supabaseAdmin
+      .from('user_currencies')
+      .insert(rows)
+      .select()
+
+    if (insertError) throw insertError
+    res.status(201).json({ currencies: data })
   } catch (err) {
     next(err)
   }

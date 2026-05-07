@@ -1,6 +1,10 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Currency } from '@swiftspend/types';
+import { useMonthlyReport } from '../../hooks/useReports';
+import { useUserCurrencies } from '../../hooks/useUserCurrencies';
+import { formatCurrency, getCurrencyIcon, getCurrencySymbol } from '../../utils/formatCurrency';
+import { ReportSkeleton } from '../../components/ReportSkeleton';
 
 export const MonthlyReportPage: React.FC = () => {
   const navigate = useNavigate();
@@ -10,49 +14,104 @@ export const MonthlyReportPage: React.FC = () => {
   const [selectedYear] = useState(currentYear);
   const [selectedMonth] = useState(currentMonth);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.EUR);
+  
+  const { data: userCurrencies } = useUserCurrencies();
+  const { data: report, isLoading, error, refetch } = useMonthlyReport(
+    selectedYear.toString(), 
+    selectedMonth.toString().padStart(2, '0'), 
+    selectedCurrency
+  );
+  
+  const currencyOptions = userCurrencies?.currencies?.map((uc) => uc.currency as Currency) || [Currency.EUR];
+  
+  if (isLoading) {
+    return <ReportSkeleton />;
+  }
+  
+  if (error) {
+    return (
+      <div className="bg-surface text-on-surface min-h-screen pb-24 flex items-center justify-center">
+        <div className="text-center">
+          <span className="material-symbols-outlined text-4xl text-error mb-4">error</span>
+          <h2 className="text-xl font-bold mb-2">Failed to load report</h2>
+          <p className="text-secondary mb-4">Please try again later</p>
+          <button 
+            onClick={() => refetch()}
+            className="px-4 py-2 bg-primary text-on-primary rounded-lg"
+          >
+            Retry
+          </button>
+        </div>
+      </div>
+    );
+  }
+  
+  if (!report) {
+    return <ReportSkeleton />;
+  }
+  
+  // Handle empty state
+  if (!report.has_data) {
+    return (
+      <div className="bg-surface text-on-surface min-h-screen pb-24">
+        {/* Top Navigation Anchor */}
+        <header className="fixed top-0 left-0 right-0 z-50 bg-[#f7f9fb] flex justify-between items-center w-full px-6 py-4">
+          <div className="flex items-center gap-3">
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="p-2 rounded-full hover:bg-surface-container-low/50 transition-colors"
+            >
+              <span className="material-symbols-outlined text-black">arrow_back</span>
+            </button>
+            <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Report</h1>
+          </div>
+          <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
+            <img alt="Profile Photo" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj8DSZ2A0tz_RU6XlMGUtdnNqziN1kzcaYHv6alF6DcmUrZH4-keZkJUh2zDdBEBKsmp8yALR1VYZpst_CMOX_RN6nE8p0_dOa-EnqBo-04k6fqXs69vRp_oU2Pj0bn4xer5FijJo-NpLiWeuGRgt67VcF_Nbztdn_G7pbwV05SvJhzIsr9RpSpuBEEwJlWBOn7You-cVWNleveUy_tV7I2zm2GKjUfBbooMgIcfA72m2Ra-6ClGGj2rXkUhtdOBiM8Jcj9LGAPYs" />
+          </div>
+        </header>
 
-  // Mock data for the design
-  const monthlyData = [
-    { height: 'h-1/3' },
-    { height: 'h-2/5' },
-    { height: 'h-1/4' },
-    { height: 'h-3/5' },
-    { height: 'h-2/3' },
-    { height: 'h-full', active: true },
-    { height: 'h-1/2' },
-    { height: 'h-3/4' },
-    { height: 'h-2/5' },
-    { height: 'h-1/2' },
-    { height: 'h-1/3' },
-    { height: 'h-1/5' },
-    { height: 'h-1/2' },
-    { height: 'h-2/3' },
-  ];
+        <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
+          {/* Segmented Control */}
+          <div className="pt-4">
+            <div className="bg-surface-container-low p-1 flex rounded-lg">
+              <button 
+                onClick={() => navigate('/reports')}
+                className="flex-1 py-2 text-sm font-medium text-secondary"
+              >
+                Daily
+              </button>
+              <button 
+                onClick={() => navigate('/reports/monthly')}
+                className="flex-1 py-2 text-sm font-semibold rounded-md bg-white shadow-sm text-primary"
+              >
+                Monthly
+              </button>
+              <button 
+                onClick={() => navigate('/reports/yearly')}
+                className="flex-1 py-2 text-sm font-medium text-secondary"
+              >
+                Yearly
+              </button>
+            </div>
+          </div>
 
-  // Mock total amounts in different currencies
-  const totalAmounts = {
-    EUR: 3840.00,
-    USD: 4185.60,
-    UAH: 128000.00,
-    ALL: 376320.00,
-  };
+          {/* Empty State */}
+          <section className="flex flex-col items-center justify-center py-20">
+            <span className="material-symbols-outlined text-6xl text-secondary mb-4">calendar_month</span>
+            <h2 className="text-xl font-bold text-primary mb-2">No expenses this month</h2>
+            <p className="text-secondary text-center mb-6">There are no expenses recorded for this month</p>
+            <button 
+              onClick={() => navigate('/dashboard')}
+              className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
+            >
+              Add Expense
+            </button>
+          </section>
+        </main>
+      </div>
+    );
+  }
 
-  const currencyOptions = [Currency.EUR, Currency.USD, Currency.UAH, Currency.ALL];
-
-  const uahSymbol = '₴';
-
-  const currencyIcons = {
-    EUR: 'euro',
-    USD: 'attach_money',
-    UAH: 'hryvnia',
-    ALL: 'currency_lira',
-  };
-
-  const categoryData = [
-    { name: 'Food', amount: 1240.00, percentage: 65, transactions: 12, icon: 'lunch_dining', color: 'bg-primary' },
-    { name: 'Restaurants', amount: 890.50, percentage: 45, transactions: 48, icon: 'dining', color: 'bg-secondary' },
-    { name: 'Home', amount: 750.00, percentage: 38, transactions: 3, icon: 'home', color: 'bg-on-tertiary-container' },
-  ];
 
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen">
@@ -68,44 +127,45 @@ export const MonthlyReportPage: React.FC = () => {
           <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Report</h1>
         </div>
         <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
-          <img className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCDyw6z3nGg6Cb0uvUYLN8cyAXpjphIX1QY6gWRWz7_yn9ssuPWn-r5M-TH9oBG-RdOgjCAhKj2YWqEosIBIe7CUTXkgcQ8qkWght9qf35jEKzKBX5cveW5tHf8b4wvi0FA26rCpo87PIeKNkazqz-tc_UVtSMpnipFhpneoJ4hGCl5BMdga-qZRJUTDVUDdMBlRCi9XOSFPcp-7zlPSdb73-P4nRvxVKIjL2zvJ7ahKp8vE0i2S4fhwJz2SBqBYaGn5RxKPikuv4k" />
+          <img alt="Profile Photo" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj8DSZ2A0tz_RU6XlMGUtdnNqziN1kzcaYHv6alF6DcmUrZH4-keZkJUh2zDdBEBKsmp8yALR1VYZpst_CMOX_RN6nE8p0_dOa-EnqBo-04k6fqXs69vRp_oU2Pj0bn4xer5FijJo-NpLiWeuGRgt67VcF_Nbztdn_G7pbwV05SvJhzIsr9RpSpuBEEwJlWBOn7You-cVWNleveUy_tV7I2zm2GKjUfBbooMgIcfA72m2Ra-6ClGGj2rXkUhtdOBiM8Jcj9LGAPYs" />
         </div>
       </header>
 
-      <main className="pt-24 pb-28 px-6 max-w-md mx-auto">
+      <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
         {/* Period Switcher (Segmented Control) */}
-        <section className="mb-4">
+        <div className="pt-4">
           <div className="bg-surface-container-low p-1 flex rounded-lg">
             <button 
               onClick={() => navigate('/reports')}
-              className="flex-1 py-2 text-[11px] font-semibold font-label tracking-widest text-slate-500"
+              className="flex-1 py-2 text-sm font-medium text-secondary"
             >
-              DAILY
+              Daily
             </button>
             <button 
-              className="flex-1 py-2 text-[11px] font-semibold font-label tracking-widest bg-surface-container-lowest text-primary shadow-sm rounded-md transition-all duration-300"
+              onClick={() => navigate('/reports/monthly')}
+              className="flex-1 py-2 text-sm font-semibold rounded-md bg-white shadow-sm text-primary"
             >
-              MONTHLY
+              Monthly
             </button>
             <button 
               onClick={() => navigate('/reports/yearly')}
-              className="flex-1 py-2 text-[11px] font-semibold font-label tracking-widest text-slate-500"
+              className="flex-1 py-2 text-sm font-medium text-secondary"
             >
-              YEARLY
+              Yearly
             </button>
           </div>
-        </section>
+        </div>
 
         {/* Hero Card (Total Spending) */}
         <section className="relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase mb-2 block">
+              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-4 block">
                 Monthly Statement — {new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' })}
               </span>
               {/* Currency Selector */}
               <div className="flex rounded-lg bg-surface-container-low p-1 mb-4">
-                {currencyOptions.map((currency) => (
+                {currencyOptions.map((currency: Currency) => (
                   <button
                     key={currency}
                     onClick={() => setSelectedCurrency(currency)}
@@ -120,19 +180,21 @@ export const MonthlyReportPage: React.FC = () => {
                 ))}
               </div>
               <div className="flex items-baseline gap-4">
-                <span className={`text-[2.5rem] text-primary ${selectedCurrency === 'UAH' ? '' : 'material-symbols-outlined'}`}>
-                  {selectedCurrency === 'UAH' ? uahSymbol : currencyIcons[selectedCurrency]}
+                <span className={`text-[2.5rem] text-primary ${selectedCurrency === Currency.UAH ? '' : 'material-symbols-outlined'}`}>
+                  {selectedCurrency === Currency.UAH ? getCurrencySymbol(selectedCurrency) : getCurrencyIcon(selectedCurrency)}
                 </span>
                 <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary">
-                  {totalAmounts[selectedCurrency].toFixed(2).replace('.', ',')}
+                  {formatCurrency(report.total, selectedCurrency).replace(getCurrencySymbol(selectedCurrency), '')}
                 </h2>
               </div>
               <div className="flex items-center gap-2 mt-4">
-                <span className="material-symbols-outlined text-error" style={{ fontVariationSettings: "'FILL' 1" }}>
-                  trending_up
+                <span className={`material-symbols-outlined ${report.direction === 'up' ? 'text-error' : report.direction === 'down' ? 'text-primary' : 'text-secondary'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
+                  {report.direction === 'up' ? 'trending_up' : report.direction === 'down' ? 'trending_down' : 'trending_flat'}
                 </span>
-                <span className="font-label text-sm font-semibold text-error">
-                  +5% increase from last month
+                <span className={`font-label text-sm font-semibold ${report.direction === 'up' ? 'text-error' : report.direction === 'down' ? 'text-primary' : 'text-secondary'}`}>
+                  {report.direction === 'same' ? 'No change' : 
+                   report.direction === 'up' ? `+${report.change_percent.toFixed(1)}% increase from last month` :
+                   `-${report.change_percent.toFixed(1)}% decrease from last month`}
                 </span>
               </div>
             </div>
@@ -146,12 +208,22 @@ export const MonthlyReportPage: React.FC = () => {
             <span className="text-label-sm text-secondary font-medium">01 Oct - 31 Oct</span>
           </div>
           <div className="h-48 flex items-end justify-between gap-1.5 pt-4">
-            {monthlyData.map((data, index) => (
-              <div 
-                key={index} 
-                className={`flex-1 ${data.active ? 'bg-primary' : 'bg-surface-container-highest'} rounded-t-sm ${data.height}`}
-              ></div>
-            ))}
+            {report.daily_chart.map((data, index) => {
+              const maxAmount = Math.max(...report.daily_chart.map(d => d.amount), 1);
+              const heightPercentage = (data.amount / maxAmount) * 100;
+              const heightClass = heightPercentage === 0 ? 'h-2' : 
+                               heightPercentage < 20 ? 'h-8' :
+                               heightPercentage < 40 ? 'h-16' :
+                               heightPercentage < 60 ? 'h-24' :
+                               heightPercentage < 80 ? 'h-32' : 'h-40';
+              
+              return (
+                <div 
+                  key={index} 
+                  className={`flex-1 bg-surface-container-highest rounded-t-sm ${heightClass}`}
+                ></div>
+              );
+            })}
           </div>
           <div className="flex justify-between text-[10px] uppercase font-bold tracking-tighter text-secondary opacity-50 px-1">
             <span>01 Oct</span>
@@ -168,7 +240,7 @@ export const MonthlyReportPage: React.FC = () => {
             </div>
             <div className="flex-1">
               <h4 className="text-white text-xs font-bold uppercase tracking-widest opacity-60">Insights</h4>
-              <p className="text-white font-medium text-sm">Your utility bills were 15% lower this month compared to your yearly average</p>
+              <p className="text-white font-medium text-sm">{report.insight}</p>
             </div>
             <span className="material-symbols-outlined text-white/40">chevron_right</span>
           </div>
@@ -178,7 +250,7 @@ export const MonthlyReportPage: React.FC = () => {
         <section className="mb-12">
           <h3 className="text-sm font-headline font-bold text-primary tracking-tight mb-6">Top Categories Spending</h3>
           <div className="space-y-6">
-            {categoryData.map((category, index) => (
+            {report.top_categories.map((category, index) => (
               <div key={index} className="group">
                 <div className="flex justify-between items-center mb-2">
                   <div className="flex items-center gap-3">
@@ -187,14 +259,14 @@ export const MonthlyReportPage: React.FC = () => {
                     </div>
                     <div>
                       <p className="text-xs font-bold text-primary tracking-tight">{category.name}</p>
-                      <p className="text-[10px] text-on-surface-variant font-medium">{category.transactions} Transactions</p>
+                      <p className="text-[10px] text-on-surface-variant font-medium">{category.count} Transactions</p>
                     </div>
                   </div>
-                  <p className="text-sm font-headline font-bold text-primary">€{category.amount.toFixed(2).replace('.', ',')}</p>
+                  <p className="text-sm font-headline font-bold text-primary">{formatCurrency(category.total, selectedCurrency)}</p>
                 </div>
                 <div className="flex items-center gap-4">
                   <div className="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                    <div className={`h-full ${category.color} rounded-full`} style={{width: `${category.percentage}%`}}></div>
+                    <div className="h-full bg-primary rounded-full" style={{width: `${category.percentage}%`}}></div>
                   </div>
                   <span className="text-[10px] font-bold text-secondary">{category.percentage}%</span>
                 </div>
@@ -208,12 +280,12 @@ export const MonthlyReportPage: React.FC = () => {
           <h3 className="text-lg font-bold font-headline">Comparison</h3>
           <div className="flex gap-4">
             <div className="flex-1 p-4 bg-surface-container-low rounded-lg">
-              <p className="text-[9px] font-label text-outline uppercase tracking-wider mb-1">September</p>
-              <p className="text-lg font-headline font-extrabold text-secondary opacity-60">€3.650</p>
+              <p className="text-[9px] font-label text-outline uppercase tracking-wider mb-1">Last Month</p>
+              <p className="text-lg font-headline font-extrabold text-secondary opacity-60">{formatCurrency(report.previous_total, selectedCurrency)}</p>
             </div>
             <div className="flex-1 p-4 bg-surface-container-highest rounded-lg border-l-4 border-primary">
-              <p className="text-[9px] font-label text-primary uppercase tracking-wider mb-1">October</p>
-              <p className="text-lg font-headline font-extrabold text-primary">€3.840</p>
+              <p className="text-[9px] font-label text-primary uppercase tracking-wider mb-1">This Month</p>
+              <p className="text-lg font-headline font-extrabold text-primary">{formatCurrency(report.total, selectedCurrency)}</p>
             </div>
           </div>
         </section>
