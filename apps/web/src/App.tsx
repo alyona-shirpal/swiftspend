@@ -10,6 +10,8 @@ import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
 import { DailyReportPage } from './pages/reports/DailyReportPage';
 import { MonthlyReportPage } from './pages/reports/MonthlyReportPage';
 import { YearlyReportPage } from './pages/reports/YearlyReportPage';
+import CurrencyOnboardingPage from './pages/onboarding/CurrencyOnboardingPage';
+import CategoryOnboardingPage from './pages/onboarding/CategoryOnboardingPage';
 import { supabase } from './services/supabase.ts';
 import { Toaster } from 'react-hot-toast';
 
@@ -130,6 +132,8 @@ function App() {
               </ProtectedRoute>
             } 
           />
+          <Route path="/onboarding/currencies" element={<CurrencyOnboardingPage />} />
+          <Route path="/onboarding/categories" element={<CategoryOnboardingPage />} />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

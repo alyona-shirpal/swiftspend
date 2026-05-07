@@ -21,9 +21,14 @@ export const InstantLogging: React.FC = () => {
   const hasRecentCategories = recentCategories && recentCategories.length > 0;
 
   // All categories to show: real recent ones take priority, else show all from DB
+  // Remove duplicates by ensuring unique IDs
+  const uniqueCategories = (allCategories || []).filter((category, index, arr) => 
+    arr.findIndex(c => c.id === category.id) === index
+  );
+  
   const displayCategories: Category[] = hasRecentCategories
     ? recentCategories
-    : (allCategories || []).slice(0, 10); // Show up to 10 if no recent ones
+    : uniqueCategories.slice(0, 10); // Show up to 10 if no recent ones
 
   const categoryLabel = hasRecentCategories ? 'Recent Categories' : 'Categories';
 

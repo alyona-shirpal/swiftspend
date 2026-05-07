@@ -66,4 +66,15 @@ export interface ReportTotals {
   amounts: CurrencyAmounts
 }
 
-// Expense, Category, Report types will be added here after DB schema is finalized
+export interface Category {
+  id: string
+  user_id: string
+  name: string
+  icon: string
+  color: string
+  is_system: boolean
+  is_hidden: boolean
+  created_at: string
+}
+
+// Expense, Report types will be added here after DB schema is finalized
