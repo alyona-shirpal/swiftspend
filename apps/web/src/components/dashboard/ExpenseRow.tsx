@@ -5,9 +5,10 @@ import { Currency } from '@swiftspend/types';
 
 interface ExpenseRowProps {
   expense: RecentExpense;
+  currency: Currency;
 }
 
-export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense }) => {
+export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense, currency }) => {
   // Format the subtitle time/date
   const formatTime = (dateString: string, timeString: string) => {
     const expenseDate = new Date(dateString);
@@ -19,7 +20,6 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense }) => {
     const isYesterday = expenseDate.toDateString() === yesterday.toDateString();
 
     if (isToday) {
-      // Use time from created_at
       return new Date(timeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
     } else if (isYesterday) {
       return 'Yesterday';
@@ -31,18 +31,18 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense }) => {
   const subtitleTime = formatTime(expense.date, expense.time);
   const categoryName = expense.category?.name || 'Uncategorized';
   const icon = expense.category?.icon || 'receipt';
-  
+
   // Description falls back to category name
   const title = expense.description || categoryName;
 
-  // Amount is always shown as negative EUR value per design
-  const eurAmount = expense.amounts?.[Currency.EUR] ?? 0;
-  const formattedEur = `-${formatCurrency(eurAmount, Currency.EUR)}`;
-  
-  // Show original currency if different from EUR
-  const hasOriginalCurrency = expense.currency !== Currency.EUR;
-  const formattedOriginal = hasOriginalCurrency 
-    ? `paid in ${formatCurrency(expense.amount, expense.currency)}` 
+  // Show the amount in the selected dashboard currency
+  const displayAmount = expense.amounts?.[currency] ?? expense.amounts?.[Currency.EUR] ?? 0;
+  const formattedAmount = `-${formatCurrency(displayAmount, currency)}`;
+
+  // If the expense was recorded in a different currency, show the original
+  const hasOriginalCurrency = expense.currency !== currency;
+  const formattedOriginal = hasOriginalCurrency
+    ? `paid in ${formatCurrency(expense.amount, expense.currency as Currency)}`
     : null;
 
   return (
@@ -59,9 +59,13 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({ expense }) => {
         </div>
       </div>
       <div className="text-right flex flex-col items-end">
-        <span className="font-body font-bold text-primary">{formattedEur}</span>
+        <span className="font-body font-bold text-primary transition-all duration-300">
+          {formattedAmount}
+        </span>
         {formattedOriginal && (
-          <span className="font-label text-[10px] text-secondary opacity-60 mt-0.5">{formattedOriginal}</span>
+          <span className="font-label text-[10px] text-secondary opacity-60 mt-0.5">
+            {formattedOriginal}
+          </span>
         )}
       </div>
     </div>

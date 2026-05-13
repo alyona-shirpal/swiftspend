@@ -14,6 +14,7 @@ const ExpenseSchema = z.object({
   currency: z.string().min(3).max(3),
   category_id: z.string().uuid().optional(),
   description: z.string().max(200).optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // YYYY-MM-DD from the client date picker
 });
 
 export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
@@ -87,13 +88,16 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
       snapshot
     );
 
+    // Use the date provided by the client (past/future entry); fall back to today
+    const expenseDate = validated.date ?? new Date().toISOString().split('T')[0];
+
     const { data, error } = await supabaseAdmin
       .from('expenses')
       .insert({
         user_id: userId,
         category_id: validated.category_id ?? null,
         description: validated.description ?? null,
-        date: new Date().toISOString().split('T')[0],
+        date: expenseDate,
         amount: validated.amount,
         currency: validated.currency,
         amounts,
