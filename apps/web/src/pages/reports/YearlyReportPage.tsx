@@ -12,6 +12,7 @@ export const YearlyReportPage: React.FC = () => {
   
   const [selectedYear] = useState(currentYear);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.EUR);
+  const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   
   const { data: userCurrencies } = useUserCurrencies();
   const { data: report, isLoading, error, refetch } = useYearlyReport(selectedYear.toString(), selectedCurrency);
@@ -95,7 +96,7 @@ export const YearlyReportPage: React.FC = () => {
             <h2 className="text-xl font-bold text-primary mb-2">No expenses this year</h2>
             <p className="text-secondary text-center mb-6">There are no expenses recorded for this year</p>
             <button 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/expenses/new')}
               className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
             >
               Add Expense
@@ -177,8 +178,13 @@ export const YearlyReportPage: React.FC = () => {
                 <span className={`text-[2.5rem] text-primary ${selectedCurrency === Currency.UAH ? '' : 'material-symbols-outlined'}`}>
                   {selectedCurrency === Currency.UAH ? getCurrencySymbol(selectedCurrency) : getCurrencyIcon(selectedCurrency)}
                 </span>
-                <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary">
-                  {formatCurrency(report.total, selectedCurrency).replace(getCurrencySymbol(selectedCurrency), '')}
+                <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary transition-all duration-300">
+                  {formatCurrency(
+                    selectedBarIndex !== null
+                      ? (report.monthly_chart[selectedBarIndex]?.amount ?? 0)
+                      : report.total,
+                    selectedCurrency
+                  ).replace(getCurrencySymbol(selectedCurrency), '')}
                 </h2>
               </div>
               <div className="flex items-center gap-2 mt-4">
@@ -199,23 +205,37 @@ export const YearlyReportPage: React.FC = () => {
         <section className="space-y-6">
           <div className="flex justify-between items-end">
             <h3 className="text-xl font-bold font-headline text-primary">Spending Trend</h3>
-            <span className="text-label-sm text-secondary font-medium">Jan — Dec 2023</span>
+            {selectedBarIndex !== null ? (
+              <span className="text-xs text-secondary font-medium">
+                {report.monthly_chart[selectedBarIndex]?.month} — {formatCurrency(report.monthly_chart[selectedBarIndex]?.amount ?? 0, selectedCurrency)}
+              </span>
+            ) : (
+              <span className="text-label-sm text-secondary font-medium">Jan — Dec {selectedYear}</span>
+            )}
           </div>
           <div className="h-48 flex items-end justify-between gap-1.5 pt-4">
             {report.monthly_chart.map((data, index) => {
               const maxAmount = Math.max(...report.monthly_chart.map(d => d.amount), 1);
               const heightPercentage = (data.amount / maxAmount) * 100;
-              const heightClass = heightPercentage === 0 ? 'h-2' : 
-                               heightPercentage < 20 ? 'h-8' :
-                               heightPercentage < 40 ? 'h-16' :
-                               heightPercentage < 60 ? 'h-24' :
-                               heightPercentage < 80 ? 'h-32' : 'h-40';
-              
+              const heightPx = heightPercentage === 0 ? 4 :
+                               heightPercentage < 20 ? 32 :
+                               heightPercentage < 40 ? 64 :
+                               heightPercentage < 60 ? 96 :
+                               heightPercentage < 80 ? 128 : 160;
+              const isSelected = selectedBarIndex === index;
+
               return (
-                <div 
-                  key={index} 
-                  className={`flex-1 bg-surface-container-highest rounded-t-sm ${heightClass}`}
-                ></div>
+                <button
+                  key={index}
+                  onClick={() => setSelectedBarIndex(isSelected ? null : index)}
+                  style={{ height: `${heightPx}px` }}
+                  title={`${data.month}: ${formatCurrency(data.amount, selectedCurrency)}`}
+                  className={`flex-1 rounded-t-sm transition-all duration-200 focus:outline-none ${
+                    isSelected
+                      ? 'bg-primary shadow-md scale-x-110'
+                      : 'bg-surface-container-highest hover:bg-primary/50'
+                  }`}
+                />
               );
             })}
           </div>

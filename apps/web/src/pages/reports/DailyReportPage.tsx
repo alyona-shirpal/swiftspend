@@ -9,6 +9,7 @@ import { ReportSkeleton } from '../../components/ReportSkeleton';
 export const DailyReportPage: React.FC = () => {
   const navigate = useNavigate();
   const [selectedDate] = useState(new Date().toISOString().split('T')[0]!);
+  const [selectedBarIndex, setSelectedBarIndex] = useState<number | null>(null);
   const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.EUR);
   
   const { data: userCurrencies } = useUserCurrencies();
@@ -93,7 +94,7 @@ export const DailyReportPage: React.FC = () => {
             <h2 className="text-xl font-bold text-primary mb-2">No expenses yet</h2>
             <p className="text-secondary text-center mb-6">There are no expenses recorded for this day</p>
             <button 
-              onClick={() => navigate('/dashboard')}
+              onClick={() => navigate('/expenses/new')}
               className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
             >
               Add Expense
@@ -175,8 +176,13 @@ export const DailyReportPage: React.FC = () => {
                 <span className={`text-[2.5rem] text-primary ${selectedCurrency === Currency.UAH ? '' : 'material-symbols-outlined'}`}>
                   {selectedCurrency === Currency.UAH ? getCurrencySymbol(selectedCurrency) : getCurrencyIcon(selectedCurrency)}
                 </span>
-                <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary">
-                  {formatCurrency(report.total, selectedCurrency).replace(getCurrencySymbol(selectedCurrency), '')}
+                <h2 className="font-headline text-[3.5rem] leading-none font-extrabold balance-text text-primary transition-all duration-300">
+                  {formatCurrency(
+                    selectedBarIndex !== null
+                      ? (report.weekly_chart[selectedBarIndex]?.amount ?? 0)
+                      : report.total,
+                    selectedCurrency
+                  ).replace(getCurrencySymbol(selectedCurrency), '')}
                 </h2>
               </div>
               <div className="flex items-center gap-2 mt-4">
@@ -195,23 +201,47 @@ export const DailyReportPage: React.FC = () => {
 
         {/* Primary Graph (Spending This Week) */}
         <section className="space-y-4">
-          <h3 className="text-lg font-bold font-headline">Spending This Week</h3>
+          <div className="flex items-baseline justify-between">
+            <h3 className="text-lg font-bold font-headline">Spending This Week</h3>
+            {selectedBarIndex !== null && (
+              <span className="text-xs text-secondary font-medium">
+                {report.weekly_chart[selectedBarIndex]?.day} — {formatCurrency(report.weekly_chart[selectedBarIndex]?.amount ?? 0, selectedCurrency)}
+              </span>
+            )}
+          </div>
           <div className="bg-surface-container-lowest p-6 rounded-xl space-y-6">
             <div className="flex items-end justify-between h-40 px-2">
               {report.weekly_chart.map((data, index) => {
                 const maxAmount = Math.max(...report.weekly_chart.map(d => d.amount), 1);
                 const heightPercentage = (data.amount / maxAmount) * 100;
-                const heightClass = heightPercentage === 0 ? 'h-2' : 
-                                 heightPercentage < 20 ? 'h-8' :
-                                 heightPercentage < 40 ? 'h-16' :
-                                 heightPercentage < 60 ? 'h-24' :
-                                 heightPercentage < 80 ? 'h-32' : 'h-40';
+                const heightPx = heightPercentage === 0 ? 8 :
+                                 heightPercentage < 20 ? 32 :
+                                 heightPercentage < 40 ? 64 :
+                                 heightPercentage < 60 ? 96 :
+                                 heightPercentage < 80 ? 128 : 160;
+                const isSelected = selectedBarIndex === index;
+                const isToday = data.is_today;
                 
                 return (
-                  <div key={index} className="flex flex-col items-center gap-2 group">
-                    <div className={`w-2 ${data.is_today ? 'bg-primary' : 'bg-surface-container-high'} rounded-full ${heightClass} ${!data.is_today ? 'group-hover:bg-primary transition-all' : ''}`}></div>
-                    <span className={`text-[10px] font-medium ${data.is_today ? 'text-primary font-bold' : 'text-secondary'}`}>{data.day}</span>
-                  </div>
+                  <button
+                    key={index}
+                    onClick={() => setSelectedBarIndex(isSelected ? null : index)}
+                    className="flex flex-col items-center gap-2 group focus:outline-none"
+                  >
+                    <div
+                      style={{ height: `${heightPx}px` }}
+                      className={`w-3 rounded-full transition-all duration-200 ${
+                        isSelected
+                          ? 'bg-primary scale-x-125 shadow-lg'
+                          : isToday
+                          ? 'bg-primary/60'
+                          : 'bg-surface-container-high group-hover:bg-primary/40'
+                      }`}
+                    />
+                    <span className={`text-[10px] font-medium transition-colors ${
+                      isSelected ? 'text-primary font-bold' : isToday ? 'text-primary/70 font-semibold' : 'text-secondary'
+                    }`}>{data.day}</span>
+                  </button>
                 );
               })}
             </div>

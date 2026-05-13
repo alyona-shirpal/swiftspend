@@ -31,9 +31,18 @@ async function resolveCurrency(reqCurrency: string | undefined, userId: string):
   return data?.currency || 'EUR';
 }
 
-function getAmount(amounts: any, currency: string): number {
+interface CategorySummary {
+  id: string | null;
+  name: string;
+  icon: string;
+  color: string;
+  total: number;
+  count: number;
+}
+
+function getAmount(amounts: unknown, currency: string): number {
   if (!amounts || typeof amounts !== 'object') return 0;
-  return Number((amounts as any)[currency]) || 0;
+  return Number((amounts as Record<string, unknown>)[currency]) || 0;
 }
 
 function getWeekDates(date: Date): Array<{ date: string; day: string; isToday: boolean }> {
@@ -192,7 +201,7 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: Next
     // Calculate totals
     let total = 0;
     let previousTotal = 0;
-    const catMap = new Map<string, any>();
+    const catMap = new Map<string, CategorySummary>();
 
     for (const e of expenses || []) {
       const amt = getAmount(e.amounts, currency);
@@ -301,7 +310,7 @@ export const getMonthlyReport = async (req: AuthRequest, res: Response, next: Ne
     // Calculate totals and categories
     let total = 0;
     let previousTotal = 0;
-    const catMap = new Map<string, any>();
+    const catMap = new Map<string, CategorySummary>();
     const dayMap = new Map<string, number>();
 
     for (const e of expenses || []) {
@@ -405,7 +414,7 @@ export const getYearlyReport = async (req: AuthRequest, res: Response, next: Nex
     // Calculate totals and categories
     let total = 0;
     let previousTotal = 0;
-    const catMap = new Map<string, any>();
+    const catMap = new Map<string, CategorySummary>();
     const monthMap = new Map<string, number>();
 
     for (const e of expenses || []) {

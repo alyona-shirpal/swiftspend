@@ -4,7 +4,6 @@ import { AuthRequest } from '../middleware/auth'
 import { supabaseAdmin } from '../services/supabase'
 import { Currency } from '../types'
 import { ExchangeRateService } from '../services/exchangeRate'
-import { ensureUserCurrencies } from '../services/userCurrencies'
 import type { RateSnapshot } from '@swiftspend/types'
 
 const Schema = z.object({
