@@ -4,11 +4,9 @@ import { Currency } from '@swiftspend/types';
 import { MonthlyHero } from '../../components/dashboard/MonthlyHero';
 import { InstantLogging } from '../../components/dashboard/InstantLogging';
 import { RecentSpend } from '../../components/dashboard/RecentSpend';
-import { useAuth } from '../../hooks/useAuth';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 
 export const DashboardPage: React.FC = () => {
-  const { signOut } = useAuth();
   const navigate = useNavigate();
   const { data: userCurrencies } = useUserCurrencies();
 
@@ -36,10 +34,10 @@ export const DashboardPage: React.FC = () => {
         </div>
         <button
           type="button"
-          onClick={() => void signOut()}
-          className="rounded-full border border-outline-variant/30 px-4 py-2 text-xs font-bold uppercase tracking-widest text-secondary hover:bg-surface-container-low transition-colors"
+          onClick={() => navigate('/settings')}
+          className="p-2 -mr-2 rounded-full text-secondary hover:bg-surface-container-low transition-colors"
         >
-          Sign Out
+          <span className="material-symbols-outlined">settings</span>
         </button>
       </header>
 

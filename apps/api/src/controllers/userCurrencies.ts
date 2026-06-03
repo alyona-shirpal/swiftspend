@@ -11,6 +11,10 @@ const Schema = z.object({
   is_default: z.boolean().optional(),
 })
 
+const PositionSchema = z.object({
+  position: z.number().int().min(0)
+})
+
 const OnboardingSchema = z.object({
   currencies: z.array(z.string().min(3).max(3)).min(1).max(10),
   default_currency: z.string().min(3).max(3)
@@ -279,6 +283,55 @@ export const setDefaultCurrency = async (req: AuthRequest, res: Response, next: 
 
     if (updError) throw updError
     res.json(data)
+  } catch (err) {
+    next(err)
+  }
+}
+
+export const updateCurrencyPosition = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const currency = req.params.currency
+    const { position: newPosition } = PositionSchema.parse(req.body)
+    const userId = req.user!.id
+
+    const { data: existing, error } = await supabaseAdmin
+      .from('user_currencies')
+      .select('id, currency, position')
+      .eq('user_id', userId)
+      .order('position', { ascending: true })
+    
+    if (error) throw error
+
+    const targetIndex = existing.findIndex(c => c.currency === currency)
+    if (targetIndex === -1) {
+      return res.status(404).json({ error: 'Currency not found' })
+    }
+
+    const currencies = [...existing]
+    const [target] = currencies.splice(targetIndex, 1)
+    
+    // Insert at new position
+    currencies.splice(newPosition, 0, target!)
+
+    // Update all positions to ensure sequence is maintained
+    await Promise.all(
+      currencies.map((c, index) => 
+        supabaseAdmin
+          .from('user_currencies')
+          .update({ position: index })
+          .eq('id', c.id)
+      )
+    )
+
+    const { data: finalCurrencies, error: fetchErr } = await supabaseAdmin
+      .from('user_currencies')
+      .select('*')
+      .eq('user_id', userId)
+      .order('position', { ascending: true })
+
+    if (fetchErr) throw fetchErr
+
+    res.json(finalCurrencies)
   } catch (err) {
     next(err)
   }

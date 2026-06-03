@@ -7,6 +7,7 @@ import expensesRoutes from './routes/expenses';
 import reportsRoutes from './routes/reports';
 import exchangeRatesRoutes from './routes/exchangeRates';
 import userCurrenciesRoutes from './routes/userCurrencies';
+import authRoutes from './routes/auth';
 import { errorHandler } from './middleware/errorHandler';
 
 dotenv.config({ path: path.resolve(__dirname, '../.env') });
@@ -24,6 +25,7 @@ app.use('/expenses', expensesRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/exchange-rates', exchangeRatesRoutes);
 app.use('/user-currencies', userCurrenciesRoutes);
+app.use('/auth', authRoutes);
 
 // Global Error Handler
 app.use(errorHandler);
