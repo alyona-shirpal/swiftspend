@@ -60,9 +60,13 @@ export const YearlyReportPage: React.FC = () => {
             </button>
             <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Report</h1>
           </div>
-          <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
-            <img alt="Profile Photo" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj8DSZ2A0tz_RU6XlMGUtdnNqziN1kzcaYHv6alF6DcmUrZH4-keZkJUh2zDdBEBKsmp8yALR1VYZpst_CMOX_RN6nE8p0_dOa-EnqBo-04k6fqXs69vRp_oU2Pj0bn4xer5FijJo-NpLiWeuGRgt67VcF_Nbztdn_G7pbwV05SvJhzIsr9RpSpuBEEwJlWBOn7You-cVWNleveUy_tV7I2zm2GKjUfBbooMgIcfA72m2Ra-6ClGGj2rXkUhtdOBiM8Jcj9LGAPYs" />
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="p-2 -mr-2 rounded-full text-secondary hover:bg-surface-container-low transition-colors"
+          >
+            <span className="material-symbols-outlined">settings</span>
+          </button>
         </header>
 
         <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
@@ -92,7 +96,7 @@ export const YearlyReportPage: React.FC = () => {
 
           {/* Empty State */}
           <section className="flex flex-col items-center justify-center py-20">
-            <span className="material-symbols-outlined text-6xl text-secondary mb-4">calendar_year</span>
+            <span className="material-symbols-outlined text-6xl text-secondary mb-4">calendar_month</span>
             <h2 className="text-xl font-bold text-primary mb-2">No expenses this year</h2>
             <p className="text-secondary text-center mb-6">There are no expenses recorded for this year</p>
             <button 
@@ -121,9 +125,13 @@ export const YearlyReportPage: React.FC = () => {
           </button>
           <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Report</h1>
         </div>
-        <div className="w-8 h-8 rounded-full bg-surface-container-highest flex items-center justify-center overflow-hidden">
-          <img alt="Profile Photo" className="w-full h-full object-cover" src="https://lh3.googleusercontent.com/aida-public/AB6AXuAj8DSZ2A0tz_RU6XlMGUtdnNqziN1kzcaYHv6alF6DcmUrZH4-keZkJUh2zDdBEBKsmp8yALR1VYZpst_CMOX_RN6nE8p0_dOa-EnqBo-04k6fqXs69vRp_oU2Pj0bn4xer5FijJo-NpLiWeuGRgt67VcF_Nbztdn_G7pbwV05SvJhzIsr9RpSpuBEEwJlWBOn7You-cVWNleveUy_tV7I2zm2GKjUfBbooMgIcfA72m2Ra-6ClGGj2rXkUhtdOBiM8Jcj9LGAPYs" />
-        </div>
+        <button
+          type="button"
+          onClick={() => navigate('/settings')}
+          className="p-2 -mr-2 rounded-full text-secondary hover:bg-surface-container-low transition-colors"
+        >
+          <span className="material-symbols-outlined">settings</span>
+        </button>
       </header>
 
       <main className="pt-14 pb-28 px-6 max-w-md mx-auto">

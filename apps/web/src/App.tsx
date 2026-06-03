@@ -10,6 +10,8 @@ import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
 import { DailyReportPage } from './pages/reports/DailyReportPage';
 import { MonthlyReportPage } from './pages/reports/MonthlyReportPage';
 import { YearlyReportPage } from './pages/reports/YearlyReportPage';
+import { SettingsPage } from './pages/settings/SettingsPage';
+import { CategoriesSettingsPage } from './pages/settings/CategoriesSettingsPage';
 import CurrencyOnboardingPage from './pages/onboarding/CurrencyOnboardingPage';
 import CategoryOnboardingPage from './pages/onboarding/CategoryOnboardingPage';
 import { supabase } from './services/supabase.ts';
@@ -131,6 +133,30 @@ function App() {
                 <DashboardPage />
               </ProtectedRoute>
             } 
+          />
+          <Route
+            path="/settings"
+            element={
+              <ProtectedRoute>
+                <SettingsPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/profile"
+            element={
+              <ProtectedRoute>
+                <div className="p-4">Profile settings placeholder</div>
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/settings/categories"
+            element={
+              <ProtectedRoute>
+                <CategoriesSettingsPage />
+              </ProtectedRoute>
+            }
           />
           <Route path="/onboarding/currencies" element={<CurrencyOnboardingPage />} />
           <Route path="/onboarding/categories" element={<CategoryOnboardingPage />} />
