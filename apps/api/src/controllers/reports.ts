@@ -220,7 +220,7 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: Next
           count: 0
         });
       }
-      const entry = catMap.get(catId);
+      const entry = catMap.get(catId)!;
       entry.total += amt;
       entry.count += 1;
     }
@@ -330,7 +330,7 @@ export const getMonthlyReport = async (req: AuthRequest, res: Response, next: Ne
           count: 0
         });
       }
-      const entry = catMap.get(catId);
+      const entry = catMap.get(catId)!;
       entry.total += amt;
       entry.count += 1;
 
@@ -434,7 +434,7 @@ export const getYearlyReport = async (req: AuthRequest, res: Response, next: Nex
           count: 0
         });
       }
-      const entry = catMap.get(catId);
+      const entry = catMap.get(catId)!;
       entry.total += amt;
       entry.count += 1;
 
