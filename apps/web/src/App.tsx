@@ -7,6 +7,7 @@ import SignUpPage from './pages/auth/SignUpPage';
 import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { AddExpensePage } from './pages/expenses/AddExpensePage';
 import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
+import { AllExpensesPage } from './pages/expenses/AllExpensesPage';
 import { DailyReportPage } from './pages/reports/DailyReportPage';
 import { MonthlyReportPage } from './pages/reports/MonthlyReportPage';
 import { YearlyReportPage } from './pages/reports/YearlyReportPage';
@@ -92,6 +93,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AllCategoriesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expenses"
+            element={
+              <ProtectedRoute>
+                <AllExpensesPage />
               </ProtectedRoute>
             }
           />

@@ -43,30 +43,39 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       return;
     }
 
-    // Initial session fetch
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase!.auth.getSession();
+    let isMounted = true;
+    let subscription: { unsubscribe: () => void } | null = null;
+
+    // Explicit recovery for mobile Safari session recovery
+    supabase.auth.getSession()
+      .then(({ data: { session } }) => {
+        if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Error initializing auth:', error);
-      } finally {
+      })
+      .catch((error) => {
+        console.error('Error recovering session:', error);
+      })
+      .finally(() => {
+        if (!isMounted) return;
+
+        // Then set up listener for real-time auth state changes
+        const { data } = supabase!.auth.onAuthStateChange((_event, session) => {
+          if (!isMounted) return;
+          setSession(session);
+          setUser(session?.user ?? null);
+          setIsLoading(false);
+        });
+
+        subscription = data.subscription;
         setIsLoading(false);
-      }
-    };
-
-    initAuth();
-
-    // Listen for auth changes
-    const { data: { subscription } } = supabase!.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      setIsLoading(false);
-    });
+      });
 
     return () => {
-      subscription.unsubscribe();
+      isMounted = false;
+      if (subscription) {
+        subscription.unsubscribe();
+      }
     };
   }, []);
 
