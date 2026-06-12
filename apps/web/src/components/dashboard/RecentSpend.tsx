@@ -1,4 +1,5 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useRecentExpenses } from '../../hooks/useRecentExpenses';
 import { ExpenseRow } from './ExpenseRow';
 import { Currency } from '@swiftspend/types';
@@ -8,6 +9,7 @@ interface RecentSpendProps {
 }
 
 export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
+  const navigate = useNavigate();
   const { data: expenses, isLoading, isError } = useRecentExpenses();
   const hasExpenses = Boolean(expenses && expenses.length > 0);
 
@@ -16,7 +18,7 @@ export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
       <div className="flex justify-between items-center">
         <h3 className="font-headline text-2xl font-bold tracking-tight text-primary">Recent Spend</h3>
         <button
-          onClick={() => console.log('View All clicked')}
+          onClick={() => navigate('/expenses')}
           className="font-label text-xs font-bold text-secondary hover:underline uppercase tracking-widest"
         >
           View All
