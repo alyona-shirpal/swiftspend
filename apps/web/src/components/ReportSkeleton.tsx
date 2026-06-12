@@ -9,7 +9,10 @@ export const ReportSkeleton: React.FC = () => {
           <div className="w-10 h-10 bg-surface-container-highest rounded-full animate-pulse"></div>
           <div className="w-24 h-6 bg-surface-container-highest rounded animate-pulse"></div>
         </div>
-        <div className="w-8 h-8 bg-surface-container-highest rounded-full animate-pulse"></div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-surface-container-highest rounded-full animate-pulse"></div>
+          <div className="w-8 h-8 bg-surface-container-highest rounded-full animate-pulse"></div>
+        </div>
       </header>
 
       <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
