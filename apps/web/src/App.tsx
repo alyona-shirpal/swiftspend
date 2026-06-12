@@ -10,6 +10,7 @@ import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
 import { DailyReportPage } from './pages/reports/DailyReportPage';
 import { MonthlyReportPage } from './pages/reports/MonthlyReportPage';
 import { YearlyReportPage } from './pages/reports/YearlyReportPage';
+import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { CategoriesSettingsPage } from './pages/settings/CategoriesSettingsPage';
 import CurrencyOnboardingPage from './pages/onboarding/CurrencyOnboardingPage';
@@ -123,6 +124,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <YearlyReportPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/analytics"
+            element={
+              <ProtectedRoute>
+                <AnalyticsPage />
               </ProtectedRoute>
             }
           />
