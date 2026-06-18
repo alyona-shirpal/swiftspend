@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AuthForm } from '../../components/auth/AuthForm.tsx';
 import { OAuthButtons } from '../../components/auth/OAuthButtons.tsx';
@@ -9,13 +9,17 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { session, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (session) {
-      navigate('/', { replace: true });
-    }
-  }, [navigate, session]);
+  // Show spinner while auth state is being determined
+  if (isLoading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-surface">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
 
-  if (!isLoading && session) {
+  // Already logged in — redirect to dashboard
+  if (session) {
     return <Navigate to="/" replace />;
   }
 

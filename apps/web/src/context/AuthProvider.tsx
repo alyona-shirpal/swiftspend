@@ -44,38 +44,40 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     let isMounted = true;
-    let subscription: { unsubscribe: () => void } | null = null;
 
-    // Explicit recovery for mobile Safari session recovery
-    supabase.auth.getSession()
-      .then(({ data: { session } }) => {
+    // Set up the auth state listener FIRST (synchronously).
+    // Supabase's onAuthStateChange fires an INITIAL_SESSION event
+    // immediately, which handles both fresh loads and session recovery
+    // (including mobile Safari where getSession alone can race).
+    const { data: { subscription } } = supabase!.auth.onAuthStateChange(
+      (_event, session) => {
         if (!isMounted) return;
         setSession(session);
         setUser(session?.user ?? null);
-      })
-      .catch((error) => {
-        console.error('Error recovering session:', error);
-      })
-      .finally(() => {
-        if (!isMounted) return;
-
-        // Then set up listener for real-time auth state changes
-        const { data } = supabase!.auth.onAuthStateChange((_event, session) => {
-          if (!isMounted) return;
-          setSession(session);
-          setUser(session?.user ?? null);
-          setIsLoading(false);
-        });
-
-        subscription = data.subscription;
         setIsLoading(false);
-      });
+      }
+    );
+
+    // Safety net: if onAuthStateChange doesn't fire within 3s
+    // (e.g. network issues), fall back to getSession and stop loading.
+    const fallbackTimer = setTimeout(async () => {
+      if (!isMounted) return;
+      try {
+        const { data: { session } } = await supabase!.auth.getSession();
+        if (!isMounted) return;
+        setSession(session);
+        setUser(session?.user ?? null);
+      } catch (error) {
+        console.error('Fallback session recovery failed:', error);
+      } finally {
+        if (isMounted) setIsLoading(false);
+      }
+    }, 3000);
 
     return () => {
       isMounted = false;
-      if (subscription) {
-        subscription.unsubscribe();
-      }
+      clearTimeout(fallbackTimer);
+      subscription.unsubscribe();
     };
   }, []);
 
