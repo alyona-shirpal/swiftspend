@@ -9,17 +9,9 @@ const LoginPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { session, isLoading } = useAuth();
 
-  // Show spinner while auth state is being determined
-  if (isLoading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-primary"></div>
-      </div>
-    );
-  }
-
   // Already logged in — redirect to dashboard
-  if (session) {
+  // (don't redirect while still loading, wait for auth to settle)
+  if (!isLoading && session) {
     return <Navigate to="/" replace />;
   }
 

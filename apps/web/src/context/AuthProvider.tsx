@@ -44,39 +44,38 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
 
     let isMounted = true;
+    let initialSessionResolved = false;
 
-    // Set up the auth state listener FIRST (synchronously).
-    // Supabase's onAuthStateChange fires an INITIAL_SESSION event
-    // immediately, which handles both fresh loads and session recovery
-    // (including mobile Safari where getSession alone can race).
+    // 1. Call getSession() immediately to resolve auth state fast.
+    //    This is the primary mechanism — works on all browsers including mobile Safari.
+    supabase!.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
+      initialSessionResolved = true;
+      setSession(session);
+      setUser(session?.user ?? null);
+      setIsLoading(false);
+    }).catch((error) => {
+      console.error('Error getting session:', error);
+      if (isMounted) {
+        setIsLoading(false);
+      }
+    });
+
+    // 2. Listen for auth state changes (login, logout, token refresh).
+    //    Skip the INITIAL_SESSION event if getSession() already resolved it.
     const { data: { subscription } } = supabase!.auth.onAuthStateChange(
-      (_event, session) => {
+      (event, session) => {
         if (!isMounted) return;
+        // Skip the initial event if getSession() already handled it
+        if (event === 'INITIAL_SESSION' && initialSessionResolved) return;
         setSession(session);
         setUser(session?.user ?? null);
         setIsLoading(false);
       }
     );
 
-    // Safety net: if onAuthStateChange doesn't fire within 3s
-    // (e.g. network issues), fall back to getSession and stop loading.
-    const fallbackTimer = setTimeout(async () => {
-      if (!isMounted) return;
-      try {
-        const { data: { session } } = await supabase!.auth.getSession();
-        if (!isMounted) return;
-        setSession(session);
-        setUser(session?.user ?? null);
-      } catch (error) {
-        console.error('Fallback session recovery failed:', error);
-      } finally {
-        if (isMounted) setIsLoading(false);
-      }
-    }, 3000);
-
     return () => {
       isMounted = false;
-      clearTimeout(fallbackTimer);
       subscription.unsubscribe();
     };
   }, []);

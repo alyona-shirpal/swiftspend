@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { AuthForm } from '../../components/auth/AuthForm.tsx';
 import { OAuthButtons } from '../../components/auth/OAuthButtons.tsx';
@@ -9,12 +9,7 @@ const SignUpPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const { session, isLoading } = useAuth();
 
-  useEffect(() => {
-    if (session) {
-      navigate('/', { replace: true });
-    }
-  }, [navigate, session]);
-
+  // Already logged in — redirect to dashboard
   if (!isLoading && session) {
     return <Navigate to="/" replace />;
   }
