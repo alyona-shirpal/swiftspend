@@ -1,8 +1,9 @@
 import axios from 'axios';
+import { getApiBaseUrl } from '../config/env';
 import { supabase } from './supabase.ts';
 
 const api = axios.create({
-  baseURL: import.meta.env.VITE_API_URL || 'http://localhost:3000',
+  baseURL: getApiBaseUrl(),
   headers: {
     'Content-Type': 'application/json',
   },
