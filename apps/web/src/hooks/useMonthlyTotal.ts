@@ -15,6 +15,7 @@ export function useMonthlyTotal(year?: number, month?: number) {
         
         return {
           totals: { EUR: 1250.50, ALL: 150000, USD: 1350, UAH: 50000 },
+          previous_totals: { EUR: 1480.75, ALL: 177000, USD: 1600, UAH: 59000 },
           comparison: {
             direction: 'down' as const,
             change_percent: 15.5,

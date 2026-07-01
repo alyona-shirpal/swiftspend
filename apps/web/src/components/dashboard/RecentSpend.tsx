@@ -14,7 +14,7 @@ export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
   const hasExpenses = Boolean(expenses && expenses.length > 0);
 
   return (
-    <section className="lg:col-span-7 space-y-8 order-2 lg:order-1">
+    <section className="lg:col-span-7 space-y-4 order-2 lg:order-1">
       <div className="flex justify-between items-center">
         <h3 className="font-headline text-2xl font-bold tracking-tight text-primary">Recent Spend</h3>
         <button
@@ -24,7 +24,7 @@ export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
           View All
         </button>
       </div>
-      <div className="space-y-6">
+      <div className="space-y-4">
         {isLoading &&
           Array.from({ length: 4 }).map((_, i) => (
             <div key={`skeleton-${i}`} className="flex items-center justify-between group animate-pulse">

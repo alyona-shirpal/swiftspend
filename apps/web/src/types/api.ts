@@ -21,13 +21,9 @@ export interface RecentExpense {
 export interface MonthlyTotal {
   year: number;
   month: number;
-  default_currency: 'EUR';
-  totals: {
-    UAH: number;
-    ALL: number;
-    EUR: number;
-    USD: number;
-  };
+  default_currency: string;
+  totals: Partial<Record<Currency, number>>;
+  previous_totals?: Partial<Record<Currency, number>>;
   comparison: {
     previous_month_eur: number;
     change_percent: number;

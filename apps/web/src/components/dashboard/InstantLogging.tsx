@@ -79,12 +79,12 @@ export const InstantLogging: React.FC = () => {
   };
 
   return (
-    <div className="bg-surface-container-lowest rounded-xl sticky top-24 shadow-sm border border-outline-variant/10 p-6">
-      <h3 className="font-headline text-xl font-bold text-primary mb-6">
+    <div className="bg-surface-container-lowest rounded-xl sticky top-20 shadow-sm border border-outline-variant/10 p-4">
+      <h3 className="font-headline text-lg font-bold text-primary mb-3">
         Instant Logging
       </h3>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form onSubmit={handleSubmit} className="space-y-4">
         {/* Amount + Currency Row */}
         <div>
           <div className="flex items-center border-b-2 border-surface-container-highest focus-within:border-on-tertiary-container transition-colors py-2">
@@ -144,7 +144,7 @@ export const InstantLogging: React.FC = () => {
         <button
           type="submit"
           disabled={isSaving}
-          className="w-full bg-primary text-on-primary py-5 rounded-md font-label font-black uppercase tracking-[0.2em] shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          className="w-full bg-primary text-on-primary py-3 rounded-md font-label font-black uppercase tracking-[0.2em] shadow-lg hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
         >
           {isSaving ? 'Saving…' : 'Add'}
         </button>

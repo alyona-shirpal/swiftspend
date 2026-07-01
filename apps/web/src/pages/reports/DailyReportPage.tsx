@@ -51,7 +51,7 @@ export const DailyReportPage: React.FC = () => {
       <div className="bg-surface text-on-surface min-h-screen pb-24">
         <ReportHeader />
 
-        <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
+        <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
           <ReportPeriodNav activePeriod="daily" />
 
           {/* Empty State */}
@@ -76,14 +76,14 @@ export const DailyReportPage: React.FC = () => {
     <div className="bg-surface text-on-surface min-h-screen pb-24">
       <ReportHeader />
 
-      <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
+      <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
         <ReportPeriodNav activePeriod="daily" />
 
         {/* Hero Card (Total Spending) */}
         <section className="relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-4 block">
+              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-2 block">
                 Daily Statement — {new Date(selectedDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
               </span>
               {/* Currency Selector */}
@@ -115,7 +115,7 @@ export const DailyReportPage: React.FC = () => {
                   ).replace(getCurrencySymbol(selectedCurrency), '')}
                 </h2>
               </div>
-              <div className="flex items-center gap-2 mt-4">
+              <div className="flex items-center gap-2 mt-2">
                 <span className={`material-symbols-outlined ${report.direction === 'up' ? 'text-error' : report.direction === 'down' ? 'text-primary' : 'text-secondary'}`} style={{ fontVariationSettings: "'FILL' 1" }}>
                   {report.direction === 'up' ? 'trending_up' : report.direction === 'down' ? 'trending_down' : 'trending_flat'}
                 </span>
@@ -130,7 +130,7 @@ export const DailyReportPage: React.FC = () => {
         </section>
 
         {/* Primary Graph (Spending This Week) */}
-        <section className="space-y-4">
+        <section className="space-y-3">
           <div className="flex items-baseline justify-between">
             <h3 className="text-lg font-bold font-headline">Spending This Week</h3>
             {selectedBarIndex !== null && (
@@ -139,7 +139,7 @@ export const DailyReportPage: React.FC = () => {
               </span>
             )}
           </div>
-          <div className="bg-surface-container-lowest p-6 rounded-xl space-y-6">
+          <div className="bg-surface-container-lowest p-4 rounded-xl space-y-4">
             <div className="flex items-end justify-between h-40 px-2">
               {report.weekly_chart.map((data, index) => {
                 const maxAmount = Math.max(...report.weekly_chart.map(d => d.amount), 1);
@@ -179,7 +179,7 @@ export const DailyReportPage: React.FC = () => {
         </section>
 
         {/* Insights */}
-        <section className="mb-8">
+        <section className="mb-4">
           <div className="p-5 bg-primary-container rounded-xl flex items-center gap-4">
             <div className="w-10 h-10 rounded-full bg-on-tertiary-container flex items-center justify-center">
               <span className="material-symbols-outlined text-white" style={{fontVariationSettings: "'FILL' 1"}}>lightbulb</span>
@@ -200,7 +200,7 @@ export const DailyReportPage: React.FC = () => {
           </div>
           <div className="divide-y divide-surface-container-low">
             {report.top_categories.map((category, index) => (
-              <div key={index} className="p-6 flex items-center hover:bg-surface-container-low transition-colors group">
+              <div key={index} className="px-4 py-3 flex items-center hover:bg-surface-container-low transition-colors group">
                 <div className="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center mr-4 group-hover:bg-primary group-hover:text-white transition-colors">
                   <span className="material-symbols-outlined">{category.icon}</span>
                 </div>

@@ -251,18 +251,13 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
 export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    let currency = req.query.currency as string | undefined;
+    const currencies = await ensureUserCurrencies(userId);
+    const userCurrencyCodes = currencies.map((c) => c.currency);
+    const defaultCurrency = currencies.find((c) => c.is_default)?.currency || 'EUR';
 
+    let currency = req.query.currency as string | undefined;
     if (!currency) {
-      const { data: defaultCurr } = await supabaseAdmin
-        .from('user_currencies')
-        .select('currency')
-        .eq('user_id', userId)
-        .eq('is_default', true)
-        .limit(1)
-        .single();
-      
-      currency = defaultCurr?.currency || 'EUR';
+      currency = defaultCurrency;
     }
 
     const targetYearQuery = req.query.year ? parseInt(req.query.year as string) : null;
@@ -305,25 +300,21 @@ export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: Nex
         .lte('date', prevRange.end)
     ]);
 
-    const eurTotal = (currentData || []).reduce((sum, row) => {
-      const amounts = row.amounts as Record<string, number> | null;
-      return sum + (amounts?.['EUR'] || 0);
-    }, 0);
+    const sumByCurrency = (rows: { amounts: unknown }[] | null, code: string) =>
+      (rows || []).reduce((sum, row) => {
+        const amounts = row.amounts as Record<string, number> | null;
+        return sum + (amounts?.[code] || 0);
+      }, 0);
 
-    const eurPrevTotal = (prevData || []).reduce((sum, row) => {
-      const amounts = row.amounts as Record<string, number> | null;
-      return sum + (amounts?.['EUR'] || 0);
-    }, 0);
+    const totals: Record<string, number> = {};
+    const previousTotals: Record<string, number> = {};
+    for (const code of userCurrencyCodes) {
+      totals[code] = sumByCurrency(currentData, code);
+      previousTotals[code] = sumByCurrency(prevData, code);
+    }
 
-    const currentTotal = (currentData || []).reduce((sum, row) => {
-      const amounts = row.amounts as Record<string, number> | null;
-      return sum + (amounts?.[currency as string] || 0);
-    }, 0);
-
-    const previousTotal = (prevData || []).reduce((sum, row) => {
-      const amounts = row.amounts as Record<string, number> | null;
-      return sum + (amounts?.[currency as string] || 0);
-    }, 0);
+    const currentTotal = totals[currency] ?? 0;
+    const previousTotal = previousTotals[currency] ?? 0;
 
     let change_percent = 0;
     if (previousTotal > 0) {
@@ -337,13 +328,11 @@ export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: Nex
     res.json({
       year,
       month: month + 1,
-      default_currency: currency,
-      totals: { 
-        [currency as string]: currentTotal,
-        EUR: eurTotal 
-      },
+      default_currency: defaultCurrency,
+      totals,
+      previous_totals: previousTotals,
       comparison: { 
-        previous_month_eur: eurPrevTotal, 
+        previous_month_eur: previousTotals['EUR'] ?? 0, 
         change_percent: Math.round(change_percent * 100) / 100, 
         direction 
       }
