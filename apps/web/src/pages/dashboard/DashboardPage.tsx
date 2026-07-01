@@ -26,7 +26,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen pb-32">
       {/* TopAppBar */}
-      <header className="bg-[#f7f9fb] flex justify-between items-center px-6 py-4 w-full docked full-width top-0 sticky z-40">
+      <header className="bg-[#f7f9fb] flex justify-between items-center px-6 py-2 w-full docked full-width top-0 sticky z-40">
         <div className="flex items-center gap-3">
           <h1 className="text-xl font-black text-black uppercase tracking-widest">
             SwiftSpend
@@ -41,14 +41,14 @@ export const DashboardPage: React.FC = () => {
         </button>
       </header>
 
-      <main className="max-w-screen-xl mx-auto px-6 py-8 space-y-12">
+      <main className="max-w-screen-xl mx-auto px-4 pt-3 pb-4 space-y-5">
         {/* Monthly hero — currency switcher lives here */}
         <MonthlyHero
           selectedCurrency={selectedCurrency}
           onCurrencyChange={setSelectedCurrency}
         />
 
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
           {/* Instant Logging block */}
           <aside className="lg:col-span-5 order-1 lg:order-2">
             <InstantLogging />

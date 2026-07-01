@@ -24,9 +24,9 @@ export const AddExpensePage: React.FC = () => {
   const { data: recentCategories = [] } = useRecentCategories();
   
   const quickCategories = useMemo(() => {
-    if (recentCategories.length >= 8) return recentCategories.slice(0, 8);
+    if (recentCategories.length >= 12) return recentCategories.slice(0, 12);
     const fallback = categories.filter((c) => !recentCategories.some((r) => r.id === c.id));
-    return [...recentCategories, ...fallback].slice(0, 8);
+    return [...recentCategories, ...fallback].slice(0, 12);
   }, [categories, recentCategories]);
   
   const savedCategoryDraft = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
@@ -164,8 +164,8 @@ export const AddExpensePage: React.FC = () => {
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen md:pl-20">
       <header className="sticky top-0 z-40 border-b border-surface-container-high bg-surface/95 backdrop-blur">
-        <div className="mx-auto flex w-full max-w-xl items-center justify-between px-6 py-4">
-          <div className="flex items-center gap-3">
+        <div className="mx-auto flex w-full max-w-xl items-center justify-between px-4 py-2.5 md:px-6 md:py-4">
+          <div className="flex items-center gap-2 md:gap-3">
             <button
               type="button"
               onClick={() => navigate('/')}
@@ -173,17 +173,21 @@ export const AddExpensePage: React.FC = () => {
             >
               <span className="material-symbols-outlined text-sm">close</span>
             </button>
-            <h1 className="text-xl font-black uppercase tracking-widest text-primary">SwiftSpend</h1>
+            <h1 className="text-base font-black uppercase tracking-widest text-primary md:text-xl">SwiftSpend</h1>
           </div>
-          <div className="flex h-10 w-10 items-center justify-center overflow-hidden rounded-full bg-surface-container-highest text-xs font-bold uppercase tracking-widest text-secondary">
-            SS
-          </div>
+          <button
+            type="button"
+            onClick={() => navigate('/settings')}
+            className="p-2 -mr-2 rounded-full text-secondary hover:bg-surface-container-low transition-colors"
+          >
+            <span className="material-symbols-outlined">settings</span>
+          </button>
         </div>
       </header>
 
-      <main className="mx-auto flex min-h-[calc(100dvh-73px)] w-full max-w-xl flex-col px-6 pb-28 pt-4">
-        <section className="mb-8 flex items-center justify-between gap-4">
-          <div className="flex rounded-lg bg-surface-container-low p-1 shadow-inner">
+      <main className="mx-auto flex h-[calc(100dvh-120px)] w-full max-w-xl flex-col px-4 pb-0 pt-2 md:h-[calc(100dvh-140px)] md:px-6 md:pb-0 md:pt-4">
+        <section className="mb-3 flex shrink-0 items-center justify-between gap-3 md:mb-6">
+          <div className="flex rounded-lg bg-surface-container-low p-0.5 shadow-inner md:p-1">
             {CURRENCY_OPTIONS.map((option) => {
               const isActive = option === currency;
               return (
@@ -191,7 +195,7 @@ export const AddExpensePage: React.FC = () => {
                   key={option}
                   type="button"
                   onClick={() => setCurrency(option)}
-                  className={`rounded-md px-4 py-1.5 text-[10px] font-headline uppercase tracking-wider transition-all ${
+                  className={`rounded-md px-2.5 py-1 text-[9px] font-headline uppercase tracking-wider transition-all md:px-4 md:py-1.5 md:text-[10px] ${
                     isActive
                       ? 'bg-white font-bold text-primary shadow-sm'
                       : 'font-medium text-secondary hover:bg-white/50'
@@ -206,9 +210,9 @@ export const AddExpensePage: React.FC = () => {
           <button
             type="button"
             onClick={openDatePicker}
-            className="flex items-center gap-2 rounded-lg bg-surface-container-low px-3 py-1.5 text-[10px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-surface-container"
+            className="flex items-center gap-1.5 rounded-lg bg-surface-container-low px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-surface-container md:gap-2 md:px-3 md:py-1.5 md:text-[10px]"
           >
-            <span className="material-symbols-outlined text-sm">calendar_today</span>
+            <span className="material-symbols-outlined text-xs md:text-sm">calendar_today</span>
             <span>{dateLabel}</span>
           </button>
         </section>
@@ -224,35 +228,35 @@ export const AddExpensePage: React.FC = () => {
           aria-hidden="true"
         />
 
-        <section className="mb-12">
-          <p className="mb-2 text-center text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+        <section className="mb-3 shrink-0 md:mb-6">
+          <p className="mb-0.5 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-secondary md:mb-1 md:text-[10px]">
             Amount to Log
           </p>
-          <div className="flex items-end justify-center gap-3">
-            <span className="pb-3 font-headline text-2xl font-light text-secondary">
+          <div className="flex items-end justify-center gap-2">
+            <span className="pb-0.5 font-headline text-lg font-light text-secondary md:pb-1 md:text-2xl">
               {formatCurrency(0, currency).replace('0.00', '')}
             </span>
-            <div className="font-headline text-[5rem] font-bold leading-none tracking-tighter text-primary">
+            <div className="font-headline text-[2.5rem] font-bold leading-none tracking-tighter text-primary md:text-[3.5rem]">
               {amountInput}
             </div>
           </div>
         </section>
 
-        <section className="mb-8">
-          <div className="mb-4 flex items-end justify-between">
-            <h2 className="text-[10px] font-bold uppercase tracking-[0.2em] text-on-surface-variant">
+        <section className="mb-3 shrink-0 md:mb-6">
+          <div className="mb-1.5 flex items-end justify-between md:mb-3">
+            <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant md:text-[10px]">
               Quick Category
             </h2>
             <button
               type="button"
               onClick={() => navigate('/expenses/categories')}
-              className="text-[10px] font-medium text-secondary underline underline-offset-4"
+              className="text-[9px] font-medium text-secondary underline underline-offset-4 md:text-[10px]"
             >
               View All
             </button>
           </div>
 
-          <div className="grid grid-cols-4 gap-3">
+          <div className="mx-auto grid w-full max-w-[27rem] grid-cols-6 gap-1.5 md:max-w-none md:gap-2">
             {quickCategories.map((category) => {
               const isActive = category.id === selectedCategoryId;
               return (
@@ -260,37 +264,43 @@ export const AddExpensePage: React.FC = () => {
                   key={category.id}
                   type="button"
                   onClick={() => setSelectedCategoryId(category.id)}
-                  className={`aspect-square rounded-xl border-2 bg-white transition-all ${
+                  className={`flex aspect-square flex-col items-center justify-center rounded-lg border bg-white px-0.5 transition-all md:rounded-xl md:border-2 ${
                     isActive
-                      ? 'border-primary shadow-lg'
+                      ? 'border-primary shadow-md md:shadow-lg'
                       : 'border-transparent hover:border-outline-variant'
                   }`}
                 >
-                  <div className="flex h-full flex-col items-center justify-center gap-2">
-                    <span className={`material-symbols-outlined transition-colors ${
+                  <span
+                    className={`material-symbols-outlined text-[15px] transition-colors md:text-[20px] ${
                       isActive ? 'text-primary' : 'text-secondary'
-                    }`}>{category.icon}</span>
-                    <span className={`px-1 text-center text-[10px] font-semibold uppercase tracking-tighter ${
-                      isActive ? 'text-primary' : ''
-                    }`}>{category.name}</span>
-                  </div>
+                    }`}
+                  >
+                    {category.icon}
+                  </span>
+                  <span
+                    className={`mt-0.5 w-full truncate px-0.5 text-center text-[7px] font-semibold uppercase leading-tight tracking-tighter md:mt-1 md:text-[9px] ${
+                      isActive ? 'text-primary' : 'text-on-surface-variant'
+                    }`}
+                  >
+                    {category.name}
+                  </span>
                 </button>
               );
             })}
           </div>
         </section>
 
-        <section className="mt-auto rounded-[1.25rem] bg-surface-container-low p-2 shadow-inner">
-          <div className="grid grid-cols-3 gap-1">
+        <section className="mb-0 shrink-0 rounded-[1rem] bg-surface-container-low p-1 shadow-inner md:mb-0 md:rounded-[1.25rem] md:p-2">
+          <div className="grid grid-cols-3 gap-0.5 md:gap-1">
             {KEYS.map((key) => (
               <button
                 key={key}
                 type="button"
                 onClick={() => handleKeyPress(key)}
-                className="rounded-xl py-6 text-center font-headline text-2xl font-bold transition-colors hover:bg-white active:scale-[0.98]"
+                className="flex items-center justify-center rounded-lg py-2 text-center font-headline text-lg font-bold transition-colors hover:bg-white active:scale-[0.98] md:rounded-xl md:py-4 md:text-2xl"
               >
                 {key === 'backspace' ? (
-                  <span className="material-symbols-outlined text-2xl">backspace</span>
+                  <span className="material-symbols-outlined text-lg md:text-2xl">backspace</span>
                 ) : (
                   key
                 )}
@@ -300,22 +310,22 @@ export const AddExpensePage: React.FC = () => {
         </section>
       </main>
 
-      <div className="fixed bottom-0 left-0 right-0 border-t border-surface-container-high bg-white/95 px-6 py-4 backdrop-blur md:left-20">
-        <div className="mx-auto flex w-full max-w-xl items-center gap-4 pb-safe">
+      <div className="fixed bottom-0 left-0 right-0 border-t border-surface-container-high bg-white/95 px-4 py-2.5 backdrop-blur md:px-6 md:py-4 md:left-20">
+        <div className="mx-auto flex w-full max-w-xl items-center gap-3 pb-safe md:gap-4">
           <div className="relative flex-1">
             <input
               type="text"
               value={note}
               onChange={(event) => setNote(event.target.value)}
               placeholder="Add note..."
-              className="w-full rounded-lg border-none bg-surface-container-low px-4 py-3 text-sm placeholder:text-secondary focus:ring-0"
+              className="w-full rounded-lg border-none bg-surface-container-low px-3 py-2.5 text-sm placeholder:text-secondary focus:ring-0 md:px-4 md:py-3"
             />
           </div>
           <button
             type="button"
             onClick={() => void handleSave()}
             disabled={isSaving}
-            className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50"
+            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 md:w-12"
           >
             <span className="material-symbols-outlined font-bold">check</span>
           </button>

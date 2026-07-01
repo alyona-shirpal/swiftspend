@@ -257,21 +257,22 @@ export const SettingsPage = () => {
 
   return (
     <div className="min-h-screen bg-surface pb-24">
-      {/* Header */}
-      <header className="px-8 pt-12 pb-8">
-        <button onClick={() => navigate('/')} className="mb-8 p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors">
-          <svg className="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
-          </svg>
-        </button>
-        <h1 className="font-display font-medium text-display-lg leading-tight tracking-tight text-primary">
-          Settings
-        </h1>
+      <header className="fixed top-0 left-0 right-0 z-50 bg-[#f7f9fb] flex items-center w-full px-6 py-2">
+        <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={() => navigate('/dashboard')}
+            className="p-2 rounded-full hover:bg-surface-container-low/50 transition-colors"
+          >
+            <span className="material-symbols-outlined text-black">arrow_back</span>
+          </button>
+          <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Settings</h1>
+        </div>
       </header>
 
-      <main className="px-8 space-y-12">
+      <main className="pt-20 px-5 space-y-5">
         {/* Profile Section */}
-        <section className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-outline-variant/10">
+        <section className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-display text-xl">
@@ -349,7 +350,7 @@ export const SettingsPage = () => {
         <section>
           <h3 className="font-display font-medium text-headline-sm text-primary mb-4">App Preferences</h3>
           <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 divide-y divide-surface-container-low">
-            <div className="p-6 flex items-center justify-between">
+            <div className="p-4 flex items-center justify-between">
               <label className="font-body text-title-md text-primary">Default Report View</label>
               <select
                 value={defaultReportView}
@@ -361,7 +362,7 @@ export const SettingsPage = () => {
                 <option value="Yearly">Yearly</option>
               </select>
             </div>
-            <div className="p-6 flex items-center justify-between">
+            <div className="p-4 flex items-center justify-between">
               <label className="font-body text-title-md text-primary">First Day of Week</label>
               <select
                 value={firstDayOfWeek}
@@ -376,9 +377,9 @@ export const SettingsPage = () => {
         </section>
 
         {/* Account Section */}
-        <section className="pt-8">
+        <section className="pt-4">
           <h3 className="font-display font-medium text-headline-sm text-error mb-4">Danger Zone</h3>
-          <div className="bg-surface-container-lowest p-6 rounded-xl shadow-sm border border-error-container/50 space-y-4">
+          <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-error-container/50 space-y-3">
             <button
               onClick={signOut}
               className="w-full py-4 text-center font-body text-sm font-semibold text-primary bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-colors"

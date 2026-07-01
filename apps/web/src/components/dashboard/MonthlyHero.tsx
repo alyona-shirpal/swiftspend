@@ -52,12 +52,24 @@ export const MonthlyHero: React.FC<MonthlyHeroProps> = ({ selectedCurrency, onCu
     );
   }
 
-  const { totals, comparison, year, month } = data;
+  const { totals, year, month, previous_totals } = data;
   const monthName = new Date(year, month - 1).toLocaleString('default', { month: 'long' });
 
-  const totalAmount = totals[selectedCurrency] ?? totals[Currency.EUR] ?? 0;
-  const isDecrease = comparison.direction === 'down';
-  const isIncrease = comparison.direction === 'up';
+  const totalAmount = totals[selectedCurrency] ?? 0;
+  const previousAmount = previous_totals?.[selectedCurrency] ?? 0;
+
+  let changePercent = 0;
+  let direction: 'up' | 'down' | 'same' = 'same';
+  if (previousAmount > 0) {
+    changePercent = Math.round(((totalAmount - previousAmount) / previousAmount) * 10000) / 100;
+    direction = totalAmount > previousAmount ? 'up' : totalAmount < previousAmount ? 'down' : 'same';
+  } else if (totalAmount > 0) {
+    changePercent = 100;
+    direction = 'up';
+  }
+
+  const isDecrease = direction === 'down';
+  const isIncrease = direction === 'up';
 
   return (
     <section className="relative">
@@ -68,7 +80,7 @@ export const MonthlyHero: React.FC<MonthlyHeroProps> = ({ selectedCurrency, onCu
           </span>
 
           {/* Currency switcher — same style as reports */}
-          <div className="flex rounded-lg bg-surface-container-low p-1 mb-4 w-fit">
+          <div className="flex rounded-lg bg-surface-container-low p-1 mb-2 w-fit">
             {currencyOptions.map((option) => (
               <button
                 key={option}
@@ -103,8 +115,8 @@ export const MonthlyHero: React.FC<MonthlyHeroProps> = ({ selectedCurrency, onCu
             </h2>
           </div>
 
-          <div className="flex items-center gap-2 mt-4">
-            {comparison.direction !== 'same' && (
+          <div className="flex items-center gap-2 mt-2">
+            {direction !== 'same' && (
               <span
                 className={`material-symbols-outlined ${
                   isIncrease ? 'text-error' : 'text-on-tertiary-container'
@@ -119,9 +131,9 @@ export const MonthlyHero: React.FC<MonthlyHeroProps> = ({ selectedCurrency, onCu
                 isIncrease ? 'text-error' : 'text-on-tertiary-container'
               }`}
             >
-              {comparison.direction === 'same'
+              {direction === 'same'
                 ? 'Same as last month'
-                : `${comparison.change_percent}% ${
+                : `${changePercent}% ${
                     isDecrease ? 'decrease' : 'increase'
                   } from last month`}
             </span>

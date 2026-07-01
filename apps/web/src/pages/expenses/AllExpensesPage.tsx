@@ -126,9 +126,9 @@ export const AllExpensesPage: React.FC = () => {
         )}
       </header>
 
-      <main className="max-w-3xl mx-auto px-6 py-8 space-y-8">
+      <main className="max-w-3xl mx-auto px-4 py-4 space-y-4">
         {/* Total stats card */}
-        <section className="bg-surface-container-lowest p-6 rounded-2xl border border-outline-variant/10 flex justify-between items-center shadow-sm">
+        <section className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 flex justify-between items-center shadow-sm">
           <div>
             <p className="text-xs text-outline font-medium uppercase tracking-wider mb-1">Total Spent</p>
             <h2 className="text-3xl font-headline font-black text-primary">
@@ -186,7 +186,7 @@ export const AllExpensesPage: React.FC = () => {
         </section>
 
         {/* Expenses List */}
-        <section className="space-y-6">
+        <section className="space-y-4">
           {isLoading && (
             <div className="space-y-6">
               {Array.from({ length: 5 }).map((_, i) => (
@@ -225,7 +225,7 @@ export const AllExpensesPage: React.FC = () => {
               <h3 className="font-headline text-xs font-bold text-outline uppercase tracking-wider pl-1">
                 {formatDateHeader(dateStr)}
               </h3>
-              <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-5 space-y-5 shadow-sm">
+              <div className="bg-surface-container-lowest border border-outline-variant/10 rounded-2xl p-3 space-y-3 shadow-sm">
                 {items.map((expense) => (
                   <ExpenseRow key={expense.id} expense={expense} currency={selectedCurrency} />
                 ))}

@@ -59,7 +59,7 @@ export const MonthlyReportPage: React.FC = () => {
       <div className="bg-surface text-on-surface min-h-screen pb-24">
         <ReportHeader />
 
-        <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
+        <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
           <ReportPeriodNav activePeriod="monthly" />
 
           {/* Empty State */}
@@ -84,14 +84,14 @@ export const MonthlyReportPage: React.FC = () => {
     <div className="bg-surface text-on-surface font-body min-h-screen">
       <ReportHeader />
 
-      <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
+      <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
         <ReportPeriodNav activePeriod="monthly" />
 
         {/* Hero Card (Total Spending) */}
         <section className="relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-4 block">
+              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-2 block">
                 Monthly Statement — {new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' })}
               </span>
               {/* Currency Selector */}
@@ -138,7 +138,7 @@ export const MonthlyReportPage: React.FC = () => {
         </section>
 
         {/* Primary Graph: Vertical Bar Heartbeat */}
-        <section className="mb-12 space-y-6">
+        <section className="mb-4 space-y-3">
           <div className="flex justify-between items-end">
             <h3 className="text-sm font-headline font-bold text-primary tracking-tight">Spending This Month</h3>
             {selectedBarIndex !== null ? (
@@ -200,7 +200,7 @@ export const MonthlyReportPage: React.FC = () => {
         {/* Category Breakdown: Horizontal Ledger */}
         <section className="mb-12">
           <h3 className="text-sm font-headline font-bold text-primary tracking-tight mb-6">Top Categories Spending</h3>
-          <div className="space-y-6">
+          <div className="space-y-3">
             {report.top_categories.map((category, index) => (
               <div key={index} className="group">
                 <div className="flex justify-between items-center mb-2">
@@ -227,7 +227,7 @@ export const MonthlyReportPage: React.FC = () => {
         </section>
 
         {/* Comparison Section */}
-        <section className="space-y-4 pb-8">
+        <section className="space-y-3 pb-4">
           <h3 className="text-lg font-bold font-headline">Comparison</h3>
           <div className="flex gap-4">
             <div className="flex-1 p-4 bg-surface-container-low rounded-lg">
