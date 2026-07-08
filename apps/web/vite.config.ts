@@ -63,7 +63,7 @@ export default defineConfig({
           {
             name: 'Reports',
             short_name: 'Reports',
-            url: '/reports/daily',
+            url: '/reports/monthly',
             icons: [
               {
                 src: '/icons/icon-192.png',

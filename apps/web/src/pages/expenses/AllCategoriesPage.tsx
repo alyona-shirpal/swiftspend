@@ -146,6 +146,7 @@ export const AllCategoriesPage: React.FC = () => {
         </button>
         <button
           type="button"
+          onClick={() => navigate('/reports')}
           className="flex flex-col items-center justify-center px-6 py-1 text-[#47607e] opacity-60 transition-opacity hover:opacity-100"
         >
           <span className="material-symbols-outlined">insert_chart</span>

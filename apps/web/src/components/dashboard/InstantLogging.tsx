@@ -1,11 +1,13 @@
-import React, { useState, useEffect } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import { Currency } from '@swiftspend/types';
 import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { useCategories } from '../../hooks/useCategories';
 import { useAddExpense } from '../../hooks/useAddExpense';
+import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
 import { CategoryPill } from './CategoryPill';
 import { Category } from '../../types/api';
 import toast from 'react-hot-toast';
+import { sortCategoriesByLastUsed } from '../../utils/categorySorting';
 
 export const InstantLogging: React.FC = () => {
   const [amountStr, setAmountStr] = useState<string>('');
@@ -17,20 +19,31 @@ export const InstantLogging: React.FC = () => {
   const { data: recentCategories, refetch: refetchRecent } = useRecentCategories();
   const { data: allCategories, refetch: refetchAll } = useCategories();
   const { mutateAsync: addExpense } = useAddExpense();
-
-  const hasRecentCategories = recentCategories && recentCategories.length > 0;
+  const normalizedDescription = description.trim().toLowerCase();
+  const { data: noteSuggestions = [] } = useExpenseNoteSuggestions(categoryId, description);
+  const visibleNoteSuggestions = noteSuggestions
+    .filter((suggestion) => suggestion.normalized_note !== normalizedDescription)
+    .slice(0, 5);
 
   // All categories to show: real recent ones take priority, else show all from DB
   // Remove duplicates by ensuring unique IDs
-  const uniqueCategories = (allCategories || []).filter((category, index, arr) => 
-    arr.findIndex(c => c.id === category.id) === index
+  const uniqueCategories = useMemo(
+    () => (allCategories || []).filter((category, index, arr) =>
+      arr.findIndex(c => c.id === category.id) === index
+    ),
+    [allCategories]
   );
   
-  const displayCategories: Category[] = hasRecentCategories
-    ? recentCategories
-    : uniqueCategories.slice(0, 10); // Show up to 10 if no recent ones
+  const displayCategories: Category[] = useMemo(() => {
+    const recent = sortCategoriesByLastUsed(recentCategories || []);
+    const fallback = sortCategoriesByLastUsed(uniqueCategories).filter(
+      (category) => !recent.some((recentCategory) => recentCategory.id === category.id)
+    );
 
-  const categoryLabel = hasRecentCategories ? 'Recent Categories' : 'Categories';
+    return [...recent, ...fallback];
+  }, [recentCategories, uniqueCategories]);
+
+  const categoryLabel = 'Categories';
 
   // Auto-select first option
   useEffect(() => {
@@ -130,15 +143,56 @@ export const InstantLogging: React.FC = () => {
         </div>
 
         {/* Description */}
-        <div>
-          <input
-            type="text"
-            placeholder="What was this for?"
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-            disabled={isSaving}
-            className="w-full bg-transparent border-b-2 border-surface-container-highest focus:border-on-tertiary-container focus:outline-none focus:ring-0 transition-colors py-3 font-body font-medium text-on-surface placeholder:text-secondary/50"
-          />
+        <div className="space-y-2">
+          {visibleNoteSuggestions.length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-outline-variant/20 bg-white/75 px-2 py-2 shadow-inner">
+              <span className="material-symbols-outlined shrink-0 text-[16px] text-secondary">
+                notes
+              </span>
+              <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">
+                {visibleNoteSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.normalized_note}
+                    type="button"
+                    onClick={() => setDescription(suggestion.note)}
+                    disabled={isSaving}
+                    title={suggestion.note}
+                    className="group flex max-w-[11rem] shrink-0 items-center gap-1.5 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1.5 text-left text-xs font-semibold text-primary shadow-sm transition-all hover:border-primary/30 hover:bg-surface-container-low active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <span className="min-w-0 truncate">{suggestion.note}</span>
+                    {suggestion.count > 1 && (
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary">
+                        {suggestion.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="What was this for?"
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              disabled={isSaving}
+              className="w-full bg-transparent border-b-2 border-surface-container-highest py-3 pr-10 font-body font-medium text-on-surface transition-colors placeholder:text-secondary/50 focus:border-on-tertiary-container focus:outline-none focus:ring-0"
+            />
+            {description && (
+              <button
+                type="button"
+                onClick={() => setDescription('')}
+                disabled={isSaving}
+                aria-label="Clear note"
+                title="Clear note"
+                className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            )}
+          </div>
         </div>
 
         <button

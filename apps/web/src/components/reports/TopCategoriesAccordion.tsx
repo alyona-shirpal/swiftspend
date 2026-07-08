@@ -29,7 +29,7 @@ function groupExpensesByComment(expenses: Expense[], currency: Currency) {
 
   expenses.forEach((expense) => {
     const comment = expense.description?.trim() || 'No comment';
-    const key = comment.toLocaleLowerCase();
+    const key = expense.normalized_description || comment.toLowerCase();
     const existing = groups.get(key);
     const amount = getExpenseAmount(expense, currency);
 

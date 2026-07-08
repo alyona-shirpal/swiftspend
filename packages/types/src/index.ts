@@ -35,6 +35,7 @@ export interface Expense {
   user_id: string
   category_id: string | null
   description: string | null
+  normalized_description: string | null
   date: string
   created_at: string
   amount: number
@@ -75,6 +76,7 @@ export interface Category {
   is_system: boolean
   is_hidden: boolean
   created_at: string
+  last_used_at: string | null
 }
 
 // Expense, Report types will be added here after DB schema is finalized

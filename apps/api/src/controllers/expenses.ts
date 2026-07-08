@@ -17,6 +17,34 @@ const ExpenseSchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // YYYY-MM-DD from the client date picker
 });
 
+const NoteSuggestionsSchema = z.object({
+  category_id: z.string().uuid(),
+  q: z.string().max(200).optional(),
+  limit: z.string().regex(/^\d+$/).optional(),
+});
+
+const normalizeNote = (value: string | null | undefined) => {
+  const normalized = value?.trim().toLowerCase() ?? '';
+  return normalized || null;
+};
+
+const markCategoryLastUsed = async (
+  supabase: ReturnType<typeof createSupabaseUserClient>,
+  userId: string,
+  categoryId: string | null | undefined,
+  lastUsedAt = new Date().toISOString()
+) => {
+  if (!categoryId) return;
+
+  const { error } = await supabase
+    .from('categories')
+    .update({ last_used_at: lastUsedAt })
+    .eq('id', categoryId)
+    .eq('user_id', userId);
+
+  if (error) throw error;
+};
+
 export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to, category_id, currency, search, page = '1', limit = '50' } = req.query;
@@ -32,7 +60,8 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: NextFun
     if (to) query = query.lte('date', to);
     if (category_id) query = query.eq('category_id', category_id);
     if (currency) query = query.eq('currency', currency);
-    if (search) query = query.ilike('description', `%${search}%`);
+    const normalizedSearch = normalizeNote(typeof search === 'string' ? search : undefined);
+    if (normalizedSearch) query = query.ilike('normalized_description', `%${normalizedSearch}%`);
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
@@ -48,6 +77,59 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: NextFun
       data,
       metadata: { total: count, page: pageNum, limit: limitNum }
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getNoteSuggestions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { category_id, q, limit } = NoteSuggestionsSchema.parse(req.query);
+    const normalizedQuery = normalizeNote(q);
+    const resultLimit = Math.min(parseInt(limit ?? '6', 10), 12);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+
+    let query = supabase
+      .from('expenses')
+      .select('description, normalized_description, created_at')
+      .eq('user_id', req.user!.id)
+      .eq('category_id', category_id)
+      .not('normalized_description', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (normalizedQuery) {
+      query = query.ilike('normalized_description', `%${normalizedQuery}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const suggestions = new Map<
+      string,
+      { note: string; normalized_note: string; count: number; last_used_at: string }
+    >();
+
+    for (const row of data ?? []) {
+      const normalizedNote = normalizeNote(row.normalized_description);
+      const displayNote = row.description?.trim();
+      if (!normalizedNote || !displayNote) continue;
+
+      const existing = suggestions.get(normalizedNote);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+
+      suggestions.set(normalizedNote, {
+        note: displayNote,
+        normalized_note: normalizedNote,
+        count: 1,
+        last_used_at: row.created_at,
+      });
+    }
+
+    res.json(Array.from(suggestions.values()).slice(0, resultLimit));
   } catch (err) {
     next(err);
   }
@@ -110,6 +192,7 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
       .single();
 
     if (error) throw error;
+    await markCategoryLastUsed(supabase, userId, validated.category_id ?? null, data.created_at);
     res.status(201).json(data);
   } catch (err) {
     next(err);
@@ -171,6 +254,12 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
       .single();
 
     if (error) throw error;
+    if (
+      validated.category_id !== undefined &&
+      validated.category_id !== existing.category_id
+    ) {
+      await markCategoryLastUsed(supabase, req.user!.id, validated.category_id);
+    }
     res.json(data);
   } catch (err) {
     next(err);

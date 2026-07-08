@@ -19,6 +19,18 @@ import CategoryOnboardingPage from './pages/onboarding/CategoryOnboardingPage';
 import { supabase } from './services/supabase.ts';
 import { Toaster } from 'react-hot-toast';
 
+const REPORT_PATH_BY_VIEW: Record<string, string> = {
+  Daily: '/reports/daily',
+  Monthly: '/reports/monthly',
+  Yearly: '/reports/yearly',
+};
+
+const DefaultReportsRedirect = () => {
+  const defaultView = localStorage.getItem('pref_report_view') || 'Monthly';
+
+  return <Navigate to={REPORT_PATH_BY_VIEW[defaultView] ?? '/reports/monthly'} replace />;
+};
+
 // Callback component to handle OAuth redirection
 const AuthCallback = () => {
   useEffect(() => {
@@ -108,7 +120,7 @@ function App() {
             path="/reports"
             element={
               <ProtectedRoute>
-                <Navigate to="/reports/daily" replace />
+                <DefaultReportsRedirect />
               </ProtectedRoute>
             }
           />

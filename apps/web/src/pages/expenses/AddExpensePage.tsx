@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { useAddExpense } from '../../hooks/useAddExpense';
 import { useCategories } from '../../hooks/useCategories';
 import { useRecentCategories } from '../../hooks/useRecentCategories';
+import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
 import { formatCurrency } from '../../utils/formatCurrency';
 
 const CURRENCY_OPTIONS = [Currency.USD, Currency.EUR, Currency.ALL, Currency.UAH];
@@ -22,13 +23,7 @@ export const AddExpensePage: React.FC = () => {
   
   const { data: categories = [] } = useCategories();
   const { data: recentCategories = [] } = useRecentCategories();
-  
-  const quickCategories = useMemo(() => {
-    if (recentCategories.length >= 12) return recentCategories.slice(0, 12);
-    const fallback = categories.filter((c) => !recentCategories.some((r) => r.id === c.id));
-    return [...recentCategories, ...fallback].slice(0, 12);
-  }, [categories, recentCategories]);
-  
+
   const savedCategoryDraft = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
   
   const [currency, setCurrency] = useState<Currency>(() => {
@@ -37,6 +32,27 @@ export const AddExpensePage: React.FC = () => {
   });
   
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(savedCategoryDraft ?? '');
+
+  const quickCategories = useMemo(() => {
+    const orderedCategories = [
+      ...recentCategories,
+      ...categories.filter((c) => !recentCategories.some((r) => r.id === c.id)),
+    ];
+
+    if (!selectedCategoryId) {
+      return orderedCategories.slice(0, 12);
+    }
+
+    const selectedCategory = orderedCategories.find((category) => category.id === selectedCategoryId);
+    if (!selectedCategory) {
+      return orderedCategories.slice(0, 12);
+    }
+
+    return [
+      selectedCategory,
+      ...orderedCategories.filter((category) => category.id !== selectedCategoryId),
+    ].slice(0, 12);
+  }, [categories, recentCategories, selectedCategoryId]);
   
   const [note, setNote] = useState(() => sessionStorage.getItem(NOTE_DRAFT_KEY) ?? '');
   const [amountInput, setAmountInput] = useState(() => sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00');
@@ -44,6 +60,11 @@ export const AddExpensePage: React.FC = () => {
     () => sessionStorage.getItem(DATE_DRAFT_KEY) ?? new Date().toISOString().split('T')[0] ?? ''
   );
   const [isSaving, setIsSaving] = useState(false);
+  const normalizedNote = note.trim().toLowerCase();
+  const { data: noteSuggestions = [] } = useExpenseNoteSuggestions(selectedCategoryId, note);
+  const visibleNoteSuggestions = noteSuggestions
+    .filter((suggestion) => suggestion.normalized_note !== normalizedNote)
+    .slice(0, 5);
 
   useEffect(() => {
     if (!selectedCategoryId) {
@@ -311,24 +332,52 @@ export const AddExpensePage: React.FC = () => {
       </main>
 
       <div className="fixed bottom-0 left-0 right-0 border-t border-surface-container-high bg-white/95 px-4 py-2.5 backdrop-blur md:px-6 md:py-4 md:left-20">
-        <div className="mx-auto flex w-full max-w-xl items-center gap-3 pb-safe md:gap-4">
-          <div className="relative flex-1">
-            <input
-              type="text"
-              value={note}
-              onChange={(event) => setNote(event.target.value)}
-              placeholder="Add note..."
-              className="w-full rounded-lg border-none bg-surface-container-low px-3 py-2.5 text-sm placeholder:text-secondary focus:ring-0 md:px-4 md:py-3"
-            />
+        <div className="mx-auto w-full max-w-xl pb-safe">
+          {visibleNoteSuggestions.length > 0 && (
+            <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+              {visibleNoteSuggestions.map((suggestion) => (
+                <button
+                  key={suggestion.normalized_note}
+                  type="button"
+                  onClick={() => setNote(suggestion.note)}
+                  className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
+                >
+                  {suggestion.note}
+                </button>
+              ))}
+            </div>
+          )}
+
+          <div className="flex items-center gap-3 md:gap-4">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                value={note}
+                onChange={(event) => setNote(event.target.value)}
+                placeholder="Add note..."
+                className="w-full rounded-lg border-none bg-surface-container-low px-3 py-2.5 pr-11 text-sm placeholder:text-secondary focus:ring-0 md:px-4 md:py-3 md:pr-12"
+              />
+              {note && (
+                <button
+                  type="button"
+                  onClick={() => setNote('')}
+                  aria-label="Clear note"
+                  title="Clear note"
+                  className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                >
+                  <span className="material-symbols-outlined text-base">close</span>
+                </button>
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => void handleSave()}
+              disabled={isSaving}
+              className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 md:w-12"
+            >
+              <span className="material-symbols-outlined font-bold">check</span>
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => void handleSave()}
-            disabled={isSaving}
-            className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 md:w-12"
-          >
-            <span className="material-symbols-outlined font-bold">check</span>
-          </button>
         </div>
       </div>
 

@@ -16,6 +16,7 @@ export type RecentExpenseCategoryJoinRow = {
 export type RecentExpenseJoinRow = {
   id: string;
   description: string | null;
+  normalized_description?: string | null;
   date: string;
   created_at: string;
   amount: number;

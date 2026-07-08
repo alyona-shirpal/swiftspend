@@ -1,13 +1,13 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
 import { createSupabaseUserClient } from '../services/supabase';
-import { RecentExpenseCategoryJoinRow, CategoryRow } from '../types/supabase';
 import { z } from 'zod';
 
 const CreateCategorySchema = z.object({
   name: z.string().min(1),
   icon: z.string().min(1),
-  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a valid hex color')
+  color: z.string().regex(/^#[0-9a-fA-F]{6}$/, 'Must be a valid hex color'),
+  is_hidden: z.boolean().optional()
 });
 
 const DEFAULT_CATEGORIES = [
@@ -38,6 +38,7 @@ export const getCategories = async (req: AuthRequest, res: Response, next: NextF
       .from('categories')
       .select('*')
       .eq('user_id', req.user!.id)
+      .order('last_used_at', { ascending: false, nullsFirst: false })
       .order('name');
 
     if (error) throw error;
@@ -62,7 +63,11 @@ export const getCategories = async (req: AuthRequest, res: Response, next: NextF
       } else {
         // Combine and sort
         const combined = [...(data || []), ...(insertedData || [])];
-        return res.json(combined.sort((a, b) => a.name.localeCompare(b.name)));
+        return res.json(combined.sort((a, b) => {
+          const aTime = a.last_used_at ? new Date(a.last_used_at).getTime() : 0;
+          const bTime = b.last_used_at ? new Date(b.last_used_at).getTime() : 0;
+          return bTime - aTime || a.name.localeCompare(b.name);
+        }));
       }
     }
 
@@ -151,38 +156,19 @@ export const deleteCategory = async (req: AuthRequest, res: Response, next: Next
 
 export const getRecentCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    // Get unique categories from recent expenses
     const supabase = createSupabaseUserClient(req.accessToken!);
     const { data, error } = await supabase
-      .from('expenses')
-      .select(`
-        category_id,
-        created_at,
-        categories (
-          id,
-          name,
-          icon,
-          color
-        )
-      `)
+      .from('categories')
+      .select('id, name, icon, color, last_used_at')
       .eq('user_id', req.user!.id)
-      .not('category_id', 'is', null)
-      .order('created_at', { ascending: false })
-      .limit(50);
+      .eq('is_hidden', false)
+      .order('last_used_at', { ascending: false, nullsFirst: false })
+      .order('name')
+      .limit(12);
 
     if (error) throw error;
 
-    const rows = (data ?? []) as unknown as RecentExpenseCategoryJoinRow[];
-
-    const uniqueCategories = new Map<string, CategoryRow>();
-    for (const item of rows) {
-      if (item.category_id && item.categories && !uniqueCategories.has(item.category_id)) {
-        uniqueCategories.set(item.category_id, item.categories);
-        if (uniqueCategories.size >= 4) break;
-      }
-    }
-
-    res.json(Array.from(uniqueCategories.values()));
+    res.json(data ?? []);
   } catch (err) {
     next(err);
   }

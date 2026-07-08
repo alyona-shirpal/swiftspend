@@ -22,6 +22,7 @@ function mapExpense(e: Expense, categoryMap: Map<string, Category>): RecentExpen
   return {
     id: e.id,
     description: e.description,
+    normalized_description: e.normalized_description,
     date: e.date,
     time: e.created_at || e.date,
     amount: e.amount,

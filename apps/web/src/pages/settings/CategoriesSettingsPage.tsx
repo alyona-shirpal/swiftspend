@@ -5,7 +5,7 @@ import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'react-hot-toast';
 
-interface CategoryState extends Omit<Category, 'user_id' | 'created_at'> {
+interface CategoryState extends Omit<Category, 'user_id' | 'created_at' | 'last_used_at'> {
   is_hidden: boolean;
 }
 
@@ -56,7 +56,7 @@ export const CategoriesSettingsPage: React.FC = () => {
           icon: c.icon,
           color: c.color,
           is_system: c.is_system,
-          is_hidden: c.is_hidden
+          is_hidden: c.is_hidden,
         }));
         setCategories(state);
         setInitialCategories(JSON.parse(JSON.stringify(state)));
@@ -108,7 +108,7 @@ export const CategoriesSettingsPage: React.FC = () => {
         icon: data.icon,
         color: data.color,
         is_system: data.is_system,
-        is_hidden: data.is_hidden
+        is_hidden: data.is_hidden,
       };
       setCategories(prev => [...prev, newCat]);
       setInitialCategories(prev => [...prev, newCat]); // New category already saved to db

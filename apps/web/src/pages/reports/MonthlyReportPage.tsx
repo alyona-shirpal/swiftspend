@@ -66,7 +66,7 @@ export const MonthlyReportPage: React.FC = () => {
       <div className="bg-surface text-on-surface min-h-screen pb-24">
         <ReportHeader />
 
-        <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
+        <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
           <ReportPeriodNav activePeriod="monthly" />
 
           {/* Empty State */}
@@ -88,17 +88,17 @@ export const MonthlyReportPage: React.FC = () => {
 
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-screen">
+    <div className="bg-surface text-on-surface font-body min-h-screen pb-24 antialiased">
       <ReportHeader />
 
-      <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
+      <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
         <ReportPeriodNav activePeriod="monthly" />
 
         {/* Hero Card (Total Spending) */}
         <section className="relative">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
             <div>
-              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-2 block">
+              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-4 block">
                 Monthly Statement — {new Date(selectedYear, selectedMonth - 1).toLocaleString('default', { month: 'long' })}
               </span>
               {/* Currency Selector */}
@@ -145,9 +145,9 @@ export const MonthlyReportPage: React.FC = () => {
         </section>
 
         {/* Primary Graph: Vertical Bar Heartbeat */}
-        <section className="mb-4 space-y-3">
+        <section className="space-y-6">
           <div className="flex justify-between items-end">
-            <h3 className="text-sm font-headline font-bold text-primary tracking-tight">Spending This Month</h3>
+            <h3 className="text-xl font-bold font-headline text-primary">Spending This Month</h3>
             {selectedBarIndex !== null ? (
               <span className="text-xs text-secondary font-medium">
                 Day {report.daily_chart[selectedBarIndex]?.day} — {formatCurrency(report.daily_chart[selectedBarIndex]?.amount ?? 0, selectedCurrency)}

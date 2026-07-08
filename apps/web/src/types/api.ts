@@ -5,17 +5,26 @@ export interface Category {
   name: string;
   icon: string;
   color: string;
+  last_used_at?: string | null;
 }
 
 export interface RecentExpense {
   id: string;
   description: string | null;
+  normalized_description?: string | null;
   date: string;
   time: string;
   amount: number;
   currency: Currency;
   amounts: CurrencyAmounts;
   category: Category | null;
+}
+
+export interface NoteSuggestion {
+  note: string;
+  normalized_note: string;
+  count: number;
+  last_used_at: string;
 }
 
 export interface MonthlyTotal {
