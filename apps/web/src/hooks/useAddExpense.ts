@@ -27,6 +27,7 @@ export function useAddExpense() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['expenses', 'recent'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', 'all'] });
       queryClient.invalidateQueries({ queryKey: ['expenses', 'monthly-total'] });
       queryClient.invalidateQueries({ queryKey: ['categories', 'recent'] });
     },

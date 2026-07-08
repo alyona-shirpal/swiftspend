@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { supabaseAdmin } from '../services/supabase';
+import { createSupabaseUserClient } from '../services/supabase';
 import { ExchangeRateService } from '../services/exchangeRate';
 import { ensureUserCurrencies } from '../services/userCurrencies';
 import {
@@ -12,7 +12,7 @@ import { Currency } from '../types';
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().min(3).max(3),
-  category_id: z.string().uuid().optional(),
+  category_id: z.string().uuid().nullable().optional(),
   description: z.string().max(200).optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // YYYY-MM-DD from the client date picker
 });
@@ -20,8 +20,9 @@ const ExpenseSchema = z.object({
 export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to, category_id, currency, search, page = '1', limit = '50' } = req.query;
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
-    let query = supabaseAdmin
+    let query = supabase
       .from('expenses')
       .select('*', { count: 'exact' })
       .eq('user_id', req.user!.id)
@@ -55,7 +56,8 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: NextFun
 export const getExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
-    const { data, error } = await supabaseAdmin
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const { data, error } = await supabase
       .from('expenses')
       .select('*')
       .eq('id', id)
@@ -77,10 +79,11 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
   try {
     const validated = ExpenseSchema.parse(req.body);
     const userId = req.user!.id;
-    const currencies = await ensureUserCurrencies(userId);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const currencies = await ensureUserCurrencies(userId, supabase);
     const userCurrencies = currencies.map((r) => r.currency as Currency);
 
-    const snapshot = await ExchangeRateService.getCachedRates();
+    const snapshot = await ExchangeRateService.getCachedRates(supabase);
     const amounts = await ExchangeRateService.convertToUserCurrencies(
       validated.amount,
       validated.currency as Currency,
@@ -91,7 +94,7 @@ export const createExpense = async (req: AuthRequest, res: Response, next: NextF
     // Use the date provided by the client (past/future entry); fall back to today
     const expenseDate = validated.date ?? new Date().toISOString().split('T')[0];
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('expenses')
       .insert({
         user_id: userId,
@@ -117,8 +120,9 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
   try {
     const validated = ExpenseSchema.partial().parse(req.body);
     const { id } = req.params;
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await supabase
       .from('expenses')
       .select('*')
       .eq('id', id)
@@ -130,6 +134,7 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
     let updatePayload: Record<string, unknown> = {
       ...(validated.category_id !== undefined ? { category_id: validated.category_id } : {}),
       ...(validated.description !== undefined ? { description: validated.description } : {}),
+      ...(validated.date !== undefined ? { date: validated.date } : {}),
       ...(validated.amount !== undefined ? { amount: validated.amount } : {}),
       ...(validated.currency !== undefined ? { currency: validated.currency } : {}),
     };
@@ -137,13 +142,13 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
     // Re-convert if amount or currency changed
     if (validated.amount !== undefined || validated.currency !== undefined) {
       const userId = req.user!.id;
-      const currencies = await ensureUserCurrencies(userId);
+      const currencies = await ensureUserCurrencies(userId, supabase);
       const userCurrencies = currencies.map((r) => r.currency as Currency);
 
       const finalAmount = validated.amount ?? existing.amount;
       const finalCurrency = (validated.currency ?? existing.currency) as Currency;
 
-      const snapshot = await ExchangeRateService.getCachedRates();
+      const snapshot = await ExchangeRateService.getCachedRates(supabase);
       const amounts = await ExchangeRateService.convertToUserCurrencies(
         finalAmount,
         finalCurrency,
@@ -158,7 +163,7 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
       };
     }
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('expenses')
       .update(updatePayload)
       .eq('id', id)
@@ -175,8 +180,9 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
 export const deleteExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
-    const { data: existing } = await supabaseAdmin
+    const { data: existing } = await supabase
       .from('expenses')
       .select('id')
       .eq('id', id)
@@ -185,7 +191,7 @@ export const deleteExpense = async (req: AuthRequest, res: Response, next: NextF
 
     if (!existing) return res.status(404).json({ error: 'Not found' });
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('expenses')
       .delete()
       .eq('id', id);
@@ -200,7 +206,8 @@ export const deleteExpense = async (req: AuthRequest, res: Response, next: NextF
 export const getRecentExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Top 10 most recent expenses with category data
-    const { data, error } = await supabaseAdmin
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const { data, error } = await supabase
       .from('expenses')
       .select(`
         id,
@@ -251,7 +258,8 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
 export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
-    const currencies = await ensureUserCurrencies(userId);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const currencies = await ensureUserCurrencies(userId, supabase);
     const userCurrencyCodes = currencies.map((c) => c.currency);
     const defaultCurrency = currencies.find((c) => c.is_default)?.currency || 'EUR';
 
@@ -286,13 +294,13 @@ export const getMonthlyTotal = async (req: AuthRequest, res: Response, next: Nex
     const prevRange = getMonthRange(year, month - 1);
 
     const [{ data: currentData }, { data: prevData }] = await Promise.all([
-      supabaseAdmin
+      supabase
         .from('expenses')
         .select('amounts')
         .eq('user_id', userId)
         .gte('date', currentRange.start)
         .lte('date', currentRange.end),
-      supabaseAdmin
+      supabase
         .from('expenses')
         .select('amounts')
         .eq('user_id', userId)

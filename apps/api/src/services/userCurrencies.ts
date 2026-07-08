@@ -17,8 +17,13 @@ const DEFAULT_USER_CURRENCIES: Array<Pick<UserCurrencyRow, 'currency' | 'is_defa
   { currency: Currency.ALL, is_default: false, position: 3 },
 ];
 
-export async function ensureUserCurrencies(userId: string): Promise<UserCurrencyRow[]> {
-  const { data: existing, error } = await supabaseAdmin
+type SupabaseUserCurrenciesClient = Pick<typeof supabaseAdmin, 'from'>;
+
+export async function ensureUserCurrencies(
+  userId: string,
+  supabase: SupabaseUserCurrenciesClient = supabaseAdmin
+): Promise<UserCurrencyRow[]> {
+  const { data: existing, error } = await supabase
     .from('user_currencies')
     .select('*')
     .eq('user_id', userId)
@@ -34,7 +39,7 @@ export async function ensureUserCurrencies(userId: string): Promise<UserCurrency
       position: row.position,
     }));
 
-    const { data: inserted, error: insertError } = await supabaseAdmin
+    const { data: inserted, error: insertError } = await supabase
       .from('user_currencies')
       .insert(seedRows)
       .select('*');
@@ -53,7 +58,7 @@ export async function ensureUserCurrencies(userId: string): Promise<UserCurrency
     return rows;
   }
 
-  const { error: updateError } = await supabaseAdmin
+  const { error: updateError } = await supabase
     .from('user_currencies')
     .update({ is_default: true })
     .eq('id', preferredDefault.id)

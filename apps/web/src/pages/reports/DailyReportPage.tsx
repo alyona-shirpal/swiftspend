@@ -5,8 +5,10 @@ import { useDailyReport } from '../../hooks/useReports';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { formatCurrency, getCurrencyIcon, getCurrencySymbol } from '../../utils/formatCurrency';
 import { ReportSkeleton } from '../../components/ReportSkeleton';
+import { ReportBottomNav } from '../../components/reports/ReportBottomNav';
 import { ReportHeader } from '../../components/reports/ReportHeader';
 import { ReportPeriodNav } from '../../components/reports/ReportPeriodNav';
+import { TopCategoriesAccordion } from '../../components/reports/TopCategoriesAccordion';
 
 export const DailyReportPage: React.FC = () => {
   const navigate = useNavigate();
@@ -193,53 +195,18 @@ export const DailyReportPage: React.FC = () => {
         </section>
 
         {/* Category Breakdown */}
-        <section className="bg-surface-container-lowest rounded-xl overflow-hidden">
-          <div className="px-6 py-4 border-b border-surface-container-low flex justify-between items-center">
-            <h3 className="text-lg font-bold font-headline text-primary">Top Categories Spending</h3>
-            <span className="material-symbols-outlined text-secondary cursor-pointer">filter_list</span>
-          </div>
-          <div className="divide-y divide-surface-container-low">
-            {report.top_categories.map((category, index) => (
-              <div key={index} className="px-4 py-3 flex items-center hover:bg-surface-container-low transition-colors group">
-                <div className="w-12 h-12 bg-surface-container-high rounded flex items-center justify-center mr-4 group-hover:bg-primary group-hover:text-white transition-colors">
-                  <span className="material-symbols-outlined">{category.icon}</span>
-                </div>
-                <div className="flex-1">
-                  <div className="flex justify-between items-baseline mb-1">
-                    <h4 className="font-bold text-sm text-primary">{category.name}</h4>
-                    <span className="font-bold text-primary">{formatCurrency(category.total, selectedCurrency)}</span>
-                  </div>
-                  <div className="flex items-center gap-4">
-                    <div className="flex-1 h-1.5 bg-surface-container-high rounded-full overflow-hidden">
-                      <div className={`h-full bg-primary w-[${category.percentage}%]`}></div>
-                    </div>
-                    <span className="text-[10px] font-bold text-secondary">{category.percentage}%</span>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </section>
+        <TopCategoriesAccordion
+          categories={report.top_categories}
+          currency={selectedCurrency}
+          periodRange={{ from: selectedDate, to: selectedDate }}
+          className="bg-surface-container-lowest rounded-xl overflow-hidden"
+          headerClassName="px-6 py-4 border-b border-surface-container-low flex justify-between items-center"
+          itemClassName="px-4 py-3 hover:bg-surface-container-low transition-colors"
+        />
 
               </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 py-3 pb-safe bg-[#f2f4f6] border-t border-outline-variant/10">
-        <a className="flex flex-col items-center justify-center text-black py-1" href="#" onClick={(e) => { e.preventDefault(); navigate('/dashboard'); }}>
-          <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>dashboard</span>
-          <span className="font-inter text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
-        </a>
-        {/* Large Elevated FAB button in center */}
-        <div className="relative -top-6">
-          <button className="w-16 h-16 bg-primary text-on-primary rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] flex items-center justify-center active:scale-90 transition-transform">
-            <span className="material-symbols-outlined text-3xl font-bold">add</span>
-          </button>
-        </div>
-        <a className="flex flex-col items-center justify-center text-black py-1" href="#" onClick={(e) => { e.preventDefault(); }}>
-          <span className="material-symbols-outlined" style={{fontVariationSettings: "'FILL' 1"}}>insert_chart</span>
-          <span className="font-inter text-[10px] font-medium tracking-wide uppercase mt-1">Reports</span>
-        </a>
-      </nav>
+      <ReportBottomNav />
     </div>
   );
 };

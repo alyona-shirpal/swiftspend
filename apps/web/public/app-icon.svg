@@ -1,0 +1,34 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" role="img" aria-labelledby="title desc">
+  <title id="title">SwiftSpend</title>
+  <desc id="desc">A black and white S monogram with swift glitch slices.</desc>
+  <defs>
+    <clipPath id="soft-square">
+      <rect width="512" height="512" rx="108"/>
+    </clipPath>
+    <clipPath id="top-slice">
+      <rect x="110" y="118" width="292" height="76" rx="18"/>
+    </clipPath>
+    <clipPath id="middle-slice">
+      <rect x="82" y="220" width="348" height="72" rx="18"/>
+    </clipPath>
+    <clipPath id="bottom-slice">
+      <rect x="108" y="322" width="296" height="70" rx="18"/>
+    </clipPath>
+  </defs>
+  <g clip-path="url(#soft-square)">
+    <rect width="512" height="512" fill="#050505"/>
+    <path d="M96 122h238c48 0 82 30 82 73 0 30-16 53-48 70l-150 80c-15 8-22 17-22 27 0 18 17 29 45 29h186v-57H256c-13 0-20-4-20-12 0-6 5-11 16-17l148-79c48-26 72-61 72-105 0-66-51-110-128-110H96v101Z" fill="#fff"/>
+    <path d="M416 390H178c-48 0-82-30-82-73 0-31 17-55 50-72l148-78c15-8 22-17 22-28 0-18-17-28-45-28H85v57h171c13 0 20 4 20 12 0 6-5 11-16 17l-148 78c-48 25-72 60-72 105 0 66 51 111 128 111h248V390Z" fill="#fff"/>
+    <path d="M83 215h254c39 0 71 32 71 71H83v-71Z" fill="#050505"/>
+    <path d="M119 111h246c7 0 13 6 13 13v21H119v-34Z" fill="#050505" opacity=".92"/>
+    <path d="M134 369h259v32H134z" fill="#050505" opacity=".92"/>
+    <g opacity=".9">
+      <path clip-path="url(#top-slice)" d="M96 122h238c48 0 82 30 82 73 0 30-16 53-48 70l-150 80c-15 8-22 17-22 27 0 18 17 29 45 29h186v-57H256c-13 0-20-4-20-12 0-6 5-11 16-17l148-79c48-26 72-61 72-105 0-66-51-110-128-110H96v101Z" fill="#050505" transform="translate(24 0)"/>
+      <path clip-path="url(#middle-slice)" d="M416 390H178c-48 0-82-30-82-73 0-31 17-55 50-72l148-78c15-8 22-17 22-28 0-18-17-28-45-28H85v57h171c13 0 20 4 20 12 0 6-5 11-16 17l-148 78c-48 25-72 60-72 105 0 66 51 111 128 111h248V390Z" fill="#050505" transform="translate(-28 0)"/>
+      <path clip-path="url(#bottom-slice)" d="M416 390H178c-48 0-82-30-82-73 0-31 17-55 50-72l148-78c15-8 22-17 22-28 0-18-17-28-45-28H85v57h171c13 0 20 4 20 12 0 6-5 11-16 17l-148 78c-48 25-72 60-72 105 0 66 51 111 128 111h248V390Z" fill="#050505" transform="translate(18 0)"/>
+    </g>
+    <path d="M72 260h116M322 260h118M122 184h78M314 184h78M134 330h96M306 330h74" fill="none" stroke="#fff" stroke-width="13" stroke-linecap="square"/>
+    <path d="M410 95 462 74l-23 52 37 7-74 89 20-64-37-7 25-56Z" fill="#fff"/>
+    <path d="M56 416 108 395l-23 52 37 7-74 89 20-64-37-7 25-56Z" fill="#fff" opacity=".92"/>
+  </g>
+</svg>

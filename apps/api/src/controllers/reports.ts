@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { supabaseAdmin } from '../services/supabase';
+import { createSupabaseUserClient, supabaseAdmin } from '../services/supabase';
 import { z } from 'zod';
 
 const DailyReportSchema = z.object({
@@ -19,9 +19,15 @@ const YearlyReportSchema = z.object({
   currency: z.string().min(3).max(3).optional(),
 });
 
-async function resolveCurrency(reqCurrency: string | undefined, userId: string): Promise<string> {
+type SupabaseReportsClient = Pick<typeof supabaseAdmin, 'from'>;
+
+async function resolveCurrency(
+  reqCurrency: string | undefined,
+  userId: string,
+  supabase: SupabaseReportsClient
+): Promise<string> {
   if (reqCurrency) return reqCurrency;
-  const { data } = await supabaseAdmin
+  const { data } = await supabase
     .from('user_currencies')
     .select('currency')
     .eq('user_id', userId)
@@ -162,10 +168,11 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: Next
   try {
     const { date, currency: reqCurrency } = DailyReportSchema.parse(req.query);
     const userId = req.user!.id;
-    const currency = await resolveCurrency(reqCurrency, userId);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const currency = await resolveCurrency(reqCurrency, userId, supabase);
 
     // Get current day expenses
-    const { data: expenses, error } = await supabaseAdmin
+    const { data: expenses, error } = await supabase
       .from('expenses')
       .select(`
         id, category_id, description, date, created_at, amount, currency, amounts,
@@ -182,7 +189,7 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: Next
     prevDate.setDate(prevDate.getDate() - 1);
     const prevDateStr = prevDate.toISOString().split('T')[0]!;
     
-    const { data: prevExpenses } = await supabaseAdmin
+    const { data: prevExpenses } = await supabase
       .from('expenses')
       .select('amounts')
       .eq('user_id', userId)
@@ -192,7 +199,7 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: Next
     const weekDates = getWeekDates(new Date(date));
     const weekDateStrings = weekDates.map(d => d.date);
     
-    const { data: weekExpenses } = await supabaseAdmin
+    const { data: weekExpenses } = await supabase
       .from('expenses')
       .select('date, amounts')
       .eq('user_id', userId)
@@ -277,7 +284,8 @@ export const getMonthlyReport = async (req: AuthRequest, res: Response, next: Ne
   try {
     const { year, month, currency: reqCurrency } = MonthlyReportSchema.parse(req.query);
     const userId = req.user!.id;
-    const currency = await resolveCurrency(reqCurrency, userId);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const currency = await resolveCurrency(reqCurrency, userId, supabase);
 
     const y = parseInt(year);
     const m = parseInt(month);
@@ -285,7 +293,7 @@ export const getMonthlyReport = async (req: AuthRequest, res: Response, next: Ne
     const endDate = new Date(Date.UTC(y, m, 0)).toISOString().split('T')[0]!;
 
     // Get current month expenses
-    const { data: expenses, error } = await supabaseAdmin
+    const { data: expenses, error } = await supabase
       .from('expenses')
       .select('id, category_id, date, amounts, categories (id, name, icon, color)')
       .eq('user_id', userId)
@@ -300,7 +308,7 @@ export const getMonthlyReport = async (req: AuthRequest, res: Response, next: Ne
     const prevStartDate = new Date(Date.UTC(prevYear, prevMonth - 1, 1)).toISOString().split('T')[0]!;
     const prevEndDate = new Date(Date.UTC(prevYear, prevMonth, 0)).toISOString().split('T')[0]!;
     
-    const { data: prevExpenses } = await supabaseAdmin
+    const { data: prevExpenses } = await supabase
       .from('expenses')
       .select('amounts')
       .eq('user_id', userId)
@@ -383,14 +391,15 @@ export const getYearlyReport = async (req: AuthRequest, res: Response, next: Nex
   try {
     const { year, currency: reqCurrency } = YearlyReportSchema.parse(req.query);
     const userId = req.user!.id;
-    const currency = await resolveCurrency(reqCurrency, userId);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const currency = await resolveCurrency(reqCurrency, userId, supabase);
 
     const y = parseInt(year);
     const startDate = new Date(Date.UTC(y, 0, 1)).toISOString().split('T')[0]!;
     const endDate = new Date(Date.UTC(y, 11, 31)).toISOString().split('T')[0]!;
 
     // Get current year expenses
-    const { data: expenses, error } = await supabaseAdmin
+    const { data: expenses, error } = await supabase
       .from('expenses')
       .select('id, category_id, date, amounts, categories (id, name, icon, color)')
       .eq('user_id', userId)
@@ -404,7 +413,7 @@ export const getYearlyReport = async (req: AuthRequest, res: Response, next: Nex
     const prevStartDate = new Date(Date.UTC(prevYear, 0, 1)).toISOString().split('T')[0]!;
     const prevEndDate = new Date(Date.UTC(prevYear, 11, 31)).toISOString().split('T')[0]!;
     
-    const { data: prevExpenses } = await supabaseAdmin
+    const { data: prevExpenses } = await supabase
       .from('expenses')
       .select('amounts')
       .eq('user_id', userId)

@@ -2,7 +2,7 @@ import React, { useState, useMemo, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
-import { useUserCurrencies } from '../../hooks/useUserCurrencies';
+import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { useAuth } from '../../hooks/useAuth';
 import api from '../../services/api';
 import { DEFAULT_CURRENCY } from '@swiftspend/types';
@@ -140,7 +140,7 @@ export default function CurrencyOnboardingPage() {
         currencies: selectedCodes,
         default_currency: defaultCurrency || selectedCodes[0],
       });
-      await queryClient.invalidateQueries({ queryKey: ['user-currencies'] });
+      await queryClient.invalidateQueries({ queryKey: USER_CURRENCIES_QUERY_KEY });
       // Navigate to /onboarding/categories (next onboarding step)
       navigate('/onboarding/categories');
     } catch (error: unknown) {

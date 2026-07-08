@@ -1,7 +1,7 @@
 import { Response, NextFunction } from 'express'
 import { z } from 'zod'
 import { AuthRequest } from '../middleware/auth'
-import { supabaseAdmin } from '../services/supabase'
+import { createSupabaseUserClient } from '../services/supabase'
 import { Currency } from '../types'
 import { ExchangeRateService } from '../services/exchangeRate'
 import type { RateSnapshot } from '@swiftspend/types'
@@ -23,7 +23,8 @@ const OnboardingSchema = z.object({
 export const getUserCurrencies = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id
-    const { data, error } = await supabaseAdmin
+    const supabase = createSupabaseUserClient(req.accessToken!)
+    const { data, error } = await supabase
       .from('user_currencies')
       .select('*')
       .eq('user_id', userId)
@@ -31,18 +32,19 @@ export const getUserCurrencies = async (req: AuthRequest, res: Response, next: N
 
     if (error) throw error
     
-    const needs_onboarding = !data || data.length === 0
-
     // Check if category onboarding is needed via the explicit flag in user_profiles
-    const { data: profile } = await supabaseAdmin
+    const { data: profile } = await supabase
       .from('user_profiles')
       .select('categories_onboarded_at')
       .eq('user_id', userId)
       .single()
 
+    const hasCompletedOnboarding = Boolean(profile?.categories_onboarded_at)
+    const needs_onboarding = !hasCompletedOnboarding && (!data || data.length === 0)
+
     // User needs category onboarding if they have currencies set up
     // but haven't completed the category onboarding step yet
-    const needs_category_onboarding = !needs_onboarding && (!profile || profile.categories_onboarded_at === null)
+    const needs_category_onboarding = !needs_onboarding && !hasCompletedOnboarding
 
     res.json({
       needs_onboarding,
@@ -58,13 +60,14 @@ export const createUserCurrency = async (req: AuthRequest, res: Response, next: 
   try {
     const { currency, is_default } = Schema.parse(req.body)
     const userId = req.user!.id
+    const supabase = createSupabaseUserClient(req.accessToken!)
 
-    const snapshot = await ExchangeRateService.getCachedRates()
+    const snapshot = await ExchangeRateService.getCachedRates(supabase)
     if (!snapshot.rates[currency as Currency]) {
       return res.status(400).json({ error: 'Currency not found in exchange rates' })
     }
 
-    const { data: existingCurrencies, error: extErr } = await supabaseAdmin
+    const { data: existingCurrencies, error: extErr } = await supabase
       .from('user_currencies')
       .select('currency, position')
       .eq('user_id', userId)
@@ -78,13 +81,13 @@ export const createUserCurrency = async (req: AuthRequest, res: Response, next: 
     const nextPosition = maxPosition + 1
 
     if (is_default) {
-      await supabaseAdmin
+      await supabase
         .from('user_currencies')
         .update({ is_default: false })
         .eq('user_id', userId)
     }
 
-    const { data: inserted, error: insertError } = await supabaseAdmin
+    const { data: inserted, error: insertError } = await supabase
       .from('user_currencies')
       .insert({
         user_id: userId,
@@ -98,7 +101,7 @@ export const createUserCurrency = async (req: AuthRequest, res: Response, next: 
     if (insertError) throw insertError
 
     // Backfill existing expenses (Using JS loop because Supabase JS cannot run raw SQL string UPDATEs)
-    const { data: expenses, error: expensesError } = await supabaseAdmin
+    const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
       .select('id, amount, currency, amounts, exchange_rate_snapshot')
       .eq('user_id', userId)
@@ -134,7 +137,7 @@ export const createUserCurrency = async (req: AuthRequest, res: Response, next: 
             [targetCurrency]: computed,
           }
 
-          const { error } = await supabaseAdmin
+          const { error } = await supabase
             .from('expenses')
             .update({ amounts: updatedAmounts })
             .eq('id', e.id)
@@ -155,25 +158,27 @@ export const onboardUserCurrencies = async (req: AuthRequest, res: Response, nex
   try {
     const { currencies, default_currency } = OnboardingSchema.parse(req.body)
     const userId = req.user!.id
+    const supabase = createSupabaseUserClient(req.accessToken!)
 
     if (!currencies.includes(default_currency)) {
       return res.status(400).json({ error: 'Default currency must be in your selected currencies' })
     }
 
-    const snapshot = await ExchangeRateService.getCachedRates()
+    const snapshot = await ExchangeRateService.getCachedRates(supabase)
     const invalidCodes = currencies.filter(code => !snapshot.rates[code])
     if (invalidCodes.length > 0) {
       return res.status(400).json({ error: `Invalid currency code: ${invalidCodes.join(', ')}` })
     }
 
-    const { count, error: countErr } = await supabaseAdmin
+    const { data: existingCurrencies, error: existingErr } = await supabase
       .from('user_currencies')
-      .select('*', { count: 'exact', head: true })
+      .select('*')
       .eq('user_id', userId)
+      .order('position', { ascending: true })
 
-    if (countErr) throw countErr
-    if (count !== null && count > 0) {
-      return res.status(409).json({ error: 'Currencies already set up' })
+    if (existingErr) throw existingErr
+    if (existingCurrencies && existingCurrencies.length > 0) {
+      return res.json({ currencies: existingCurrencies })
     }
 
     const rows = currencies.map((currency, index) => ({
@@ -183,7 +188,7 @@ export const onboardUserCurrencies = async (req: AuthRequest, res: Response, nex
       position: index
     }))
 
-    const { data, error: insertError } = await supabaseAdmin
+    const { data, error: insertError } = await supabase
       .from('user_currencies')
       .insert(rows)
       .select()
@@ -199,8 +204,9 @@ export const deleteUserCurrency = async (req: AuthRequest, res: Response, next: 
   try {
     const currency = req.params.currency as string
     const userId = req.user!.id
+    const supabase = createSupabaseUserClient(req.accessToken!)
 
-    const { data: existing, error } = await supabaseAdmin
+    const { data: existing, error } = await supabase
       .from('user_currencies')
       .select('id, currency, is_default')
       .eq('user_id', userId)
@@ -212,7 +218,7 @@ export const deleteUserCurrency = async (req: AuthRequest, res: Response, next: 
     if (target.is_default) return res.status(400).json({ error: 'Cannot delete default currency' })
     if (existing.length <= 1) return res.status(400).json({ error: 'Cannot delete last currency' })
 
-    const { error: delError } = await supabaseAdmin
+    const { error: delError } = await supabase
       .from('user_currencies')
       .delete()
       .eq('user_id', userId)
@@ -221,7 +227,7 @@ export const deleteUserCurrency = async (req: AuthRequest, res: Response, next: 
     if (delError) throw delError
 
     // Remove from JSONB (Using JS loop because Supabase JS cannot run raw SQL string UPDATEs)
-    const { data: expenses, error: expensesError } = await supabaseAdmin
+    const { data: expenses, error: expensesError } = await supabase
       .from('expenses')
       .select('id, amounts')
       .eq('user_id', userId)
@@ -235,7 +241,7 @@ export const deleteUserCurrency = async (req: AuthRequest, res: Response, next: 
             if (e.amounts && typeof e.amounts === 'object') {
               const amounts = { ...(e.amounts as Record<string, unknown>) }
               delete amounts[currency]
-              await supabaseAdmin
+              await supabase
                 .from('expenses')
                 .update({ amounts })
                 .eq('id', e.id)
@@ -256,8 +262,9 @@ export const setDefaultCurrency = async (req: AuthRequest, res: Response, next: 
   try {
     const currency = req.params.currency
     const userId = req.user!.id
+    const supabase = createSupabaseUserClient(req.accessToken!)
 
-    const { data: existing, error } = await supabaseAdmin
+    const { data: existing, error } = await supabase
       .from('user_currencies')
       .select('id, currency')
       .eq('user_id', userId)
@@ -268,12 +275,12 @@ export const setDefaultCurrency = async (req: AuthRequest, res: Response, next: 
       return res.status(404).json({ error: 'Not found' })
     }
 
-    await supabaseAdmin
+    await supabase
       .from('user_currencies')
       .update({ is_default: false })
       .eq('user_id', userId)
 
-    const { data, error: updError } = await supabaseAdmin
+    const { data, error: updError } = await supabase
       .from('user_currencies')
       .update({ is_default: true })
       .eq('user_id', userId)
@@ -293,8 +300,9 @@ export const updateCurrencyPosition = async (req: AuthRequest, res: Response, ne
     const currency = req.params.currency
     const { position: newPosition } = PositionSchema.parse(req.body)
     const userId = req.user!.id
+    const supabase = createSupabaseUserClient(req.accessToken!)
 
-    const { data: existing, error } = await supabaseAdmin
+    const { data: existing, error } = await supabase
       .from('user_currencies')
       .select('id, currency, position')
       .eq('user_id', userId)
@@ -316,14 +324,14 @@ export const updateCurrencyPosition = async (req: AuthRequest, res: Response, ne
     // Update all positions to ensure sequence is maintained
     await Promise.all(
       currencies.map((c, index) => 
-        supabaseAdmin
+        supabase
           .from('user_currencies')
           .update({ position: index })
           .eq('id', c.id)
       )
     )
 
-    const { data: finalCurrencies, error: fetchErr } = await supabaseAdmin
+    const { data: finalCurrencies, error: fetchErr } = await supabase
       .from('user_currencies')
       .select('*')
       .eq('user_id', userId)

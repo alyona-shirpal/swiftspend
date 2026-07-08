@@ -32,6 +32,7 @@ export const requireAuth = async (req: AuthRequest, res: Response, next: NextFun
       email: user.email,
       created_at: user.created_at,
     };
+    req.accessToken = token;
 
     next();
   } catch (error) {

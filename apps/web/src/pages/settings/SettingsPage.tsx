@@ -21,7 +21,9 @@ import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
 import { supabase } from '../../services/supabase.ts';
+import { clearPersistedQueryCache } from '../../services/queryCachePersister';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
+import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
 
 // --- Types ---
 interface Currency {
@@ -89,6 +91,7 @@ export const SettingsPage = () => {
   const queryClient = useQueryClient();
   const [passwordPrompt, setPasswordPrompt] = useState(false);
   const [password, setPassword] = useState('');
+  const [isClearingCache, setIsClearingCache] = useState(false);
   
   // Add Currency Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -123,13 +126,7 @@ export const SettingsPage = () => {
     },
   });
 
-  const { data: currenciesData, isLoading: isCurrenciesLoading } = useQuery({
-    queryKey: ['userCurrencies'],
-    queryFn: async () => {
-      const res = await api.get('/user-currencies');
-      return res.data;
-    },
-  });
+  const { data: currenciesData, isLoading: isCurrenciesLoading } = useUserCurrencies();
 
   const { data: categoriesData } = useQuery({
     queryKey: ['categories'],
@@ -164,7 +161,7 @@ export const SettingsPage = () => {
   const addCurrencyMutation = useMutation({
     mutationFn: (code: string) => api.post('/user-currencies', { currency: code }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userCurrencies'] });
+      queryClient.invalidateQueries({ queryKey: USER_CURRENCIES_QUERY_KEY });
       setIsAddModalOpen(false);
       setAddSearchQuery('');
       toast.success('Currency added successfully');
@@ -179,7 +176,7 @@ export const SettingsPage = () => {
   const setDefaultCurrencyMutation = useMutation({
     mutationFn: (currencyCode: string) => api.put(`/user-currencies/${currencyCode}/default`),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['userCurrencies'] });
+      queryClient.invalidateQueries({ queryKey: USER_CURRENCIES_QUERY_KEY });
       toast.success('Default currency updated');
     },
     onError: () => toast.error('Failed to update default currency'),
@@ -188,7 +185,7 @@ export const SettingsPage = () => {
   const updateCurrencyPositionMutation = useMutation({
     mutationFn: ({ code, position }: { code: string, position: number }) => 
       api.put(`/user-currencies/${code}/position`, { position }),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['userCurrencies'] }),
+    onSuccess: () => queryClient.invalidateQueries({ queryKey: USER_CURRENCIES_QUERY_KEY }),
     onError: () => toast.error('Failed to save currency order'),
   });
 
@@ -211,6 +208,20 @@ export const SettingsPage = () => {
     if (window.confirm("You will be signed out of your account.")) {
       await supabase.auth.signOut();
       navigate('/login');
+    }
+  };
+
+  const clearCache = async () => {
+    setIsClearingCache(true);
+
+    try {
+      queryClient.removeQueries();
+      await clearPersistedQueryCache();
+      toast.success('Cache cleared');
+    } catch {
+      toast.error('Failed to clear cache');
+    } finally {
+      setIsClearingCache(false);
     }
   };
 
@@ -373,6 +384,20 @@ export const SettingsPage = () => {
                 <option value="Sunday">Sunday</option>
               </select>
             </div>
+          </div>
+        </section>
+
+        {/* Storage Section */}
+        <section>
+          <h3 className="font-display font-medium text-headline-sm text-primary mb-4">Storage</h3>
+          <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
+            <button
+              onClick={clearCache}
+              disabled={isClearingCache}
+              className="w-full py-4 text-center font-body text-sm font-semibold text-primary bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50"
+            >
+              {isClearingCache ? 'Clearing...' : 'Clear Cache'}
+            </button>
           </div>
         </section>
 

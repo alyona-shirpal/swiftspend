@@ -1,6 +1,6 @@
 import { Response, NextFunction } from 'express';
 import { AuthRequest } from '../middleware/auth';
-import { supabaseAdmin } from '../services/supabase';
+import { createSupabaseUserClient } from '../services/supabase';
 import { RecentExpenseCategoryJoinRow, CategoryRow } from '../types/supabase';
 import { z } from 'zod';
 
@@ -33,7 +33,8 @@ const DEFAULT_CATEGORIES = [
 
 export const getCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { data, error } = await supabaseAdmin
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const { data, error } = await supabase
       .from('categories')
       .select('*')
       .eq('user_id', req.user!.id)
@@ -51,7 +52,7 @@ export const getCategories = async (req: AuthRequest, res: Response, next: NextF
         ...cat
       }));
 
-      const { data: insertedData, error: insertError } = await supabaseAdmin
+      const { data: insertedData, error: insertError } = await supabase
         .from('categories')
         .insert(categoriesToInsert)
         .select();
@@ -74,8 +75,9 @@ export const getCategories = async (req: AuthRequest, res: Response, next: NextF
 export const createCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = CreateCategorySchema.parse(req.body);
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('categories')
       .insert({
         user_id: req.user!.id,
@@ -95,9 +97,10 @@ export const updateCategory = async (req: AuthRequest, res: Response, next: Next
   try {
     const validated = CreateCategorySchema.partial().parse(req.body);
     const { id } = req.params;
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
     // Check ownership
-    const { data: category } = await supabaseAdmin
+    const { data: category } = await supabase
       .from('categories')
       .select('user_id')
       .eq('id', id)
@@ -106,7 +109,7 @@ export const updateCategory = async (req: AuthRequest, res: Response, next: Next
     if (!category) return res.status(404).json({ error: 'Not found' });
     if (category.user_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
 
-    const { data, error } = await supabaseAdmin
+    const { data, error } = await supabase
       .from('categories')
       .update(validated)
       .eq('id', id)
@@ -123,8 +126,9 @@ export const updateCategory = async (req: AuthRequest, res: Response, next: Next
 export const deleteCategory = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
-    const { data: category } = await supabaseAdmin
+    const { data: category } = await supabase
       .from('categories')
       .select('user_id')
       .eq('id', id)
@@ -133,7 +137,7 @@ export const deleteCategory = async (req: AuthRequest, res: Response, next: Next
     if (!category) return res.status(404).json({ error: 'Not found' });
     if (category.user_id !== req.user!.id) return res.status(403).json({ error: 'Forbidden' });
 
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('categories')
       .delete()
       .eq('id', id);
@@ -148,7 +152,8 @@ export const deleteCategory = async (req: AuthRequest, res: Response, next: Next
 export const getRecentCategories = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     // Get unique categories from recent expenses
-    const { data, error } = await supabaseAdmin
+    const supabase = createSupabaseUserClient(req.accessToken!);
+    const { data, error } = await supabase
       .from('expenses')
       .select(`
         category_id,
@@ -186,9 +191,10 @@ export const getRecentCategories = async (req: AuthRequest, res: Response, next:
 export const completeCategoryOnboarding = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const userId = req.user!.id;
+    const supabase = createSupabaseUserClient(req.accessToken!);
 
     // Upsert into user_profiles to mark category onboarding as complete
-    const { error } = await supabaseAdmin
+    const { error } = await supabase
       .from('user_profiles')
       .upsert(
         { user_id: userId, categories_onboarded_at: new Date().toISOString() },

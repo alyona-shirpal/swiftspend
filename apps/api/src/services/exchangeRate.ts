@@ -1,5 +1,5 @@
 import axios from 'axios';
-import { supabaseAdmin } from './supabase';
+import { hasSupabaseServiceRoleKey, supabaseAdmin } from './supabase';
 import { Currency } from '../types';
 import type { RateSnapshot, CurrencyAmounts } from '@swiftspend/types';
 
@@ -8,6 +8,8 @@ interface ExchangeRateAPIResponse {
   base_code: string;
   rates: Record<string, number>;
 }
+
+type SupabaseExchangeRateClient = Pick<typeof supabaseAdmin, 'from'>;
 
 export class ExchangeRateService {
   // Using open.er-api.com with EUR base
@@ -25,8 +27,10 @@ export class ExchangeRateService {
   /**
    * Check cache or fetch new ones if stale
    */
-  public static async getCachedRates(): Promise<RateSnapshot> {
-    const { data, error } = await supabaseAdmin
+  public static async getCachedRates(
+    supabase: SupabaseExchangeRateClient = supabaseAdmin
+  ): Promise<RateSnapshot> {
+    const { data, error } = await supabase
       .from('exchange_rate_cache')
       .select('*')
       .order('fetched_at', { ascending: false })
@@ -51,6 +55,10 @@ export class ExchangeRateService {
 
     // Otherwise, fetch new rates
     const newRates = await this.fetchRatesFromAPI();
+
+    if (!hasSupabaseServiceRoleKey) {
+      return { base: Currency.EUR as unknown as RateSnapshot['base'], rates: newRates, fetched_at: now.toISOString() };
+    }
     
     // Store in cache
     const { data: inserted, error: insertError } = await supabaseAdmin

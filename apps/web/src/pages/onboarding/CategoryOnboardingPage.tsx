@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import { Category } from '@swiftspend/types';
 import api from '../../services/api';
-import { useUserCurrencies } from '../../hooks/useUserCurrencies';
+import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { useAuth } from '../../hooks/useAuth';
 
 interface CategoryState extends Omit<Category, 'user_id' | 'created_at'> {
@@ -24,6 +25,7 @@ const COLOR_MAP: Record<string, { bg: string; text: string }> = {
 
 export default function CategoryOnboardingPage() {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const { user } = useAuth();
   const { data: onboardingData, isLoading: onboardingLoading } = useUserCurrencies();
 
@@ -139,33 +141,36 @@ export default function CategoryOnboardingPage() {
     setIsSubmitting(true);
     setSubmitError(null);
 
-    const changedCategories = categories.filter(c => {
-      const initial = initialCategories.find(i => i.id === c.id);
-      return initial && initial.is_hidden !== c.is_hidden;
-    });
+    try {
+      const changedCategories = categories.filter(c => {
+        const initial = initialCategories.find(i => i.id === c.id);
+        return initial && initial.is_hidden !== c.is_hidden;
+      });
 
-    if (changedCategories.length === 0) {
-      navigate('/');
-      return;
-    }
+      const failedNames: string[] = [];
+      await Promise.allSettled(
+        changedCategories.map(async (c) => {
+          try {
+            await api.put(`/categories/${c.id}`, { is_hidden: c.is_hidden });
+          } catch (err) {
+            failedNames.push(c.name);
+            throw err;
+          }
+        })
+      );
 
-    const failedNames: string[] = [];
-    await Promise.allSettled(
-      changedCategories.map(async (c) => {
-        try {
-          await api.put(`/categories/${c.id}`, { is_hidden: c.is_hidden });
-        } catch (err) {
-          failedNames.push(c.name);
-          throw err;
-        }
-      })
-    );
+      if (failedNames.length > 0) {
+        setSubmitError(`Could not update: ${failedNames.join(', ')}. Changes may not be saved.`);
+        setIsSubmitting(false);
+        return;
+      }
 
-    if (failedNames.length > 0) {
-      setSubmitError(`Could not update: ${failedNames.join(', ')}. Changes may not be saved.`);
-      setIsSubmitting(false);
-    } else {
       await api.post('/categories/complete-onboarding');
+      await queryClient.invalidateQueries({ queryKey: USER_CURRENCIES_QUERY_KEY });
+      navigate('/', { replace: true });
+    } catch (err) {
+      setSubmitError('Could not complete setup. Please try again.');
+      setIsSubmitting(false);
     }
   };
 

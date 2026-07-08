@@ -1,13 +1,44 @@
-import { useQuery } from '@tanstack/react-query';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import api from '../services/api';
 import { RecentExpense, Category } from '../types/api';
 import { supabase } from '../services/supabase';
 import { Currency, Expense } from '@swiftspend/types';
 
-export function useAllExpenses() {
-  return useQuery({
-    queryKey: ['expenses', 'all'],
-    queryFn: async (): Promise<RecentExpense[]> => {
+const PAGE_SIZE = 50;
+
+export interface ExpensesPage {
+  expenses: RecentExpense[];
+  total: number;
+  page: number;
+  limit: number;
+}
+
+interface UseAllExpensesParams {
+  search?: string;
+  categoryId?: string;
+}
+
+function mapExpense(e: Expense, categoryMap: Map<string, Category>): RecentExpense {
+  return {
+    id: e.id,
+    description: e.description,
+    date: e.date,
+    time: e.created_at || e.date,
+    amount: e.amount,
+    currency: e.currency as Currency,
+    amounts: e.amounts || {},
+    category: e.category_id ? categoryMap.get(e.category_id) || null : null,
+  };
+}
+
+export function useAllExpenses(params: UseAllExpensesParams = {}) {
+  const search = params.search?.trim() ?? '';
+  const categoryId = params.categoryId && params.categoryId !== 'all' ? params.categoryId : undefined;
+
+  return useInfiniteQuery({
+    queryKey: ['expenses', 'all', { search, categoryId }],
+    initialPageParam: 1,
+    queryFn: async ({ pageParam }): Promise<ExpensesPage> => {
       // Fetch categories first to resolve category names/icons/colors
       let categories: Category[] = [];
       try {
@@ -24,7 +55,7 @@ export function useAllExpenses() {
         const yesterday = new Date(Date.now() - 86400000).toISOString().split('T')[0]!;
         const twoDaysAgo = new Date(Date.now() - 172800000).toISOString().split('T')[0]!;
         
-        return [
+        const mockExpenses: RecentExpense[] = [
           {
             id: '1',
             description: 'Lunch at Cafe Milano',
@@ -76,42 +107,53 @@ export function useAllExpenses() {
             category: { id: '4', name: 'Entertainment', icon: 'movie', color: '#96CEB4' }
           }
         ];
+
+        const filtered = mockExpenses.filter((expense) => {
+          const matchesSearch =
+            !search ||
+            expense.description?.toLowerCase().includes(search.toLowerCase()) ||
+            expense.category?.name.toLowerCase().includes(search.toLowerCase());
+          const matchesCategory = !categoryId || expense.category?.id === categoryId;
+
+          return matchesSearch && matchesCategory;
+        });
+
+        const start = (pageParam - 1) * PAGE_SIZE;
+        const expenses = filtered.slice(start, start + PAGE_SIZE);
+
+        return {
+          expenses,
+          total: filtered.length,
+          page: pageParam,
+          limit: PAGE_SIZE,
+        };
       }
 
-      // Fetch all pages of expenses to get the full list
-      const allExpenses: Expense[] = [];
-      let page = 1;
-      const limit = 100;
-      let hasMore = true;
+      const searchParams = new URLSearchParams({
+        page: String(pageParam),
+        limit: String(PAGE_SIZE),
+      });
+      if (search) searchParams.set('search', search);
+      if (categoryId) searchParams.set('category_id', categoryId);
 
-      while (hasMore) {
-        const { data } = await api.get(`/expenses?page=${page}&limit=${limit}`);
-        allExpenses.push(...data.data);
-        if (allExpenses.length >= data.metadata.total || data.data.length === 0) {
-          hasMore = false;
-        } else {
-          page++;
-        }
-      }
-
-      // Map backend Expense to RecentExpense shape and sort from recent to older by date/time
-      const mapped = allExpenses.map((e: Expense) => ({
-        id: e.id,
-        description: e.description,
-        date: e.date,
-        time: e.created_at || e.date, // fallback
-        amount: e.amount,
-        currency: e.currency as Currency,
-        amounts: e.amounts || {},
-        category: e.category_id ? categoryMap.get(e.category_id) || null : null
-      }));
-
-      // Sort by date (descending), then by time/created_at (descending)
-      return mapped.sort((a, b) => {
+      const { data } = await api.get(`/expenses?${searchParams}`);
+      const mapped = (data.data as Expense[]).map((expense) => mapExpense(expense, categoryMap));
+      const expenses = mapped.sort((a, b) => {
         const dateA = new Date(`${a.date}T${a.time.includes('T') ? a.time.split('T')[1] : '00:00:00'}`);
         const dateB = new Date(`${b.date}T${b.time.includes('T') ? b.time.split('T')[1] : '00:00:00'}`);
         return dateB.getTime() - dateA.getTime();
       });
+
+      return {
+        expenses,
+        total: data.metadata.total,
+        page: data.metadata.page,
+        limit: data.metadata.limit,
+      };
+    },
+    getNextPageParam: (lastPage) => {
+      const loaded = lastPage.page * lastPage.limit;
+      return loaded < lastPage.total && lastPage.expenses.length > 0 ? lastPage.page + 1 : undefined;
     },
     staleTime: 1 * 60 * 1000,
   });
