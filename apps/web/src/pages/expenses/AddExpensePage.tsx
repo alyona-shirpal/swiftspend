@@ -34,7 +34,7 @@ const NOTE_DRAFT_KEY = 'swiftspend.add-expense.note';
 const AMOUNT_DRAFT_KEY = 'swiftspend.add-expense.amount';
 const DATE_DRAFT_KEY = 'swiftspend.add-expense.date';
 const CURRENCY_DRAFT_KEY = 'swiftspend.add-expense.currency';
-const QUICK_CATEGORY_PAGE_SIZE = 15;
+const QUICK_CATEGORY_PAGE_SIZE = 12;
 
 export const AddExpensePage: React.FC = () => {
   const navigate = useNavigate();
@@ -320,10 +320,7 @@ export const AddExpensePage: React.FC = () => {
           </section>
 
           <section className="mb-2 min-h-0 flex-1 overflow-hidden md:mb-4">
-            <div className="mb-1.5 flex items-end justify-between md:mb-3">
-              <h2 className="text-[9px] font-bold uppercase tracking-[0.2em] text-on-surface-variant md:text-[10px]">
-                Quick Category
-              </h2>
+            <div className="mb-1.5 flex justify-end md:mb-3">
               <button
                 type="button"
                 onClick={() => navigate('/expenses/categories')}
@@ -340,7 +337,7 @@ export const AddExpensePage: React.FC = () => {
                   : [[]]
                 ).map((page, pageIndex) => (
                   <div key={pageIndex} className="min-w-0 flex-[0_0_100%]">
-                    <div className="grid grid-cols-5 grid-rows-3 gap-1.5 md:gap-2">
+                    <div className="grid grid-cols-4 grid-rows-3 gap-1.5 md:gap-2">
                       {page.map((category) => {
                         const isActive = category.id === selectedCategoryId;
                         return (
