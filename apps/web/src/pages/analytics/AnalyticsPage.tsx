@@ -7,12 +7,16 @@ import { AnalyticsCategoryBreakdown } from '../../components/analytics/Analytics
 import { AnalyticsCategoryTrends } from '../../components/analytics/AnalyticsCategoryTrends';
 import { AnalyticsTopMerchants } from '../../components/analytics/AnalyticsTopMerchants';
 import { AnalyticsDensityCalendar } from '../../components/analytics/AnalyticsDensityCalendar';
+import { BottomNavigation } from '../../components/layout/BottomNavigation';
 import { useAnalyticsData } from '../../hooks/useAnalyticsData';
 import { useDensityCalendar } from '../../hooks/useDensityCalendar';
 import { useCategories } from '../../hooks/useCategories';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { ParsedSearch, QuickFilter } from '../../types/analytics';
-import { getQuickFilterSearch, parseSearchInput } from '../../utils/parseSearchInput';
+import {
+  getQuickFilterSearch,
+  parseSearchInput,
+} from '../../utils/parseSearchInput';
 import {
   addMonths,
   canGoNext,
@@ -27,13 +31,21 @@ export const AnalyticsPage: React.FC = () => {
   const { data: userCurrencies } = useUserCurrencies();
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [activeQuickFilter, setActiveQuickFilter] = useState<QuickFilter>('this-month');
-  const [activeSearch, setActiveSearch] = useState<ParsedSearch>(() => getQuickFilterSearch('this-month'));
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(Currency.EUR);
-  const [calendarView, setCalendarView] = useState(() => getInitialCalendarMonth(getQuickFilterSearch('this-month')));
+  const [activeQuickFilter, setActiveQuickFilter] =
+    useState<QuickFilter>('this-month');
+  const [activeSearch, setActiveSearch] = useState<ParsedSearch>(() =>
+    getQuickFilterSearch('this-month'),
+  );
+  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(
+    Currency.EUR,
+  );
+  const [calendarView, setCalendarView] = useState(() =>
+    getInitialCalendarMonth(getQuickFilterSearch('this-month')),
+  );
 
-  const currencyOptions =
-    userCurrencies?.currencies?.map((uc) => uc.currency as Currency) ?? [Currency.EUR];
+  const currencyOptions = userCurrencies?.currencies?.map(
+    (uc) => uc.currency as Currency,
+  ) ?? [Currency.EUR];
 
   React.useEffect(() => {
     if (userCurrencies?.currencies?.[0]?.currency) {
@@ -44,15 +56,19 @@ export const AnalyticsPage: React.FC = () => {
   const { data, isLoading, isFetching, error, refetch } = useAnalyticsData(
     activeSearch,
     selectedCurrency,
-    categories
+    categories,
   );
 
   React.useEffect(() => {
     setCalendarView(getInitialCalendarMonth(activeSearch));
   }, [activeSearch]);
 
-  const calendarBounds = useMemo(() => getCalendarBounds(activeSearch), [activeSearch]);
-  const highlightDate = activeSearch.type === 'date' ? activeSearch.date : undefined;
+  const calendarBounds = useMemo(
+    () => getCalendarBounds(activeSearch),
+    [activeSearch],
+  );
+  const highlightDate =
+    activeSearch.type === 'date' ? activeSearch.date : undefined;
 
   const {
     data: densityCalendar,
@@ -64,7 +80,7 @@ export const AnalyticsPage: React.FC = () => {
     selectedCurrency,
     activeSearch.category?.id,
     highlightDate,
-    categories
+    categories,
   );
 
   const showLoading = isLoading || isFetching;
@@ -89,7 +105,10 @@ export const AnalyticsPage: React.FC = () => {
     setActiveSearch(getQuickFilterSearch('this-month'));
   };
 
-  const displayLabel = useMemo(() => activeSearch?.label ?? 'This Month', [activeSearch]);
+  const displayLabel = useMemo(
+    () => activeSearch?.label ?? 'This Month',
+    [activeSearch],
+  );
 
   return (
     <div className="bg-surface text-on-surface min-h-screen pb-32">
@@ -99,7 +118,9 @@ export const AnalyticsPage: React.FC = () => {
           onClick={() => navigate('/reports/daily')}
           className="p-2 rounded-full hover:bg-surface-container-low/50 transition-colors"
         >
-          <span className="material-symbols-outlined text-black">arrow_back</span>
+          <span className="material-symbols-outlined text-black">
+            arrow_back
+          </span>
         </button>
         <h1 className="font-display text-sm uppercase font-black tracking-tighter text-primary">
           Analytics
@@ -134,8 +155,12 @@ export const AnalyticsPage: React.FC = () => {
 
         {error && (
           <section className="bg-error-container/30 border border-error/20 rounded-xl p-4 text-center">
-            <span className="material-symbols-outlined text-error mb-2">error</span>
-            <p className="text-sm text-on-surface mb-3">Failed to load analytics data.</p>
+            <span className="material-symbols-outlined text-error mb-2">
+              error
+            </span>
+            <p className="text-sm text-on-surface mb-3">
+              Failed to load analytics data.
+            </p>
             <button
               type="button"
               onClick={() => refetch()}
@@ -148,11 +173,15 @@ export const AnalyticsPage: React.FC = () => {
 
         {!error && !showLoading && data && !data.hasData && (
           <section className="flex flex-col items-center justify-center py-16 text-center">
-            <span className="material-symbols-outlined text-5xl text-secondary mb-4">search_off</span>
+            <span className="material-symbols-outlined text-5xl text-secondary mb-4">
+              search_off
+            </span>
             <h2 className="text-lg font-bold text-primary mb-2">
               No expenses found for &ldquo;{displayLabel}&rdquo;
             </h2>
-            <p className="text-sm text-secondary">Try a different search or quick filter.</p>
+            <p className="text-sm text-secondary">
+              Try a different search or quick filter.
+            </p>
           </section>
         )}
 
@@ -176,8 +205,12 @@ export const AnalyticsPage: React.FC = () => {
               />
             )}
 
-            {(showLoading || (data?.showTrends && (data?.trends?.length ?? 0) > 0)) && (
-              <AnalyticsCategoryTrends trends={data?.trends ?? []} isLoading={showLoading} />
+            {(showLoading ||
+              (data?.showTrends && (data?.trends?.length ?? 0) > 0)) && (
+              <AnalyticsCategoryTrends
+                trends={data?.trends ?? []}
+                isLoading={showLoading}
+              />
             )}
 
             <AnalyticsTopMerchants
@@ -185,7 +218,6 @@ export const AnalyticsPage: React.FC = () => {
               currency={selectedCurrency}
               isLoading={showLoading}
             />
-
           </>
         )}
 
@@ -194,45 +226,19 @@ export const AnalyticsPage: React.FC = () => {
           viewMonth={calendarView}
           canGoPrev={canGoPrev(calendarView, calendarBounds.min)}
           canGoNext={canGoNext(calendarView, calendarBounds.max)}
-          onPrevMonth={() => setCalendarView((v) => addMonths(v.year, v.month, -1))}
-          onNextMonth={() => setCalendarView((v) => addMonths(v.year, v.month, 1))}
+          onPrevMonth={() =>
+            setCalendarView((v) => addMonths(v.year, v.month, -1))
+          }
+          onNextMonth={() =>
+            setCalendarView((v) => addMonths(v.year, v.month, 1))
+          }
           highlightDate={highlightDate}
           currency={selectedCurrency}
           isLoading={showDensityLoading}
         />
       </main>
 
-      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-end px-10 py-3 pb-safe bg-surface-container-lowest/80 backdrop-blur-xl border-t border-outline-variant/10">
-        <button
-          type="button"
-          onClick={() => navigate('/dashboard')}
-          className="flex flex-col items-center justify-center text-on-surface-variant hover:text-[#10B981] transition-colors"
-        >
-          <span className="material-symbols-outlined text-[28px]">home</span>
-          <span className="font-label text-[10px] font-medium uppercase tracking-widest mt-1">Home</span>
-        </button>
-        <div className="pb-1">
-          <button
-            type="button"
-            onClick={() => navigate('/expenses/new')}
-            className="scale-125 bg-[#10B981] text-on-primary rounded-full p-3 active:scale-90 transition-transform shadow-xl shadow-[#10B981]/30 flex items-center justify-center"
-          >
-            <span className="material-symbols-outlined text-[32px]">add</span>
-          </button>
-        </div>
-        <button
-          type="button"
-          className="flex flex-col items-center justify-center text-[#10B981] font-bold transition-colors"
-        >
-          <span
-            className="material-symbols-outlined text-[28px]"
-            style={{ fontVariationSettings: "'FILL' 1" }}
-          >
-            paid
-          </span>
-          <span className="font-label text-[10px] uppercase tracking-widest mt-1">Analytics</span>
-        </button>
-      </nav>
+      <BottomNavigation />
     </div>
   );
 };

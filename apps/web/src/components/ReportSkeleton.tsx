@@ -20,7 +20,10 @@ export const ReportSkeleton: React.FC = () => {
         <div className="pt-4">
           <div className="bg-surface-container-low p-1 flex rounded-lg">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="flex-1 h-8 bg-surface-container-highest rounded-md animate-pulse"></div>
+              <div
+                key={i}
+                className="flex-1 h-8 bg-surface-container-highest rounded-md animate-pulse"
+              ></div>
             ))}
           </div>
         </div>
@@ -30,7 +33,10 @@ export const ReportSkeleton: React.FC = () => {
           <div className="w-32 h-4 bg-surface-container-highest rounded animate-pulse mb-4"></div>
           <div className="flex gap-2 mb-4">
             {[1, 2, 3, 4].map((i) => (
-              <div key={i} className="flex-1 h-8 bg-surface-container-highest rounded-md animate-pulse"></div>
+              <div
+                key={i}
+                className="flex-1 h-8 bg-surface-container-highest rounded-md animate-pulse"
+              ></div>
             ))}
           </div>
           <div className="flex items-baseline gap-4">
@@ -50,7 +56,10 @@ export const ReportSkeleton: React.FC = () => {
             <div className="flex items-end justify-between h-40 px-2">
               {[1, 2, 3, 4, 5, 6, 7].map((i) => (
                 <div key={i} className="flex flex-col items-center gap-2">
-                  <div className="w-2 bg-surface-container-highest rounded-full animate-pulse" style={{height: `${Math.random() * 100 + 20}px`}}></div>
+                  <div
+                    className="w-2 bg-surface-container-highest rounded-full animate-pulse"
+                    style={{ height: `${Math.random() * 100 + 20}px` }}
+                  ></div>
                   <div className="w-3 h-3 bg-surface-container-highest rounded animate-pulse"></div>
                 </div>
               ))}
@@ -87,7 +96,10 @@ export const ReportSkeleton: React.FC = () => {
                   </div>
                   <div className="flex items-center gap-4">
                     <div className="flex-1 h-1.5 bg-surface-container-highest rounded-full overflow-hidden">
-                      <div className="h-full bg-surface-container-high rounded-full animate-pulse" style={{width: `${Math.random() * 80 + 20}%`}}></div>
+                      <div
+                        className="h-full bg-surface-container-high rounded-full animate-pulse"
+                        style={{ width: `${Math.random() * 80 + 20}%` }}
+                      ></div>
                     </div>
                     <div className="w-8 h-3 bg-surface-container-highest rounded animate-pulse"></div>
                   </div>
@@ -99,17 +111,11 @@ export const ReportSkeleton: React.FC = () => {
       </main>
 
       {/* Bottom Navigation Skeleton */}
-      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 py-3 pb-safe bg-[#f2f4f6] border-t border-outline-variant/10">
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-6 h-6 bg-surface-container-highest rounded animate-pulse"></div>
-          <div className="w-8 h-3 bg-surface-container-highest rounded animate-pulse mt-1"></div>
-        </div>
-        <div className="relative -top-6">
-          <div className="w-16 h-16 bg-surface-container-highest rounded-full animate-pulse"></div>
-        </div>
-        <div className="flex flex-col items-center justify-center">
-          <div className="w-6 h-6 bg-surface-container-highest rounded animate-pulse"></div>
-          <div className="w-8 h-3 bg-surface-container-highest rounded animate-pulse mt-1"></div>
+      <nav className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe pt-2">
+        <div className="mx-auto grid h-[76px] max-w-md grid-cols-[1fr_auto_1fr] items-center rounded-[28px] border border-white bg-surface-container-lowest px-3 shadow-[0_-16px_40px_rgba(25,28,30,0.12),0_2px_0_rgba(255,255,255,0.9)_inset]">
+          <div className="mx-auto h-14 min-w-[96px] rounded-[22px] bg-surface-container-highest animate-pulse"></div>
+          <div className="mx-1 h-16 w-16 rounded-[24px] bg-surface-container-highest animate-pulse ring-4 ring-surface-container-lowest"></div>
+          <div className="mx-auto h-14 min-w-[96px] rounded-[22px] bg-surface-container-highest animate-pulse"></div>
         </div>
       </nav>
     </div>

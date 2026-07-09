@@ -3,6 +3,7 @@ import { Currency } from '@swiftspend/types';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import useEmblaCarousel from 'embla-carousel-react';
+import { AnimatedBrandText } from '../../components/layout/AnimatedBrandText';
 import { useAddExpense } from '../../hooks/useAddExpense';
 import { useCategories } from '../../hooks/useCategories';
 import { useRecentCategories } from '../../hooks/useRecentCategories';
@@ -250,7 +251,7 @@ export const AddExpensePage: React.FC = () => {
                 <span className="material-symbols-outlined text-sm">close</span>
               </button>
               <h1 className="text-base font-black uppercase tracking-widest text-primary md:text-xl">
-                SwiftSpend
+                <AnimatedBrandText compact />
               </h1>
             </div>
             <button

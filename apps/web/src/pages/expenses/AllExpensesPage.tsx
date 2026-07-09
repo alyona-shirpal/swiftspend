@@ -9,10 +9,16 @@ import { useUserCurrencies, UserCurrency } from '../../hooks/useUserCurrencies';
 import { useDeleteExpense } from '../../hooks/useDeleteExpense';
 import { useUpdateExpense } from '../../hooks/useUpdateExpense';
 import { ExpenseRow } from '../../components/dashboard/ExpenseRow';
+import { BottomNavigation } from '../../components/layout/BottomNavigation';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { RecentExpense } from '../../types/api';
 
-const CURRENCY_OPTIONS = [Currency.USD, Currency.EUR, Currency.ALL, Currency.UAH];
+const CURRENCY_OPTIONS = [
+  Currency.USD,
+  Currency.EUR,
+  Currency.ALL,
+  Currency.UAH,
+];
 
 type ExpensesListItem =
   | { type: 'date'; id: string; date: string }
@@ -28,8 +34,10 @@ export const AllExpensesPage: React.FC = () => {
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>('all');
-  const [expensePendingDelete, setExpensePendingDelete] = useState<RecentExpense | null>(null);
-  const [expensePendingEdit, setExpensePendingEdit] = useState<RecentExpense | null>(null);
+  const [expensePendingDelete, setExpensePendingDelete] =
+    useState<RecentExpense | null>(null);
+  const [expensePendingEdit, setExpensePendingEdit] =
+    useState<RecentExpense | null>(null);
   const [editAmount, setEditAmount] = useState('');
   const [editCurrency, setEditCurrency] = useState<Currency>(Currency.EUR);
   const [editCategoryId, setEditCategoryId] = useState('');
@@ -47,11 +55,12 @@ export const AllExpensesPage: React.FC = () => {
     search: searchQuery,
     categoryId: selectedCategoryId,
   });
-  
+
   // Default to user's first currency (or EUR as fallback)
   const defaultCurrency =
     (userCurrencies?.currencies?.[0]?.currency as Currency) ?? Currency.EUR;
-  const [selectedCurrency, setSelectedCurrency] = useState<Currency>(defaultCurrency);
+  const [selectedCurrency, setSelectedCurrency] =
+    useState<Currency>(defaultCurrency);
 
   // Sync to user's default once loaded
   React.useEffect(() => {
@@ -60,7 +69,10 @@ export const AllExpensesPage: React.FC = () => {
     }
   }, [userCurrencies]);
 
-  const expenses = useMemo(() => data?.pages.flatMap((page) => page.expenses) ?? [], [data]);
+  const expenses = useMemo(
+    () => data?.pages.flatMap((page) => page.expenses) ?? [],
+    [data],
+  );
   const totalExpenses = data?.pages[0]?.total ?? 0;
 
   const listItems = useMemo<ExpensesListItem[]>(() => {
@@ -88,7 +100,8 @@ export const AllExpensesPage: React.FC = () => {
 
   const loadedTotalSpent = useMemo(() => {
     return expenses.reduce((sum, e) => {
-      const amount = e.amounts?.[selectedCurrency] ?? e.amounts?.[Currency.EUR] ?? 0;
+      const amount =
+        e.amounts?.[selectedCurrency] ?? e.amounts?.[Currency.EUR] ?? 0;
       return sum + amount;
     }, 0);
   }, [expenses, selectedCurrency]);
@@ -110,7 +123,13 @@ export const AllExpensesPage: React.FC = () => {
     if (lastItem.index >= listItems.length - 8) {
       fetchNextPage();
     }
-  }, [fetchNextPage, hasNextPage, isFetchingNextPage, listItems.length, virtualItems]);
+  }, [
+    fetchNextPage,
+    hasNextPage,
+    isFetchingNextPage,
+    listItems.length,
+    virtualItems,
+  ]);
 
   const formatDateHeader = (dateString: string) => {
     const date = new Date(dateString);
@@ -185,7 +204,10 @@ export const AllExpensesPage: React.FC = () => {
     }
   };
 
-  const deleteTitle = expensePendingDelete?.description || expensePendingDelete?.category?.name || 'this expense';
+  const deleteTitle =
+    expensePendingDelete?.description ||
+    expensePendingDelete?.category?.name ||
+    'this expense';
 
   return (
     <div className="bg-surface text-on-surface font-body min-h-screen pb-32">
@@ -198,13 +220,15 @@ export const AllExpensesPage: React.FC = () => {
             className="p-2 -ml-2 rounded-full text-secondary hover:bg-surface-container-low transition-colors"
             aria-label="Back to dashboard"
           >
-            <span className="material-symbols-outlined text-black">arrow_back</span>
+            <span className="material-symbols-outlined text-black">
+              arrow_back
+            </span>
           </button>
           <h1 className="text-xl font-headline font-black text-black">
             All Expenses
           </h1>
         </div>
-        
+
         {/* Currency Switcher */}
         {userCurrencies?.currencies && userCurrencies.currencies.length > 1 && (
           <div className="flex gap-1.5 bg-surface-container-low p-1 rounded-full border border-outline-variant/20">
@@ -229,7 +253,9 @@ export const AllExpensesPage: React.FC = () => {
         {/* Total stats card */}
         <section className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 flex justify-between items-center shadow-sm">
           <div>
-            <p className="text-xs text-outline font-medium uppercase tracking-wider mb-1">Loaded Spent</p>
+            <p className="text-xs text-outline font-medium uppercase tracking-wider mb-1">
+              Loaded Spent
+            </p>
             <h2 className="text-3xl font-headline font-black text-primary">
               {formatCurrency(loadedTotalSpent, selectedCurrency)}
             </h2>
@@ -238,14 +264,18 @@ export const AllExpensesPage: React.FC = () => {
             </p>
           </div>
           <div className="w-12 h-12 bg-primary/10 rounded-full flex items-center justify-center">
-            <span className="material-symbols-outlined text-primary text-2xl">account_balance_wallet</span>
+            <span className="material-symbols-outlined text-primary text-2xl">
+              account_balance_wallet
+            </span>
           </div>
         </section>
 
         {/* Search & Filters */}
         <section className="space-y-4">
           <div className="relative">
-            <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-outline">search</span>
+            <span className="material-symbols-outlined absolute left-4 top-1/2 transform -translate-y-1/2 text-outline">
+              search
+            </span>
             <input
               type="text"
               placeholder="Search by description..."
@@ -277,7 +307,9 @@ export const AllExpensesPage: React.FC = () => {
                     : 'bg-surface-container-lowest text-secondary border-outline-variant/20 hover:bg-surface-container-low'
                 }`}
               >
-                <span className="material-symbols-outlined text-[14px]">{cat.icon}</span>
+                <span className="material-symbols-outlined text-[14px]">
+                  {cat.icon}
+                </span>
                 {cat.name}
               </button>
             ))}
@@ -289,7 +321,10 @@ export const AllExpensesPage: React.FC = () => {
           {isLoading && (
             <div className="space-y-6">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between animate-pulse">
+                <div
+                  key={i}
+                  className="flex items-center justify-between animate-pulse"
+                >
                   <div className="flex items-center gap-5">
                     <div className="w-12 h-12 bg-surface-container-low rounded-lg"></div>
                     <div>
@@ -305,17 +340,25 @@ export const AllExpensesPage: React.FC = () => {
 
           {!isLoading && isError && (
             <div className="text-center py-12 bg-surface-container-lowest rounded-2xl border border-outline-variant/10">
-              <span className="material-symbols-outlined text-error text-4xl mb-2">error</span>
+              <span className="material-symbols-outlined text-error text-4xl mb-2">
+                error
+              </span>
               <p className="text-primary font-bold">Failed to load expenses</p>
-              <p className="text-sm text-secondary">Please check your network and try again.</p>
+              <p className="text-sm text-secondary">
+                Please check your network and try again.
+              </p>
             </div>
           )}
 
           {!isLoading && !isError && expenses.length === 0 && (
             <div className="text-center py-12 bg-surface-container-lowest rounded-2xl border border-outline-variant/10">
-              <span className="material-symbols-outlined text-outline text-4xl mb-2">receipt_long</span>
+              <span className="material-symbols-outlined text-outline text-4xl mb-2">
+                receipt_long
+              </span>
               <p className="text-primary font-bold">No expenses found</p>
-              <p className="text-sm text-secondary">Try adjusting your search query or category filter.</p>
+              <p className="text-sm text-secondary">
+                Try adjusting your search query or category filter.
+              </p>
             </div>
           )}
 
@@ -338,7 +381,9 @@ export const AllExpensesPage: React.FC = () => {
                       ref={rowVirtualizer.measureElement}
                       data-index={virtualItem.index}
                       className="absolute left-0 top-0 w-full"
-                      style={{ transform: `translateY(${virtualItem.start}px)` }}
+                      style={{
+                        transform: `translateY(${virtualItem.start}px)`,
+                      }}
                     >
                       {item.type === 'date' ? (
                         <h3 className="font-headline text-xs font-bold text-outline uppercase tracking-wider px-1 pb-2 pt-1">
@@ -351,7 +396,11 @@ export const AllExpensesPage: React.FC = () => {
                             currency={selectedCurrency}
                             onClick={openEditExpense}
                             onRequestDelete={setExpensePendingDelete}
-                            isDeleting={deleteExpenseMutation.isPending && deleteExpenseMutation.variables === item.expense.id}
+                            isDeleting={
+                              deleteExpenseMutation.isPending &&
+                              deleteExpenseMutation.variables ===
+                                item.expense.id
+                            }
                           />
                         </div>
                       )}
@@ -370,33 +419,7 @@ export const AllExpensesPage: React.FC = () => {
         </section>
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="fixed bottom-0 left-0 w-full z-50 flex justify-around items-center px-6 py-3 pb-safe bg-[#f2f4f6] border-t border-outline-variant/10">
-        <a
-          className="flex flex-col items-center justify-center text-black py-1"
-          href="#"
-          onClick={(e) => { e.preventDefault(); navigate('/'); }}
-        >
-          <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>dashboard</span>
-          <span className="font-inter text-[10px] font-medium tracking-wide uppercase mt-1">Home</span>
-        </a>
-        <div className="relative -top-6">
-          <button
-            onClick={() => navigate('/expenses/new')}
-            className="w-16 h-16 bg-primary text-on-primary rounded-full shadow-[0_10px_25px_-5px_rgba(0,0,0,0.3)] flex items-center justify-center active:scale-90 transition-transform"
-          >
-            <span className="material-symbols-outlined text-3xl font-bold">add</span>
-          </button>
-        </div>
-        <a
-          className="flex flex-col items-center justify-center text-[#47607e] opacity-60 hover:opacity-100 transition-opacity py-1"
-          href="#"
-          onClick={(e) => { e.preventDefault(); navigate('/reports'); }}
-        >
-          <span className="material-symbols-outlined">insert_chart</span>
-          <span className="font-inter text-[10px] font-medium tracking-wide uppercase mt-1">Reports</span>
-        </a>
-      </nav>
+      <BottomNavigation />
 
       {expensePendingDelete && (
         <div
@@ -411,11 +434,15 @@ export const AllExpensesPage: React.FC = () => {
                 <span className="material-symbols-outlined">delete</span>
               </div>
               <div>
-                <h2 id="delete-expense-title" className="font-headline text-lg font-bold text-primary">
+                <h2
+                  id="delete-expense-title"
+                  className="font-headline text-lg font-bold text-primary"
+                >
                   Delete expense?
                 </h2>
                 <p className="mt-1 text-sm text-secondary">
-                  This will permanently remove "{deleteTitle}" from your expenses.
+                  This will permanently remove "{deleteTitle}" from your
+                  expenses.
                 </p>
               </div>
             </div>
@@ -452,7 +479,10 @@ export const AllExpensesPage: React.FC = () => {
           <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-5 shadow-2xl border border-outline-variant/20">
             <div className="flex items-start justify-between gap-3">
               <div>
-                <h2 id="edit-expense-title" className="font-headline text-lg font-bold text-primary">
+                <h2
+                  id="edit-expense-title"
+                  className="font-headline text-lg font-bold text-primary"
+                >
                   Edit expense
                 </h2>
                 <p className="mt-1 text-sm text-secondary">
@@ -466,13 +496,17 @@ export const AllExpensesPage: React.FC = () => {
                 className="w-9 h-9 flex items-center justify-center rounded-full text-secondary hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
                 aria-label="Close edit expense"
               >
-                <span className="material-symbols-outlined text-[20px]">close</span>
+                <span className="material-symbols-outlined text-[20px]">
+                  close
+                </span>
               </button>
             </div>
 
             <div className="mt-5 space-y-4">
               <label className="block">
-                <span className="text-xs font-bold uppercase tracking-wider text-secondary">Amount</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                  Amount
+                </span>
                 <input
                   type="number"
                   inputMode="decimal"
@@ -486,10 +520,14 @@ export const AllExpensesPage: React.FC = () => {
 
               <div className="grid grid-cols-2 gap-3">
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wider text-secondary">Currency</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                    Currency
+                  </span>
                   <select
                     value={editCurrency}
-                    onChange={(event) => setEditCurrency(event.target.value as Currency)}
+                    onChange={(event) =>
+                      setEditCurrency(event.target.value as Currency)
+                    }
                     className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
                   >
                     {CURRENCY_OPTIONS.map((currency) => (
@@ -501,7 +539,9 @@ export const AllExpensesPage: React.FC = () => {
                 </label>
 
                 <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wider text-secondary">Date</span>
+                  <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                    Date
+                  </span>
                   <input
                     type="date"
                     value={editDate}
@@ -513,7 +553,9 @@ export const AllExpensesPage: React.FC = () => {
               </div>
 
               <fieldset>
-                <legend className="text-xs font-bold uppercase tracking-wider text-secondary">Category</legend>
+                <legend className="text-xs font-bold uppercase tracking-wider text-secondary">
+                  Category
+                </legend>
                 <div className="mt-2 grid max-h-48 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
                   <button
                     type="button"
@@ -525,7 +567,9 @@ export const AllExpensesPage: React.FC = () => {
                         : 'border-outline-variant/20 bg-surface-container-lowest text-secondary hover:border-primary/40 hover:bg-surface-container-low'
                     }`}
                   >
-                    <span className="material-symbols-outlined text-[22px]">receipt_long</span>
+                    <span className="material-symbols-outlined text-[22px]">
+                      receipt_long
+                    </span>
                     <span className="mt-1 w-full truncate text-[10px] font-bold uppercase leading-tight">
                       None
                     </span>
@@ -547,7 +591,9 @@ export const AllExpensesPage: React.FC = () => {
                         }`}
                         title={category.name}
                       >
-                        <span className="material-symbols-outlined text-[22px]">{category.icon}</span>
+                        <span className="material-symbols-outlined text-[22px]">
+                          {category.icon}
+                        </span>
                         <span className="mt-1 w-full truncate text-[10px] font-bold uppercase leading-tight">
                           {category.name}
                         </span>
@@ -558,7 +604,9 @@ export const AllExpensesPage: React.FC = () => {
               </fieldset>
 
               <label className="block">
-                <span className="text-xs font-bold uppercase tracking-wider text-secondary">Note</span>
+                <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+                  Note
+                </span>
                 <input
                   type="text"
                   value={editDescription}
