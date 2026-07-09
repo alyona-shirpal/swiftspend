@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCreateCategory } from '../../hooks/useCreateCategory';
 import { useCategories } from '../../hooks/useCategories';
+import { BottomNavigation } from '../../components/layout/BottomNavigation';
 import type { Category } from '../../types/api';
 
 const CATEGORY_DRAFT_KEY = 'swiftspend.add-expense.selected-category';
@@ -135,24 +136,7 @@ export const AllCategoriesPage: React.FC = () => {
         </section>
       </main>
 
-      <nav className="fixed bottom-0 left-0 z-50 flex w-full items-center justify-center gap-12 bg-[#f2f4f6] px-4 py-3 pb-safe shadow-[0_-4px_20px_rgba(0,0,0,0.04)]">
-        <button
-          type="button"
-          onClick={() => navigate('/')}
-          className="flex flex-col items-center justify-center rounded-md bg-[#f2f4f6] px-6 py-1 text-black"
-        >
-          <span className="material-symbols-outlined">dashboard</span>
-          <span className="mt-1 font-body text-[10px] font-medium uppercase tracking-wide">Home</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => navigate('/reports')}
-          className="flex flex-col items-center justify-center px-6 py-1 text-[#47607e] opacity-60 transition-opacity hover:opacity-100"
-        >
-          <span className="material-symbols-outlined">insert_chart</span>
-          <span className="mt-1 font-body text-[10px] font-medium uppercase tracking-wide">Reports</span>
-        </button>
-      </nav>
+      <BottomNavigation />
 
       <div className="pointer-events-none fixed right-0 top-0 -z-10 h-64 w-64 rounded-full bg-secondary/5 blur-[120px]" />
       <div className="pointer-events-none fixed bottom-0 left-0 -z-10 h-96 w-96 rounded-full bg-on-tertiary-container/5 blur-[120px]" />
