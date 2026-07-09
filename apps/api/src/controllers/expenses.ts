@@ -45,6 +45,15 @@ const markCategoryLastUsed = async (
   if (error) throw error;
 };
 
+/**
+ * Retrieves a list of expenses for the authenticated user.
+ * Supports filtering by date range (from/to), category, currency, and full-text search.
+ * Results are paginated.
+ * 
+ * @param req AuthRequest containing user credentials and query parameters
+ * @param res Response object to send JSON response
+ * @param next NextFunction to handle errors
+ */
 export const getExpenses = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { from, to, category_id, currency, search, page = '1', limit = '50' } = req.query;
