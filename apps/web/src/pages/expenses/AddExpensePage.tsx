@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo } from 'react';
 import { Currency } from '@swiftspend/types';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -39,7 +39,6 @@ const QUICK_CATEGORY_PAGE_SIZE = 15;
 export const AddExpensePage: React.FC = () => {
   const navigate = useNavigate();
   const { mutateAsync: addExpense } = useAddExpense();
-  const dateInputRef = useRef<HTMLInputElement>(null);
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
     containScroll: false,
@@ -176,20 +175,6 @@ export const AddExpensePage: React.FC = () => {
     });
   }, [selectedDate]);
 
-  const openDatePicker = () => {
-    const input = dateInputRef.current as
-      | (HTMLInputElement & { showPicker?: () => void })
-      | null;
-    if (!input) return;
-
-    if (typeof input.showPicker === 'function') {
-      input.showPicker();
-      return;
-    }
-
-    input.click();
-  };
-
   const handleKeyPress = (key: (typeof KEYS)[number]) => {
     if (key === 'backspace') {
       if (amountInput.length <= 1) {
@@ -300,28 +285,25 @@ export const AddExpensePage: React.FC = () => {
               })}
             </div>
 
-            <button
-              type="button"
-              onClick={openDatePicker}
-              className="flex items-center gap-1.5 rounded-lg bg-surface-container-low px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary transition-colors hover:bg-surface-container md:gap-2 md:px-3 md:py-1.5 md:text-[10px]"
-            >
-              <span className="material-symbols-outlined text-xs md:text-sm">
-                calendar_today
-              </span>
-              <span>{dateLabel}</span>
-            </button>
+            <div className="group relative">
+              <button
+                type="button"
+                className="pointer-events-none flex items-center gap-1.5 rounded-lg bg-surface-container-low px-2.5 py-1 text-[9px] font-bold uppercase tracking-wider text-primary transition-colors group-hover:bg-surface-container md:gap-2 md:px-3 md:py-1.5 md:text-[10px]"
+              >
+                <span className="material-symbols-outlined text-xs md:text-sm">
+                  calendar_today
+                </span>
+                <span>{dateLabel}</span>
+              </button>
+              <input
+                type="date"
+                value={selectedDate}
+                max="2099-12-31"
+                onChange={(event) => setSelectedDate(event.target.value)}
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+              />
+            </div>
           </section>
-
-          <input
-            ref={dateInputRef}
-            type="date"
-            value={selectedDate}
-            max="2099-12-31"
-            onChange={(event) => setSelectedDate(event.target.value)}
-            className="sr-only"
-            tabIndex={-1}
-            aria-hidden="true"
-          />
 
           <section className="mb-2 shrink-0 md:mb-4">
             <p className="mb-0.5 text-center text-[9px] font-bold uppercase tracking-[0.2em] text-secondary md:mb-1 md:text-[10px]">

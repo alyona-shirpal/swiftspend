@@ -87,6 +87,35 @@ supabase gen types typescript --local > packages/types/src/database.types.ts
                   [OpenExchangeRates API] ---> [Supabase exchange_rate_cache]
 ```
 
+### Example Request (`POST /expenses`)
+```json
+{
+  "amount": 100,
+  "currency": "EUR",
+  "category_id": "a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6",
+  "description": "Team lunch",
+  "date": "2026-07-09"
+}
+```
+
+### Example Response
+```json
+{
+  "id": "f5f5f5f5-f5f5-f5f5-f5f5-f5f5f5f5f5f5",
+  "user_id": "d3d3d3d3-d3d3-d3d3-d3d3-d3d3d3d3d3d3",
+  "category_id": "a1b2c3d4-e5f6-7a8b-9c0d-e1f2a3b4c5d6",
+  "amount": 100,
+  "currency": "EUR",
+  "amount_usd": 108.5,
+  "amount_eur": 100,
+  "amount_uah": 4410,
+  "amount_all": 10100,
+  "description": "Team lunch",
+  "date": "2026-07-09",
+  "created_at": "2026-07-09T19:59:00.000Z"
+}
+```
+
 ---
 
 ## 5. Adding a New Endpoint (Step-by-Step)
