@@ -25,6 +25,10 @@ const REPORT_PATH_BY_VIEW: Record<string, string> = {
   Yearly: '/reports/yearly',
 };
 
+/**
+ * Redirects the user to their preferred report view (Daily, Monthly, or Yearly)
+ * based on their stored settings in localStorage, defaulting to Monthly.
+ */
 const DefaultReportsRedirect = () => {
   const defaultView = localStorage.getItem('pref_report_view') || 'Monthly';
 
