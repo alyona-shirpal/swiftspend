@@ -50,19 +50,19 @@ export const BottomNavigation: React.FC = () => {
               onClick={() => navigate(item.path)}
               aria-current={item.active ? 'page' : undefined}
               className={[
-                'mx-auto flex h-14 min-w-[96px] items-center justify-center gap-2 rounded-[22px] px-4 transition-all duration-200 active:scale-95',
+                'mx-auto flex h-[62px] min-w-[96px] flex-col items-center justify-center gap-1 rounded-[24px] px-4 transition-all duration-200 active:scale-95',
                 item.active
                   ? 'bg-on-surface text-surface shadow-[0_10px_24px_rgba(25,28,30,0.18)]'
                   : 'text-on-surface-variant hover:bg-surface-container-low hover:text-on-surface',
               ].join(' ')}
             >
               <span
-                className="material-symbols-outlined text-[24px]"
+                className="material-symbols-outlined text-[26px]"
                 style={item.active ? iconFill : undefined}
               >
                 {item.icon}
               </span>
-              <span className="font-label text-[11px] font-bold uppercase tracking-wide">
+              <span className="font-label text-[10px] font-bold uppercase leading-none tracking-wide">
                 {item.label}
               </span>
             </button>
