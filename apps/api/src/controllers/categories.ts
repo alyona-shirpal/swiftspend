@@ -11,8 +11,8 @@ const CreateCategorySchema = z.object({
 });
 
 const DEFAULT_CATEGORIES = [
-  { name: 'Food', icon: 'lunch_dining', color: '#FF6B35' },
-  { name: 'Restaurants', icon: 'dining', color: '#9B59B6' },
+  { name: 'Grocery', icon: 'shopping_cart', color: '#FF6B35' },
+  { name: 'Cafe&Restaurants', icon: 'restaurant', color: '#795548' },
   { name: 'Home', icon: 'home', color: '#2196F3' },
   { name: 'Travel', icon: 'flight', color: '#0EA5A4' },
   { name: 'Health', icon: 'medical_services', color: '#16A34A' },
