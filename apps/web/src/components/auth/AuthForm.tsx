@@ -85,8 +85,8 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="w-full space-y-10">
-      <div className="space-y-8">
+    <form onSubmit={handleSubmit} className="w-full space-y-5 sm:space-y-10">
+      <div className="space-y-4 sm:space-y-8">
         {type === 'signup' && (
           <div className="group">
             <label className="block font-label text-[10px] font-semibold uppercase tracking-widest text-on-surface-variant mb-2">
@@ -97,7 +97,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
                 type="text"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                className="w-full py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base"
+                className="w-full py-2 sm:py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base"
                 placeholder="Enter your name"
                 required
               />
@@ -114,7 +114,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base"
+              className="w-full py-2 sm:py-3 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base"
               placeholder="name@domain.com"
               required
             />
@@ -137,7 +137,7 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
               type={showPassword ? 'text' : 'password'}
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full py-3 pr-10 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base"
+              className="w-full py-2 sm:py-3 pr-10 bg-transparent border-none focus:ring-0 text-on-surface placeholder:text-surface-variant font-body text-base"
               placeholder={type === 'signup' ? 'Min. 8 characters' : 'Enter password'}
               required
             />
@@ -166,11 +166,11 @@ export const AuthForm: React.FC<AuthFormProps> = ({ type }) => {
         </div>
       )}
 
-      <div className="pt-4">
+      <div className="pt-1 sm:pt-4">
         <button
           type="submit"
           disabled={isLoading}
-          className="w-full py-5 bg-primary text-on-primary font-headline font-bold text-sm tracking-widest uppercase rounded-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
+          className="w-full py-3.5 sm:py-5 bg-primary text-on-primary font-headline font-bold text-sm tracking-widest uppercase rounded-lg hover:opacity-90 active:scale-[0.98] transition-all flex items-center justify-center gap-3 disabled:opacity-50"
         >
           {isLoading ? 'Processing...' : type === 'signup' ? 'Create Account' : 'Sign In'}
           <span className="material-symbols-outlined text-sm">arrow_forward</span>
