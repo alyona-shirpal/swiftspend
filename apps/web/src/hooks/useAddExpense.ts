@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { Currency } from '@swiftspend/types';
 import api from '../services/api';
 import { supabase } from '../services/supabase';
+import { triggerSuccessfulTransactionHaptic } from '../utils/haptics';
 
 interface AddExpensePayload {
   amount: number;
@@ -26,6 +27,7 @@ export function useAddExpense() {
       return data;
     },
     onSuccess: () => {
+      triggerSuccessfulTransactionHaptic();
       queryClient.invalidateQueries({ queryKey: ['expenses', 'recent'] });
       queryClient.invalidateQueries({ queryKey: ['expenses', 'all'] });
       queryClient.invalidateQueries({ queryKey: ['expenses', 'monthly-total'] });

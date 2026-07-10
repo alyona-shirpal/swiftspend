@@ -2,11 +2,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQueryClient } from '@tanstack/react-query';
 import { Category } from '@swiftspend/types';
+import { AnimatedBrandText } from '../../components/layout/AnimatedBrandText';
 import api from '../../services/api';
-import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
+import {
+  USER_CURRENCIES_QUERY_KEY,
+  useUserCurrencies,
+} from '../../hooks/useUserCurrencies';
 import { useAuth } from '../../hooks/useAuth';
 
-interface CategoryState extends Omit<Category, 'user_id' | 'created_at' | 'last_used_at'> {
+interface CategoryState extends Omit<
+  Category,
+  'user_id' | 'created_at' | 'last_used_at'
+> {
   is_hidden: boolean;
 }
 
@@ -27,10 +34,13 @@ export default function CategoryOnboardingPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const { user } = useAuth();
-  const { data: onboardingData, isLoading: onboardingLoading } = useUserCurrencies();
+  const { data: onboardingData, isLoading: onboardingLoading } =
+    useUserCurrencies();
 
   const [categories, setCategories] = useState<CategoryState[]>([]);
-  const [initialCategories, setInitialCategories] = useState<CategoryState[]>([]);
+  const [initialCategories, setInitialCategories] = useState<CategoryState[]>(
+    [],
+  );
   const [newCategoryName, setNewCategoryName] = useState('');
   const [duplicateError, setDuplicateError] = useState(false);
   const [addError, setAddError] = useState<string | null>(null);
@@ -59,7 +69,9 @@ export default function CategoryOnboardingPage() {
         const { data } = await api.get<Category[]>('/categories');
         // Filter out duplicates by name (case-insensitive)
         const uniqueData = data.reduce((acc: Category[], current) => {
-          const x = acc.find(item => item.name.toLowerCase() === current.name.toLowerCase());
+          const x = acc.find(
+            (item) => item.name.toLowerCase() === current.name.toLowerCase(),
+          );
           if (!x) {
             return acc.concat([current]);
           } else {
@@ -67,7 +79,7 @@ export default function CategoryOnboardingPage() {
           }
         }, []);
 
-        const state = uniqueData.map(c => ({
+        const state = uniqueData.map((c) => ({
           id: c.id,
           name: c.name,
           icon: c.icon,
@@ -90,20 +102,20 @@ export default function CategoryOnboardingPage() {
     }
   }, [user, onboardingData, onboardingLoading, navigate]);
 
-  const visibleCount = categories.filter(c => !c.is_hidden).length;
+  const visibleCount = categories.filter((c) => !c.is_hidden).length;
   const totalCount = categories.length;
 
   const toggleVisibility = (id: string) => {
-    setCategories(prev => prev.map(c => 
-      c.id === id ? { ...c, is_hidden: !c.is_hidden } : c
-    ));
+    setCategories((prev) =>
+      prev.map((c) => (c.id === id ? { ...c, is_hidden: !c.is_hidden } : c)),
+    );
   };
 
   const handleAddCategory = async () => {
     const name = newCategoryName.trim();
     if (!name) return;
 
-    if (categories.some(c => c.name.toLowerCase() === name.toLowerCase())) {
+    if (categories.some((c) => c.name.toLowerCase() === name.toLowerCase())) {
       setDuplicateError(true);
       return;
     }
@@ -117,7 +129,7 @@ export default function CategoryOnboardingPage() {
         name,
         icon: 'category',
         color: '#B0B0B0',
-        is_system: false
+        is_system: false,
       });
       const newCat: CategoryState = {
         id: data.id,
@@ -127,8 +139,8 @@ export default function CategoryOnboardingPage() {
         is_system: data.is_system,
         is_hidden: data.is_hidden,
       };
-      setCategories(prev => [...prev, newCat]);
-      setInitialCategories(prev => [...prev, newCat]); // Since it's new and already saved
+      setCategories((prev) => [...prev, newCat]);
+      setInitialCategories((prev) => [...prev, newCat]); // Since it's new and already saved
       setNewCategoryName('');
     } catch (err) {
       setAddError('Could not add category. Please try again.');
@@ -142,8 +154,8 @@ export default function CategoryOnboardingPage() {
     setSubmitError(null);
 
     try {
-      const changedCategories = categories.filter(c => {
-        const initial = initialCategories.find(i => i.id === c.id);
+      const changedCategories = categories.filter((c) => {
+        const initial = initialCategories.find((i) => i.id === c.id);
         return initial && initial.is_hidden !== c.is_hidden;
       });
 
@@ -156,17 +168,21 @@ export default function CategoryOnboardingPage() {
             failedNames.push(c.name);
             throw err;
           }
-        })
+        }),
       );
 
       if (failedNames.length > 0) {
-        setSubmitError(`Could not update: ${failedNames.join(', ')}. Changes may not be saved.`);
+        setSubmitError(
+          `Could not update: ${failedNames.join(', ')}. Changes may not be saved.`,
+        );
         setIsSubmitting(false);
         return;
       }
 
       await api.post('/categories/complete-onboarding');
-      await queryClient.invalidateQueries({ queryKey: USER_CURRENCIES_QUERY_KEY });
+      await queryClient.invalidateQueries({
+        queryKey: USER_CURRENCIES_QUERY_KEY,
+      });
       navigate('/', { replace: true });
     } catch (err) {
       setSubmitError('Could not complete setup. Please try again.');
@@ -200,18 +216,22 @@ export default function CategoryOnboardingPage() {
       {/* Header */}
       <header className="bg-[#f7f9fb] text-black flex justify-center items-center w-full px-6 py-6 fixed top-0 z-50 border-b border-surface-container">
         <div className="w-full max-w-md mx-auto relative flex items-center justify-between">
-          <button 
+          <button
             onClick={() => navigate('/onboarding/currencies')}
             className="flex items-center justify-center w-10 h-10 -ml-2 rounded-full hover:bg-surface-container transition-colors group"
             title="Go back"
           >
-            <span className="material-symbols-outlined text-primary text-xl transition-transform group-hover:-translate-x-0.5">arrow_back</span>
+            <span className="material-symbols-outlined text-primary text-xl transition-transform group-hover:-translate-x-0.5">
+              arrow_back
+            </span>
           </button>
-          
+
           <div className="absolute left-1/2 -translate-x-1/2">
-            <span className="text-lg font-black tracking-[0.2em] text-primary uppercase font-display">SwiftSpend</span>
+            <span className="text-lg font-black tracking-[0.2em] text-primary uppercase font-display">
+              <AnimatedBrandText compact />
+            </span>
           </div>
-          
+
           <div className="w-10" />
         </div>
       </header>
@@ -219,8 +239,13 @@ export default function CategoryOnboardingPage() {
       <main className="flex-grow flex items-center justify-center pt-24 pb-32 px-6">
         <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-sm border border-surface-container">
           <div className="mb-8">
-            <h1 className="text-2xl font-black text-primary font-headline mb-2">Refine your categories</h1>
-            <p className="text-sm text-secondary font-medium">Toggle categories to hide the ones you don't need. You can always change this later.</p>
+            <h1 className="text-2xl font-black text-primary font-headline mb-2">
+              Refine your categories
+            </h1>
+            <p className="text-sm text-secondary font-medium">
+              Toggle categories to hide the ones you don't need. You can always
+              change this later.
+            </p>
           </div>
 
           {isLoading ? (
@@ -229,10 +254,16 @@ export default function CategoryOnboardingPage() {
             </div>
           ) : fetchError ? (
             <div className="flex flex-col items-center justify-center py-12 text-center">
-              <span className="material-symbols-outlined text-40 text-outline mb-4">cloud_off</span>
-              <p className="text-primary font-bold mb-2">Could not load categories</p>
-              <p className="text-sm text-secondary mb-6">Please check your connection and try again.</p>
-              <button 
+              <span className="material-symbols-outlined text-40 text-outline mb-4">
+                cloud_off
+              </span>
+              <p className="text-primary font-bold mb-2">
+                Could not load categories
+              </p>
+              <p className="text-sm text-secondary mb-6">
+                Please check your connection and try again.
+              </p>
+              <button
                 onClick={() => window.location.reload()}
                 className="bg-surface-container-low text-primary px-6 py-2 rounded-full border border-outline-variant font-bold text-sm"
               >
@@ -242,25 +273,35 @@ export default function CategoryOnboardingPage() {
           ) : (
             <>
               <div className="category-grid mb-6">
-                {categories.map(c => {
+                {categories.map((c) => {
                   const colors = getColorClasses(c.color);
                   return (
                     <button
                       key={c.id}
                       onClick={() => toggleVisibility(c.id)}
                       className={`flex items-center justify-between gap-1 px-2.5 py-2 transition-all active:scale-95 group rounded-full border shadow-sm ${
-                        c.is_hidden 
-                          ? 'bg-surface-container-low opacity-50 border-dashed border-outline-variant' 
+                        c.is_hidden
+                          ? 'bg-surface-container-low opacity-50 border-dashed border-outline-variant'
                           : 'bg-white border-surface-container hover:bg-surface-container-low'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 overflow-hidden">
-                        <div className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${colors.bg}`}>
-                          <span className={`material-symbols-outlined text-[14px] fill-icon ${colors.text}`}>{c.icon}</span>
+                        <div
+                          className={`w-6 h-6 shrink-0 rounded-full flex items-center justify-center ${colors.bg}`}
+                        >
+                          <span
+                            className={`material-symbols-outlined text-[14px] fill-icon ${colors.text}`}
+                          >
+                            {c.icon}
+                          </span>
                         </div>
-                        <span className="text-[11px] font-bold text-primary truncate">{c.name}</span>
+                        <span className="text-[11px] font-bold text-primary truncate">
+                          {c.name}
+                        </span>
                       </div>
-                      <span className={`material-symbols-outlined text-[14px] ${c.is_hidden ? 'text-outline-variant' : 'text-outline'}`}>
+                      <span
+                        className={`material-symbols-outlined text-[14px] ${c.is_hidden ? 'text-outline-variant' : 'text-outline'}`}
+                      >
                         {c.is_hidden ? 'visibility_off' : 'visibility'}
                       </span>
                     </button>
@@ -270,9 +311,12 @@ export default function CategoryOnboardingPage() {
 
               {visibleCount === 0 && (
                 <div className="flex items-center gap-2 p-3 bg-red-50 rounded-xl mb-4 border border-red-100">
-                  <span className="material-symbols-outlined text-red-500 text-[20px]">warning</span>
+                  <span className="material-symbols-outlined text-red-500 text-[20px]">
+                    warning
+                  </span>
                   <p className="text-[0.75rem] text-red-700 font-label">
-                    You've hidden all categories. You can still add expenses, but you won't be able to categorize them.
+                    You've hidden all categories. You can still add expenses,
+                    but you won't be able to categorize them.
                   </p>
                 </div>
               )}
@@ -286,30 +330,38 @@ export default function CategoryOnboardingPage() {
               <div className="mt-4 border-t border-surface-container pt-6">
                 <div className="flex items-center gap-3">
                   <div className="flex-1 relative">
-                    <input 
+                    <input
                       type="text"
                       placeholder="Enter new category name..."
                       value={newCategoryName}
                       onChange={(e) => setNewCategoryName(e.target.value)}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddCategory()}
+                      onKeyDown={(e) =>
+                        e.key === 'Enter' && handleAddCategory()
+                      }
                       className="w-full bg-white border border-surface-container rounded-lg h-12 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium text-primary px-4 placeholder:text-outline-variant shadow-sm transition-all"
                     />
                   </div>
-                  <button 
+                  <button
                     onClick={handleAddCategory}
                     disabled={!newCategoryName.trim() || isAddingCategory}
                     className="h-12 bg-primary text-on-primary px-8 rounded-lg font-bold text-[10px] tracking-widest uppercase hover:opacity-90 active:scale-95 transition-all shadow-sm flex items-center justify-center shrink-0 disabled:opacity-40"
                   >
                     {isAddingCategory ? (
                       <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-                    ) : 'Add'}
+                    ) : (
+                      'Add'
+                    )}
                   </button>
                 </div>
                 {duplicateError && (
-                  <p className="text-red-500 text-[0.75rem] font-label mt-2">A category with this name already exists</p>
+                  <p className="text-red-500 text-[0.75rem] font-label mt-2">
+                    A category with this name already exists
+                  </p>
                 )}
                 {addError && (
-                  <p className="text-red-500 text-[0.75rem] font-label mt-2">{addError}</p>
+                  <p className="text-red-500 text-[0.75rem] font-label mt-2">
+                    {addError}
+                  </p>
                 )}
               </div>
             </>
@@ -319,26 +371,30 @@ export default function CategoryOnboardingPage() {
 
       <footer className="w-full max-w-md mx-auto px-6 pb-6 mt-auto fixed bottom-0 left-1/2 -translate-x-1/2 z-50 bg-transparent">
         <div className="w-full space-y-4">
-            <button 
-              onClick={handleFinishSetup}
-              disabled={isSubmitting}
-              className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold text-sm tracking-widest uppercase flex justify-center items-center gap-2 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
-            >
-              {isSubmitting ? (
-                <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <>
-                  Finish Setup
-                  <span className="material-symbols-outlined">arrow_forward</span>
-                </>
-              )}
-            </button>
-            {submitError && (
-              <p className="text-red-500 text-[0.75rem] font-label text-center">{submitError}</p>
+          <button
+            onClick={handleFinishSetup}
+            disabled={isSubmitting}
+            className="w-full bg-primary text-on-primary py-4 rounded-xl font-bold text-sm tracking-widest uppercase flex justify-center items-center gap-2 hover:opacity-90 active:scale-95 transition-all disabled:opacity-50"
+          >
+            {isSubmitting ? (
+              <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            ) : (
+              <>
+                Finish Setup
+                <span className="material-symbols-outlined">arrow_forward</span>
+              </>
             )}
-            <div className="text-center">
-              <span className="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline">Step 2 of 2</span>
-            </div>
+          </button>
+          {submitError && (
+            <p className="text-red-500 text-[0.75rem] font-label text-center">
+              {submitError}
+            </p>
+          )}
+          <div className="text-center">
+            <span className="text-[0.6875rem] font-bold uppercase tracking-[0.15em] text-outline">
+              Step 2 of 2
+            </span>
+          </div>
         </div>
       </footer>
     </div>
