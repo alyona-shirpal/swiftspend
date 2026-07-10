@@ -10,9 +10,13 @@ import { errorHandler } from './middleware/errorHandler';
 
 export function createApp() {
   const app = express();
+  const jsonParser = express.json();
 
   app.use(cors());
-  app.use(express.json());
+  app.use((req, res, next) => {
+    if (req.path === '/expenses/document') return next();
+    return jsonParser(req, res, next);
+  });
 
   app.use('/categories', categoriesRoutes);
   app.use('/expenses', expensesRoutes);

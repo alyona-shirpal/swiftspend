@@ -8,6 +8,7 @@ import {
 } from '../types/supabase';
 import { z } from 'zod';
 import { Currency } from '../types';
+import { createExpenseRecord } from '../services/createExpense';
 
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
@@ -169,39 +170,7 @@ export const getExpense = async (req: AuthRequest, res: Response, next: NextFunc
 export const createExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const validated = ExpenseSchema.parse(req.body);
-    const userId = req.user!.id;
-    const supabase = createSupabaseUserClient(req.accessToken!);
-    const currencies = await ensureUserCurrencies(userId, supabase);
-    const userCurrencies = currencies.map((r) => r.currency as Currency);
-
-    const snapshot = await ExchangeRateService.getCachedRates(supabase);
-    const amounts = await ExchangeRateService.convertToUserCurrencies(
-      validated.amount,
-      validated.currency as Currency,
-      userCurrencies,
-      snapshot
-    );
-
-    // Use the date provided by the client (past/future entry); fall back to today
-    const expenseDate = validated.date ?? new Date().toISOString().split('T')[0];
-
-    const { data, error } = await supabase
-      .from('expenses')
-      .insert({
-        user_id: userId,
-        category_id: validated.category_id ?? null,
-        description: validated.description ?? null,
-        date: expenseDate,
-        amount: validated.amount,
-        currency: validated.currency,
-        amounts,
-        exchange_rate_snapshot: snapshot
-      })
-      .select()
-      .single();
-
-    if (error) throw error;
-    await markCategoryLastUsed(supabase, userId, validated.category_id ?? null, data.created_at);
+    const data = await createExpenseRecord(req.accessToken!, req.user!.id, validated);
     res.status(201).json(data);
   } catch (err) {
     next(err);

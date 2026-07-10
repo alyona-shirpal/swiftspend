@@ -9,6 +9,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { ExpenseDocumentUpload } from '../../components/expenses/ExpenseDocumentUpload';
 
 const CURRENCY_OPTIONS = [
   Currency.USD,
@@ -436,6 +437,16 @@ export const AddExpensePage: React.FC = () => {
             )}
 
             <div className="flex items-center gap-3 md:gap-4">
+              <ExpenseDocumentUpload
+                disabled={isSaving}
+                onParsed={(expense) => {
+                  setAmountInput(String(expense.amount));
+                  setCurrency(expense.currency as Currency);
+                  setSelectedCategoryId(expense.category_id);
+                  setSelectedDate(expense.date);
+                  setNote(expense.description);
+                }}
+              />
               <div className="relative flex-1">
                 <input
                   type="text"

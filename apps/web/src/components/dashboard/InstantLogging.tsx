@@ -8,6 +8,7 @@ import { CategoryPill } from './CategoryPill';
 import { Category } from '../../types/api';
 import toast from 'react-hot-toast';
 import { sortCategoriesByLastUsed } from '../../utils/categorySorting';
+import { ExpenseDocumentUpload } from '../expenses/ExpenseDocumentUpload';
 
 export const InstantLogging: React.FC = () => {
   const [amountStr, setAmountStr] = useState<string>('');
@@ -93,9 +94,16 @@ export const InstantLogging: React.FC = () => {
 
   return (
     <div className="bg-surface-container-lowest rounded-xl sticky top-20 shadow-sm border border-outline-variant/10 p-4">
-      <h3 className="font-headline text-lg font-bold text-primary mb-3">
-        Instant Logging
-      </h3>
+      <div className="mb-3 flex items-center justify-between gap-3">
+        <h3 className="font-headline text-lg font-bold text-primary">
+          Instant Logging
+        </h3>
+        <ExpenseDocumentUpload
+          autoCreate
+          disabled={isSaving}
+          onExpenseCreated={() => Promise.all([refetchRecent(), refetchAll()]).then(() => undefined)}
+        />
+      </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
         {/* Amount + Currency Row */}

@@ -1,6 +1,34 @@
 import { Expense } from '@swiftspend/types';
 import api from './api';
 
+export interface ParsedDocumentExpense {
+  amount: number;
+  currency: string;
+  category_id: string;
+  date: string;
+  place: string;
+  items: string[];
+  description: string;
+}
+
+export type DocumentExpenseResponse =
+  | { status: 'parsed'; provider: string; expense: ParsedDocumentExpense }
+  | { status: 'created'; provider: string; expense: Expense };
+
+export async function processExpenseDocument(file: File, auto: boolean) {
+  const { data } = await api.post<DocumentExpenseResponse>(
+    `/expenses/document?auto=${auto}`,
+    file,
+    {
+      headers: {
+        'Content-Type': file.type || 'application/octet-stream',
+        'X-File-Name': encodeURIComponent(file.name),
+      },
+    },
+  );
+  return data;
+}
+
 export interface ExpensesListResponse {
   data: Expense[];
   metadata: { total: number; page: number; limit: number };
