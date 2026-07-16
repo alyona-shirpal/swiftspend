@@ -7,6 +7,7 @@ interface ExpenseRowProps {
   expense: RecentExpense;
   currency: Currency;
   onClick?: (expense: RecentExpense) => void;
+  onRequestEdit?: (expense: RecentExpense) => void;
   onRequestDelete?: (expense: RecentExpense) => void;
   isDeleting?: boolean;
 }
@@ -15,6 +16,7 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
   expense,
   currency,
   onClick,
+  onRequestEdit,
   onRequestDelete,
   isDeleting = false,
 }) => {
@@ -29,11 +31,17 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
     const isYesterday = expenseDate.toDateString() === yesterday.toDateString();
 
     if (isToday) {
-      return new Date(timeString).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+      return new Date(timeString).toLocaleTimeString([], {
+        hour: '2-digit',
+        minute: '2-digit',
+      });
     } else if (isYesterday) {
       return 'Yesterday';
     } else {
-      return expenseDate.toLocaleDateString('default', { month: 'short', day: 'numeric' });
+      return expenseDate.toLocaleDateString('default', {
+        month: 'short',
+        day: 'numeric',
+      });
     }
   };
 
@@ -45,7 +53,8 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
   const title = expense.description || categoryName;
 
   // Show the amount in the selected dashboard currency
-  const displayAmount = expense.amounts?.[currency] ?? expense.amounts?.[Currency.EUR] ?? 0;
+  const displayAmount =
+    expense.amounts?.[currency] ?? expense.amounts?.[Currency.EUR] ?? 0;
   const formattedAmount = `-${formatCurrency(displayAmount, currency)}`;
 
   // If the expense was recorded in a different currency, show the original
@@ -65,7 +74,9 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
         onClick(expense);
       }}
       className={`flex items-center justify-between gap-3 group ${
-        onClick ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-xl' : ''
+        onClick
+          ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-xl'
+          : ''
       }`}
     >
       <div className="flex min-w-0 items-center gap-5">
@@ -73,7 +84,9 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
           <span className="material-symbols-outlined text-primary">{icon}</span>
         </div>
         <div className="min-w-0">
-          <h4 className="font-body text-md font-semibold text-primary truncate">{title}</h4>
+          <h4 className="font-body text-md font-semibold text-primary truncate">
+            {title}
+          </h4>
           <p className="font-label text-xs text-secondary opacity-70">
             {categoryName} • {subtitleTime}
           </p>
@@ -90,6 +103,20 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
             </span>
           )}
         </div>
+        {onRequestEdit && (
+          <button
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation();
+              onRequestEdit(expense);
+            }}
+            className="w-9 h-9 flex items-center justify-center rounded-full text-outline hover:bg-primary/10 hover:text-primary transition-colors"
+            aria-label={`Edit ${title}`}
+            title="Edit expense"
+          >
+            <span className="material-symbols-outlined text-[20px]">edit</span>
+          </button>
+        )}
         {onRequestDelete && (
           <button
             type="button"

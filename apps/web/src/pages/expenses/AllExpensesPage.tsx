@@ -7,18 +7,11 @@ import { useAllExpenses } from '../../hooks/useAllExpenses';
 import { useCategories } from '../../hooks/useCategories';
 import { useUserCurrencies, UserCurrency } from '../../hooks/useUserCurrencies';
 import { useDeleteExpense } from '../../hooks/useDeleteExpense';
-import { useUpdateExpense } from '../../hooks/useUpdateExpense';
 import { ExpenseRow } from '../../components/dashboard/ExpenseRow';
+import { EditExpenseDialog } from '../../components/expenses/EditExpenseDialog';
 import { BottomNavigation } from '../../components/layout/BottomNavigation';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { RecentExpense } from '../../types/api';
-
-const CURRENCY_OPTIONS = [
-  Currency.USD,
-  Currency.EUR,
-  Currency.ALL,
-  Currency.UAH,
-];
 
 type ExpensesListItem =
   | { type: 'date'; id: string; date: string }
@@ -29,7 +22,6 @@ export const AllExpensesPage: React.FC = () => {
   const { data: categories = [] } = useCategories();
   const { data: userCurrencies } = useUserCurrencies();
   const deleteExpenseMutation = useDeleteExpense();
-  const updateExpenseMutation = useUpdateExpense();
 
   // Search & Filters state
   const [searchQuery, setSearchQuery] = useState('');
@@ -38,11 +30,6 @@ export const AllExpensesPage: React.FC = () => {
     useState<RecentExpense | null>(null);
   const [expensePendingEdit, setExpensePendingEdit] =
     useState<RecentExpense | null>(null);
-  const [editAmount, setEditAmount] = useState('');
-  const [editCurrency, setEditCurrency] = useState<Currency>(Currency.EUR);
-  const [editCategoryId, setEditCategoryId] = useState('');
-  const [editDate, setEditDate] = useState('');
-  const [editDescription, setEditDescription] = useState('');
   const listRef = useRef<HTMLDivElement | null>(null);
   const {
     data,
@@ -166,42 +153,6 @@ export const AllExpensesPage: React.FC = () => {
 
   const openEditExpense = (expense: RecentExpense) => {
     setExpensePendingEdit(expense);
-    setEditAmount(String(expense.amount));
-    setEditCurrency(expense.currency);
-    setEditCategoryId(expense.category?.id ?? '');
-    setEditDate(expense.date);
-    setEditDescription(expense.description ?? '');
-  };
-
-  const closeEditExpense = () => {
-    if (updateExpenseMutation.isPending) return;
-    setExpensePendingEdit(null);
-  };
-
-  const handleSaveEdit = async () => {
-    if (!expensePendingEdit) return;
-
-    const amount = Number(editAmount);
-    if (!Number.isFinite(amount) || amount <= 0) {
-      toast.error('Enter an amount to continue.');
-      return;
-    }
-
-    try {
-      await updateExpenseMutation.mutateAsync({
-        id: expensePendingEdit.id,
-        amount,
-        currency: editCurrency,
-        category_id: editCategoryId || null,
-        description: editDescription.trim() || undefined,
-        date: editDate || undefined,
-      });
-      toast.success('Expense updated');
-      setExpensePendingEdit(null);
-    } catch (error) {
-      console.error('Failed to update expense', error);
-      toast.error('Could not update the expense.');
-    }
   };
 
   const deleteTitle =
@@ -470,174 +421,10 @@ export const AllExpensesPage: React.FC = () => {
       )}
 
       {expensePendingEdit && (
-        <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 px-4 py-6 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="edit-expense-title"
-        >
-          <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-5 shadow-2xl border border-outline-variant/20">
-            <div className="flex items-start justify-between gap-3">
-              <div>
-                <h2
-                  id="edit-expense-title"
-                  className="font-headline text-lg font-bold text-primary"
-                >
-                  Edit expense
-                </h2>
-                <p className="mt-1 text-sm text-secondary">
-                  Update the transaction details.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={closeEditExpense}
-                disabled={updateExpenseMutation.isPending}
-                className="w-9 h-9 flex items-center justify-center rounded-full text-secondary hover:bg-surface-container-low disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
-                aria-label="Close edit expense"
-              >
-                <span className="material-symbols-outlined text-[20px]">
-                  close
-                </span>
-              </button>
-            </div>
-
-            <div className="mt-5 space-y-4">
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-wider text-secondary">
-                  Amount
-                </span>
-                <input
-                  type="number"
-                  inputMode="decimal"
-                  min="0"
-                  step="0.01"
-                  value={editAmount}
-                  onChange={(event) => setEditAmount(event.target.value)}
-                  className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
-                />
-              </label>
-
-              <div className="grid grid-cols-2 gap-3">
-                <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wider text-secondary">
-                    Currency
-                  </span>
-                  <select
-                    value={editCurrency}
-                    onChange={(event) =>
-                      setEditCurrency(event.target.value as Currency)
-                    }
-                    className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
-                  >
-                    {CURRENCY_OPTIONS.map((currency) => (
-                      <option key={currency} value={currency}>
-                        {currency}
-                      </option>
-                    ))}
-                  </select>
-                </label>
-
-                <label className="block">
-                  <span className="text-xs font-bold uppercase tracking-wider text-secondary">
-                    Date
-                  </span>
-                  <input
-                    type="date"
-                    value={editDate}
-                    max="2099-12-31"
-                    onChange={(event) => setEditDate(event.target.value)}
-                    className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
-                  />
-                </label>
-              </div>
-
-              <fieldset>
-                <legend className="text-xs font-bold uppercase tracking-wider text-secondary">
-                  Category
-                </legend>
-                <div className="mt-2 grid max-h-48 grid-cols-3 gap-2 overflow-y-auto pr-1 sm:grid-cols-4">
-                  <button
-                    type="button"
-                    onClick={() => setEditCategoryId('')}
-                    aria-pressed={editCategoryId === ''}
-                    className={`flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border px-2 py-2 text-center transition-all ${
-                      editCategoryId === ''
-                        ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                        : 'border-outline-variant/20 bg-surface-container-lowest text-secondary hover:border-primary/40 hover:bg-surface-container-low'
-                    }`}
-                  >
-                    <span className="material-symbols-outlined text-[22px]">
-                      receipt_long
-                    </span>
-                    <span className="mt-1 w-full truncate text-[10px] font-bold uppercase leading-tight">
-                      None
-                    </span>
-                  </button>
-
-                  {categories.map((category) => {
-                    const isActive = editCategoryId === category.id;
-
-                    return (
-                      <button
-                        key={category.id}
-                        type="button"
-                        onClick={() => setEditCategoryId(category.id)}
-                        aria-pressed={isActive}
-                        className={`flex min-h-[4.75rem] flex-col items-center justify-center rounded-xl border px-2 py-2 text-center transition-all ${
-                          isActive
-                            ? 'border-primary bg-primary/10 text-primary shadow-sm'
-                            : 'border-outline-variant/20 bg-surface-container-lowest text-secondary hover:border-primary/40 hover:bg-surface-container-low'
-                        }`}
-                        title={category.name}
-                      >
-                        <span className="material-symbols-outlined text-[22px]">
-                          {category.icon}
-                        </span>
-                        <span className="mt-1 w-full truncate text-[10px] font-bold uppercase leading-tight">
-                          {category.name}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              </fieldset>
-
-              <label className="block">
-                <span className="text-xs font-bold uppercase tracking-wider text-secondary">
-                  Note
-                </span>
-                <input
-                  type="text"
-                  value={editDescription}
-                  onChange={(event) => setEditDescription(event.target.value)}
-                  maxLength={200}
-                  className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
-                  placeholder="Add note..."
-                />
-              </label>
-            </div>
-
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={closeEditExpense}
-                disabled={updateExpenseMutation.isPending}
-                className="h-11 flex-1 rounded-xl border border-outline-variant/20 bg-surface-container-low text-sm font-bold text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveEdit}
-                disabled={updateExpenseMutation.isPending}
-                className="h-11 flex-1 rounded-xl bg-primary text-on-primary text-sm font-bold hover:bg-primary/90 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
-              >
-                {updateExpenseMutation.isPending ? 'Saving...' : 'Save'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <EditExpenseDialog
+          expense={expensePendingEdit}
+          onClose={() => setExpensePendingEdit(null)}
+        />
       )}
     </div>
   );
