@@ -69,31 +69,14 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
     ? `paid in ${formatCurrency(expense.amount, expense.currency as Currency)}`
     : null;
 
-  return (
-    <div
-      role={onRequestView ? 'button' : undefined}
-      tabIndex={onRequestView ? 0 : undefined}
-      aria-label={onRequestView ? `View ${title}` : undefined}
-      onClick={() => onRequestView?.(expense)}
-      onKeyDown={(event) => {
-        if (!onRequestView || (event.key !== 'Enter' && event.key !== ' ')) {
-          return;
-        }
-        event.preventDefault();
-        onRequestView(expense);
-      }}
-      className={`flex items-center justify-between gap-3 group ${
-        onRequestView
-          ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-xl'
-          : ''
-      }`}
-    >
+  const expenseSummary = (
+    <>
       <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-        <div className="w-12 h-12 flex items-center justify-center bg-surface-container-low rounded-lg group-hover:bg-surface-container-highest transition-colors">
+        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-container-low transition-colors group-hover:bg-surface-container-highest">
           <span className="material-symbols-outlined text-primary">{icon}</span>
         </div>
         <div className="min-w-0">
-          <h4 className="font-body text-md font-semibold text-primary truncate">
+          <h4 className="truncate font-body text-md font-semibold text-primary">
             {title}
           </h4>
           <p className="truncate font-label text-xs text-secondary opacity-70">
@@ -101,24 +84,42 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
           </p>
         </div>
       </div>
-      <div className="flex shrink-0 items-center gap-2">
-        <div className="text-right flex flex-col items-end">
-          <span className="font-body font-bold text-primary transition-all duration-300">
-            {formattedAmount}
+      <div className="flex shrink-0 flex-col items-end text-right">
+        <span className="font-body font-bold text-primary transition-all duration-300">
+          {formattedAmount}
+        </span>
+        {formattedOriginal && (
+          <span className="mt-0.5 font-label text-[10px] text-secondary opacity-60">
+            {formattedOriginal}
           </span>
-          {formattedOriginal && (
-            <span className="font-label text-[10px] text-secondary opacity-60 mt-0.5">
-              {formattedOriginal}
-            </span>
-          )}
+        )}
+      </div>
+    </>
+  );
+
+  return (
+    <div className="group flex items-center gap-1">
+      {onRequestView ? (
+        <button
+          type="button"
+          onClick={() => onRequestView(expense)}
+          className="flex min-w-0 flex-1 items-center justify-between gap-3 rounded-xl text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40"
+          aria-label={`View ${title}`}
+        >
+          {expenseSummary}
+        </button>
+      ) : (
+        <div className="flex min-w-0 flex-1 items-center justify-between gap-3">
+          {expenseSummary}
         </div>
+      )}
+
+      {(onRequestEdit || onRequestDelete) && (
+        <div className="flex shrink-0 items-center gap-1">
         {onRequestEdit && (
           <button
             type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRequestEdit(expense);
-            }}
+            onClick={() => onRequestEdit(expense)}
             className="flex h-8 w-8 items-center justify-center rounded-full text-outline transition-colors hover:bg-primary/10 hover:text-primary sm:h-9 sm:w-9"
             aria-label={`Edit ${title}`}
             title="Edit expense"
@@ -129,10 +130,7 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
         {onRequestDelete && (
           <button
             type="button"
-            onClick={(event) => {
-              event.stopPropagation();
-              onRequestDelete(expense);
-            }}
+            onClick={() => onRequestDelete(expense)}
             disabled={isDeleting}
             className="flex h-8 w-8 items-center justify-center rounded-full text-outline transition-colors hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:w-9"
             aria-label={`Delete ${title}`}
@@ -143,7 +141,8 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
             </span>
           </button>
         )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
