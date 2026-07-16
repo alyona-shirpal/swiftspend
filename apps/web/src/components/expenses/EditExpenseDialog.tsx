@@ -15,11 +15,13 @@ const CURRENCY_OPTIONS = [
 interface EditExpenseDialogProps {
   expense: RecentExpense;
   onClose: () => void;
+  onSaved?: () => void | Promise<void>;
 }
 
 export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
   expense,
   onClose,
+  onSaved,
 }) => {
   const { data: categories = [] } = useCategories();
   const updateExpenseMutation = useUpdateExpense();
@@ -52,6 +54,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
         description: description.trim() || null,
         date: date || undefined,
       });
+      await onSaved?.();
       toast.success('Expense updated');
       onClose();
     } catch (error) {
@@ -67,7 +70,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
       aria-modal="true"
       aria-labelledby="edit-expense-title"
     >
-      <div className="w-full max-w-md rounded-2xl bg-surface-container-lowest p-5 shadow-2xl border border-outline-variant/20">
+      <div className="max-h-[calc(100dvh-2rem)] w-full max-w-md overflow-y-auto rounded-2xl border border-outline-variant/20 bg-surface-container-lowest p-5 shadow-2xl">
         <div className="flex items-start justify-between gap-3">
           <div>
             <h2
@@ -210,12 +213,12 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
             <span className="text-xs font-bold uppercase tracking-wider text-secondary">
               Note
             </span>
-            <input
-              type="text"
+            <textarea
               value={description}
               onChange={(event) => setDescription(event.target.value)}
               maxLength={2000}
-              className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+              rows={3}
+              className="mt-1 w-full resize-none rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="Add note..."
             />
           </label>

@@ -6,7 +6,7 @@ import { Currency } from '@swiftspend/types';
 interface ExpenseRowProps {
   expense: RecentExpense;
   currency: Currency;
-  onClick?: (expense: RecentExpense) => void;
+  onRequestView?: (expense: RecentExpense) => void;
   onRequestEdit?: (expense: RecentExpense) => void;
   onRequestDelete?: (expense: RecentExpense) => void;
   isDeleting?: boolean;
@@ -15,7 +15,7 @@ interface ExpenseRowProps {
 export const ExpenseRow: React.FC<ExpenseRowProps> = ({
   expense,
   currency,
-  onClick,
+  onRequestView,
   onRequestEdit,
   onRequestDelete,
   isDeleting = false,
@@ -71,21 +71,24 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
 
   return (
     <div
-      role={onClick ? 'button' : undefined}
-      tabIndex={onClick ? 0 : undefined}
-      onClick={() => onClick?.(expense)}
+      role={onRequestView ? 'button' : undefined}
+      tabIndex={onRequestView ? 0 : undefined}
+      aria-label={onRequestView ? `View ${title}` : undefined}
+      onClick={() => onRequestView?.(expense)}
       onKeyDown={(event) => {
-        if (!onClick || (event.key !== 'Enter' && event.key !== ' ')) return;
+        if (!onRequestView || (event.key !== 'Enter' && event.key !== ' ')) {
+          return;
+        }
         event.preventDefault();
-        onClick(expense);
+        onRequestView(expense);
       }}
       className={`flex items-center justify-between gap-3 group ${
-        onClick
+        onRequestView
           ? 'cursor-pointer focus:outline-none focus-visible:ring-2 focus-visible:ring-primary/40 rounded-xl'
           : ''
       }`}
     >
-      <div className="flex min-w-0 items-center gap-5">
+      <div className="flex min-w-0 items-center gap-3 sm:gap-5">
         <div className="w-12 h-12 flex items-center justify-center bg-surface-container-low rounded-lg group-hover:bg-surface-container-highest transition-colors">
           <span className="material-symbols-outlined text-primary">{icon}</span>
         </div>
@@ -116,7 +119,7 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
               event.stopPropagation();
               onRequestEdit(expense);
             }}
-            className="w-9 h-9 flex items-center justify-center rounded-full text-outline hover:bg-primary/10 hover:text-primary transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-outline transition-colors hover:bg-primary/10 hover:text-primary sm:h-9 sm:w-9"
             aria-label={`Edit ${title}`}
             title="Edit expense"
           >
@@ -131,7 +134,7 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
               onRequestDelete(expense);
             }}
             disabled={isDeleting}
-            className="w-9 h-9 flex items-center justify-center rounded-full text-outline hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50 transition-colors"
+            className="flex h-8 w-8 items-center justify-center rounded-full text-outline transition-colors hover:bg-error/10 hover:text-error disabled:cursor-not-allowed disabled:opacity-50 sm:h-9 sm:w-9"
             aria-label={`Delete ${title}`}
             title="Delete expense"
           >

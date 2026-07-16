@@ -8,6 +8,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { useUserCurrencies, UserCurrency } from '../../hooks/useUserCurrencies';
 import { useDeleteExpense } from '../../hooks/useDeleteExpense';
 import { ExpenseRow } from '../../components/dashboard/ExpenseRow';
+import { DeleteExpenseDialog } from '../../components/expenses/DeleteExpenseDialog';
 import { EditExpenseDialog } from '../../components/expenses/EditExpenseDialog';
 import { BottomNavigation } from '../../components/layout/BottomNavigation';
 import { formatCurrency } from '../../utils/formatCurrency';
@@ -151,15 +152,17 @@ export const AllExpensesPage: React.FC = () => {
     }
   };
 
-  const openEditExpense = (expense: RecentExpense) => {
+  const handleViewExpense = (expense: RecentExpense) => {
+    navigate(`/expenses/${expense.id}`, { state: { from: '/expenses' } });
+  };
+
+  const handleEditExpense = (expense: RecentExpense) => {
     setExpensePendingEdit(expense);
   };
 
-  const deleteTitle =
-    expensePendingDelete?.merchant ||
-    expensePendingDelete?.description ||
-    expensePendingDelete?.category?.name ||
-    'this expense';
+  const handleDeleteRequest = (expense: RecentExpense) => {
+    setExpensePendingDelete(expense);
+  };
 
   return (
     <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-surface pb-32 font-body text-on-surface">
@@ -346,8 +349,9 @@ export const AllExpensesPage: React.FC = () => {
                           <ExpenseRow
                             expense={item.expense}
                             currency={selectedCurrency}
-                            onClick={openEditExpense}
-                            onRequestDelete={setExpensePendingDelete}
+                            onRequestView={handleViewExpense}
+                            onRequestEdit={handleEditExpense}
+                            onRequestDelete={handleDeleteRequest}
                             isDeleting={
                               deleteExpenseMutation.isPending &&
                               deleteExpenseMutation.variables ===
@@ -374,55 +378,17 @@ export const AllExpensesPage: React.FC = () => {
       <BottomNavigation />
 
       {expensePendingDelete && (
-        <div
-          className="fixed inset-0 z-[60] flex items-end justify-center bg-black/40 px-4 py-6 sm:items-center"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="delete-expense-title"
-        >
-          <div className="w-full max-w-sm rounded-2xl bg-surface-container-lowest p-5 shadow-2xl border border-outline-variant/20">
-            <div className="flex items-start gap-3">
-              <div className="w-10 h-10 shrink-0 rounded-full bg-error/10 flex items-center justify-center text-error">
-                <span className="material-symbols-outlined">delete</span>
-              </div>
-              <div>
-                <h2
-                  id="delete-expense-title"
-                  className="font-headline text-lg font-bold text-primary"
-                >
-                  Delete expense?
-                </h2>
-                <p className="mt-1 text-sm text-secondary">
-                  This will permanently remove "{deleteTitle}" from your
-                  expenses.
-                </p>
-              </div>
-            </div>
-
-            <div className="mt-5 flex gap-3">
-              <button
-                type="button"
-                onClick={() => setExpensePendingDelete(null)}
-                disabled={deleteExpenseMutation.isPending}
-                className="h-11 flex-1 rounded-xl border border-outline-variant/20 bg-surface-container-low text-sm font-bold text-primary hover:bg-surface-container-high disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleConfirmDelete}
-                disabled={deleteExpenseMutation.isPending}
-                className="h-11 flex-1 rounded-xl bg-error text-white text-sm font-bold hover:bg-error/90 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
-              >
-                {deleteExpenseMutation.isPending ? 'Deleting...' : 'Delete'}
-              </button>
-            </div>
-          </div>
-        </div>
+        <DeleteExpenseDialog
+          expense={expensePendingDelete}
+          isDeleting={deleteExpenseMutation.isPending}
+          onCancel={() => setExpensePendingDelete(null)}
+          onConfirm={handleConfirmDelete}
+        />
       )}
 
       {expensePendingEdit && (
         <EditExpenseDialog
+          key={expensePendingEdit.id}
           expense={expensePendingEdit}
           onClose={() => setExpensePendingEdit(null)}
         />

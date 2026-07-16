@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { Currency } from '../types';
 import { createExpenseRecord } from '../services/createExpense';
+import type { RateSnapshot } from '@swiftspend/types';
 
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
@@ -206,12 +207,13 @@ export const getMerchantSuggestions = async (req: AuthRequest, res: Response, ne
 export const getExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
     const { id } = req.params;
+    const userId = req.user!.id;
     const supabase = createSupabaseUserClient(req.accessToken!);
     const { data, error } = await supabase
       .from('expenses')
-      .select('*')
+      .select('*, category:categories(id, name, icon, color)')
       .eq('id', id)
-      .eq('user_id', req.user!.id)
+      .eq('user_id', userId)
       .single();
 
     if (error) {
@@ -219,7 +221,24 @@ export const getExpense = async (req: AuthRequest, res: Response, next: NextFunc
       throw error;
     }
 
-    res.json(data);
+    const snapshot = data.exchange_rate_snapshot as unknown as RateSnapshot;
+    const currencies = await ensureUserCurrencies(userId, supabase);
+    const selectedCurrencies = new Set<string>(
+      currencies.map(({ currency }) => currency),
+    );
+    const selectedRates = Object.fromEntries(
+      Object.entries(snapshot.rates).filter(([currency]) =>
+        selectedCurrencies.has(currency),
+      ),
+    );
+
+    res.json({
+      ...data,
+      exchange_rate_snapshot: {
+        ...snapshot,
+        rates: selectedRates,
+      },
+    });
   } catch (err) {
     next(err);
   }

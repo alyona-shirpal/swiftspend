@@ -1,8 +1,11 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useRecentExpenses } from '../../hooks/useRecentExpenses';
+import { useDeleteExpense } from '../../hooks/useDeleteExpense';
 import { ExpenseRow } from './ExpenseRow';
 import { Currency } from '@swiftspend/types';
+import { DeleteExpenseDialog } from '../expenses/DeleteExpenseDialog';
 import { EditExpenseDialog } from '../expenses/EditExpenseDialog';
 import { RecentExpense } from '../../types/api';
 
@@ -13,9 +16,37 @@ interface RecentSpendProps {
 export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
   const navigate = useNavigate();
   const { data: expenses, isLoading, isError } = useRecentExpenses();
+  const deleteExpenseMutation = useDeleteExpense();
   const [expensePendingEdit, setExpensePendingEdit] =
     useState<RecentExpense | null>(null);
+  const [expensePendingDelete, setExpensePendingDelete] =
+    useState<RecentExpense | null>(null);
   const hasExpenses = Boolean(expenses && expenses.length > 0);
+
+  const handleViewExpense = (expense: RecentExpense) => {
+    navigate(`/expenses/${expense.id}`, { state: { from: '/' } });
+  };
+
+  const handleEditExpense = (expense: RecentExpense) => {
+    setExpensePendingEdit(expense);
+  };
+
+  const handleDeleteRequest = (expense: RecentExpense) => {
+    setExpensePendingDelete(expense);
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!expensePendingDelete) return;
+
+    try {
+      await deleteExpenseMutation.mutateAsync(expensePendingDelete.id);
+      toast.success('Expense deleted');
+      setExpensePendingDelete(null);
+    } catch (error) {
+      console.error('Failed to delete expense', error);
+      toast.error('Could not delete the expense.');
+    }
+  };
 
   return (
     <section className="lg:col-span-7 space-y-4 order-2 lg:order-1">
@@ -75,15 +106,31 @@ export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
               key={expense.id}
               expense={expense}
               currency={currency}
-              onRequestEdit={setExpensePendingEdit}
+              onRequestView={handleViewExpense}
+              onRequestEdit={handleEditExpense}
+              onRequestDelete={handleDeleteRequest}
+              isDeleting={
+                deleteExpenseMutation.isPending &&
+                deleteExpenseMutation.variables === expense.id
+              }
             />
           ))}
       </div>
 
       {expensePendingEdit && (
         <EditExpenseDialog
+          key={expensePendingEdit.id}
           expense={expensePendingEdit}
           onClose={() => setExpensePendingEdit(null)}
+        />
+      )}
+
+      {expensePendingDelete && (
+        <DeleteExpenseDialog
+          expense={expensePendingDelete}
+          isDeleting={deleteExpenseMutation.isPending}
+          onCancel={() => setExpensePendingDelete(null)}
+          onConfirm={handleConfirmDelete}
         />
       )}
     </section>

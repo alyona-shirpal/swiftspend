@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/dashboard/DashboardPage';
 import { AddExpensePage } from './pages/expenses/AddExpensePage';
 import { AllCategoriesPage } from './pages/expenses/AllCategoriesPage';
 import { AllExpensesPage } from './pages/expenses/AllExpensesPage';
+import { ExpenseDetailPage } from './pages/expenses/ExpenseDetailPage';
 import { DailyReportPage } from './pages/reports/DailyReportPage';
 import { MonthlyReportPage } from './pages/reports/MonthlyReportPage';
 import { YearlyReportPage } from './pages/reports/YearlyReportPage';
@@ -117,6 +118,14 @@ function App() {
             element={
               <ProtectedRoute>
                 <AllExpensesPage />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/expenses/:id"
+            element={
+              <ProtectedRoute>
+                <ExpenseDetailPage />
               </ProtectedRoute>
             }
           />
