@@ -29,6 +29,16 @@ export async function processExpenseDocument(file: File, auto: boolean) {
   return data;
 }
 
+export function getDocumentProcessingErrorMessage(error: unknown) {
+  return (
+    (error as { response?: { data?: { error?: string } } }).response?.data
+      ?.error ??
+    (error instanceof Error
+      ? error.message
+      : 'Could not process this document.')
+  );
+}
+
 export interface ExpensesListResponse {
   data: Expense[];
   metadata: { total: number; page: number; limit: number };

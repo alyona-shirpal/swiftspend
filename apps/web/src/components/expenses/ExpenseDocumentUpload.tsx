@@ -2,7 +2,11 @@ import React, { useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import { useDocumentProcessing } from '../../hooks/useDocumentProcessing';
-import { ParsedDocumentExpense, processExpenseDocument } from '../../services/expenses';
+import {
+  getDocumentProcessingErrorMessage,
+  ParsedDocumentExpense,
+  processExpenseDocument,
+} from '../../services/expenses';
 
 interface Props {
   autoCreate?: boolean;
@@ -48,8 +52,7 @@ export const ExpenseDocumentUpload: React.FC<Props> = ({
         toast.success('Document parsed. Review the expense before saving.');
       }
     } catch (error) {
-      const message = (error as { response?: { data?: { error?: string } } }).response?.data?.error;
-      toast.error(message ?? 'Could not process this document.');
+      toast.error(getDocumentProcessingErrorMessage(error));
     } finally {
       setIsProcessing(false);
     }

@@ -8,7 +8,12 @@ export default defineConfig({
     react(),
     VitePWA({
       registerType: 'autoUpdate',
-      includeAssets: ['app-icon.svg', 'offline.html', 'icons/*.png'],
+      includeAssets: [
+        'app-icon.svg',
+        'offline.html',
+        'share-target.js',
+        'icons/*.png',
+      ],
       manifest: {
         name: 'SwiftSpend',
         short_name: 'SwiftSpend',
@@ -73,9 +78,35 @@ export default defineConfig({
             ],
           },
         ],
+        share_target: {
+          action: '/share-target',
+          method: 'POST',
+          enctype: 'multipart/form-data',
+          params: {
+            files: [
+              {
+                name: 'documents',
+                accept: [
+                  'image/*',
+                  'application/pdf',
+                  'text/*',
+                  'application/json',
+                  'application/xml',
+                  'application/msword',
+                  'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                  'application/vnd.ms-excel',
+                  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+                  'application/vnd.oasis.opendocument.text',
+                  'application/vnd.oasis.opendocument.spreadsheet',
+                ],
+              },
+            ],
+          },
+        },
       },
       workbox: {
         cleanupOutdatedCaches: true,
+        importScripts: ['/share-target.js'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/auth\/callback/],

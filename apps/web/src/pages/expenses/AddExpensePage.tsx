@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { Currency } from '@swiftspend/types';
 import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
@@ -10,6 +10,11 @@ import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { ExpenseDocumentUpload } from '../../components/expenses/ExpenseDocumentUpload';
+import {
+  getDocumentProcessingErrorMessage,
+  ParsedDocumentExpense,
+} from '../../services/expenses';
+import { processSharedExpenseDocument } from '../../services/sharedExpenseDocument';
 
 const CURRENCY_OPTIONS = [
   Currency.USD,
@@ -97,6 +102,16 @@ export const AddExpensePage: React.FC = () => {
       '',
   );
   const [isSaving, setIsSaving] = useState(false);
+  const [isProcessingSharedDocument, setIsProcessingSharedDocument] =
+    useState(false);
+  const [isParsedTransactionPending, setIsParsedTransactionPending] =
+    useState(false);
+  const [sharedDocumentId] = useState(() =>
+    new URLSearchParams(window.location.search).get('sharedDocument'),
+  );
+  const [shareError] = useState(() =>
+    new URLSearchParams(window.location.search).get('shareError'),
+  );
   const normalizedNote = note.trim().toLowerCase();
   const { data: noteSuggestions = [] } = useExpenseNoteSuggestions(
     selectedCategoryId,
@@ -105,6 +120,61 @@ export const AddExpensePage: React.FC = () => {
   const visibleNoteSuggestions = noteSuggestions
     .filter((suggestion) => suggestion.normalized_note !== normalizedNote)
     .slice(0, 5);
+
+  const applyParsedExpense = useCallback((expense: ParsedDocumentExpense) => {
+    setAmountInput(String(expense.amount));
+    setCurrency(expense.currency as Currency);
+    setSelectedCategoryId(expense.category_id);
+    setSelectedDate(expense.date);
+    setNote(expense.description);
+    setIsParsedTransactionPending(true);
+  }, []);
+
+  useEffect(() => {
+    const documentId = sharedDocumentId;
+    if (!documentId && !shareError) return undefined;
+
+    window.history.replaceState(window.history.state, '', '/expenses/new');
+
+    if (shareError) {
+      toast.error(
+        shareError === 'missing-file'
+          ? 'No document was included in the share.'
+          : 'Could not receive the shared document. Share it again.',
+      );
+      return undefined;
+    }
+
+    if (!documentId) return undefined;
+
+    let isActive = true;
+    setIsProcessingSharedDocument(true);
+
+    void processSharedExpenseDocument(documentId)
+      .then(({ result }) => {
+        if (!isActive) return;
+        if (result.status !== 'parsed') {
+          throw new Error('The shared document was saved before confirmation.');
+        }
+
+        applyParsedExpense(result.expense);
+        toast.success('Transaction parsed. Review the details and confirm it.');
+      })
+      .catch((error) => {
+        if (isActive) {
+          toast.error(getDocumentProcessingErrorMessage(error));
+        }
+      })
+      .finally(() => {
+        if (isActive) {
+          setIsProcessingSharedDocument(false);
+        }
+      });
+
+    return () => {
+      isActive = false;
+    };
+  }, [applyParsedExpense, shareError, sharedDocumentId]);
 
   useEffect(() => {
     if (!selectedCategoryId) {
@@ -214,6 +284,8 @@ export const AddExpensePage: React.FC = () => {
         description: note.trim() || undefined,
         date: selectedDate || undefined,
       });
+
+      setIsParsedTransactionPending(false);
 
       sessionStorage.removeItem(CATEGORY_DRAFT_KEY);
       sessionStorage.removeItem(NOTE_DRAFT_KEY);
@@ -438,14 +510,8 @@ export const AddExpensePage: React.FC = () => {
 
             <div className="flex items-center gap-3 md:gap-4">
               <ExpenseDocumentUpload
-                disabled={isSaving}
-                onParsed={(expense) => {
-                  setAmountInput(String(expense.amount));
-                  setCurrency(expense.currency as Currency);
-                  setSelectedCategoryId(expense.category_id);
-                  setSelectedDate(expense.date);
-                  setNote(expense.description);
-                }}
+                disabled={isSaving || isProcessingSharedDocument}
+                onParsed={applyParsedExpense}
               />
               <div className="relative flex-1">
                 <input
@@ -472,12 +538,29 @@ export const AddExpensePage: React.FC = () => {
               <button
                 type="button"
                 onClick={() => void handleSave()}
-                disabled={isSaving}
-                className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 md:w-12"
+                disabled={isSaving || isProcessingSharedDocument}
+                aria-label={
+                  isParsedTransactionPending
+                    ? 'Confirm parsed transaction'
+                    : 'Save expense'
+                }
+                title={
+                  isParsedTransactionPending
+                    ? 'Confirm parsed transaction'
+                    : 'Save expense'
+                }
+                className={`flex h-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 ${
+                  isParsedTransactionPending ? 'gap-1.5 px-3.5' : 'w-11 md:w-12'
+                }`}
               >
                 <span className="material-symbols-outlined font-bold">
                   check
                 </span>
+                {isParsedTransactionPending && (
+                  <span className="text-[10px] font-bold uppercase tracking-wider">
+                    Confirm
+                  </span>
+                )}
               </button>
             </div>
           </div>
@@ -512,6 +595,25 @@ export const AddExpensePage: React.FC = () => {
           </button>
         </div>
       </nav>
+
+      {isProcessingSharedDocument && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-surface/85 px-6 backdrop-blur-sm"
+          role="status"
+          aria-live="polite"
+          aria-label="Parsing shared document"
+        >
+          <div className="flex max-w-xs flex-col items-center rounded-2xl bg-white px-8 py-7 text-center shadow-2xl ring-1 ring-outline-variant/30">
+            <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-secondary/20 border-t-primary" />
+            <p className="mt-4 font-headline text-sm font-black uppercase tracking-widest text-primary">
+              Parsing document
+            </p>
+            <p className="mt-1 text-xs text-secondary">
+              Extracting the transaction for your review…
+            </p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
