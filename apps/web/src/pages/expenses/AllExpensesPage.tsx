@@ -161,10 +161,10 @@ export const AllExpensesPage: React.FC = () => {
     'this expense';
 
   return (
-    <div className="bg-surface text-on-surface font-body min-h-screen pb-32">
+    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-surface pb-32 font-body text-on-surface">
       {/* TopAppBar */}
-      <header className="bg-[#f7f9fb] flex justify-between items-center px-6 py-4 w-full docked full-width top-0 sticky z-40 border-b border-outline-variant/10">
-        <div className="flex items-center gap-3">
+      <header className="docked full-width sticky top-0 z-40 flex w-full min-w-0 items-center justify-between gap-2 border-b border-outline-variant/10 bg-[#f7f9fb] px-4 py-4 sm:px-6">
+        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
           <button
             type="button"
             onClick={() => navigate('/')}
@@ -175,19 +175,19 @@ export const AllExpensesPage: React.FC = () => {
               arrow_back
             </span>
           </button>
-          <h1 className="text-xl font-headline font-black text-black">
+          <h1 className="truncate text-xl font-headline font-black text-black">
             All Expenses
           </h1>
         </div>
 
         {/* Currency Switcher */}
         {userCurrencies?.currencies && userCurrencies.currencies.length > 1 && (
-          <div className="flex gap-1.5 bg-surface-container-low p-1 rounded-full border border-outline-variant/20">
+          <div className="flex max-w-[48%] shrink-0 gap-1 overflow-x-auto rounded-full border border-outline-variant/20 bg-surface-container-low p-1 scrollbar-none">
             {userCurrencies.currencies.map((c: UserCurrency) => (
               <button
                 key={c.currency}
                 onClick={() => setSelectedCurrency(c.currency as Currency)}
-                className={`px-3 py-1 rounded-full text-xs font-bold transition-all ${
+                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-all ${
                   selectedCurrency === c.currency
                     ? 'bg-white text-primary shadow-sm'
                     : 'text-secondary hover:text-primary'
@@ -200,7 +200,7 @@ export const AllExpensesPage: React.FC = () => {
         )}
       </header>
 
-      <main className="max-w-3xl mx-auto px-4 py-4 space-y-4">
+      <main className="mx-auto w-full min-w-0 max-w-3xl space-y-4 px-4 py-4">
         {/* Total stats card */}
         <section className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 flex justify-between items-center shadow-sm">
           <div>
@@ -237,7 +237,7 @@ export const AllExpensesPage: React.FC = () => {
           </div>
 
           {/* Category Filter Badges */}
-          <div className="flex gap-2 overflow-x-auto pb-2 -mx-6 px-6 scrollbar-none">
+          <div className="flex w-full max-w-full gap-2 overflow-x-auto pb-2 scrollbar-none">
             <button
               onClick={() => setSelectedCategoryId('all')}
               className={`px-4 py-2 rounded-full text-xs font-bold whitespace-nowrap transition-all border ${
@@ -316,7 +316,7 @@ export const AllExpensesPage: React.FC = () => {
           {!isLoading && !isError && expenses.length > 0 && (
             <div
               ref={listRef}
-              className="h-[calc(100vh-22rem)] min-h-[420px] overflow-auto pr-1"
+              className="h-[calc(100vh-22rem)] min-h-[420px] max-w-full overflow-y-auto overflow-x-hidden pr-1"
             >
               <div
                 className="relative w-full"
