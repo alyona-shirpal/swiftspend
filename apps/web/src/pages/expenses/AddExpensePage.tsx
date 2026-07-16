@@ -8,6 +8,7 @@ import { useAddExpense } from '../../hooks/useAddExpense';
 import { useCategories } from '../../hooks/useCategories';
 import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
+import { useExpenseMerchantSuggestions } from '../../hooks/useExpenseMerchantSuggestions';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { ExpenseDocumentUpload } from '../../components/expenses/ExpenseDocumentUpload';
 import {
@@ -37,6 +38,7 @@ const KEYS = [
   'backspace',
 ] as const;
 const CATEGORY_DRAFT_KEY = 'swiftspend.add-expense.selected-category';
+const MERCHANT_DRAFT_KEY = 'swiftspend.add-expense.merchant';
 const NOTE_DRAFT_KEY = 'swiftspend.add-expense.note';
 const AMOUNT_DRAFT_KEY = 'swiftspend.add-expense.amount';
 const DATE_DRAFT_KEY = 'swiftspend.add-expense.date';
@@ -92,6 +94,12 @@ export const AddExpensePage: React.FC = () => {
   const [note, setNote] = useState(
     () => sessionStorage.getItem(NOTE_DRAFT_KEY) ?? '',
   );
+  const [merchant, setMerchant] = useState(
+    () => sessionStorage.getItem(MERCHANT_DRAFT_KEY) ?? '',
+  );
+  const [activeSuggestionField, setActiveSuggestionField] = useState<
+    'merchant' | 'note'
+  >('merchant');
   const [amountInput, setAmountInput] = useState(
     () => sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00',
   );
@@ -120,12 +128,25 @@ export const AddExpensePage: React.FC = () => {
   const visibleNoteSuggestions = noteSuggestions
     .filter((suggestion) => suggestion.normalized_note !== normalizedNote)
     .slice(0, 5);
+  const normalizedMerchant = merchant.trim().toLowerCase();
+  const { data: merchantSuggestions = [] } = useExpenseMerchantSuggestions(
+    selectedCategoryId,
+    merchant,
+  );
+  const visibleMerchantSuggestions = merchantSuggestions
+    .filter(
+      (suggestion) => suggestion.normalized_merchant !== normalizedMerchant,
+    )
+    .slice(0, 5);
 
   const applyParsedExpense = useCallback((expense: ParsedDocumentExpense) => {
     setAmountInput(String(expense.amount));
     setCurrency(expense.currency as Currency);
     setSelectedCategoryId(expense.category_id);
-    setSelectedDate(expense.date);
+    setSelectedDate(
+      expense.date ?? new Date().toISOString().split('T')[0] ?? '',
+    );
+    setMerchant(expense.merchant ?? '');
     setNote(expense.description);
     setIsParsedTransactionPending(true);
   }, []);
@@ -193,6 +214,10 @@ export const AddExpensePage: React.FC = () => {
       sessionStorage.setItem(CATEGORY_DRAFT_KEY, selectedCategoryId);
     }
   }, [selectedCategoryId]);
+
+  useEffect(() => {
+    sessionStorage.setItem(MERCHANT_DRAFT_KEY, merchant);
+  }, [merchant]);
 
   useEffect(() => {
     sessionStorage.setItem(NOTE_DRAFT_KEY, note);
@@ -281,6 +306,7 @@ export const AddExpensePage: React.FC = () => {
         amount: amountValue,
         currency,
         category_id: selectedCategoryId || undefined,
+        merchant: merchant.trim() || undefined,
         description: note.trim() || undefined,
         date: selectedDate || undefined,
       });
@@ -288,6 +314,7 @@ export const AddExpensePage: React.FC = () => {
       setIsParsedTransactionPending(false);
 
       sessionStorage.removeItem(CATEGORY_DRAFT_KEY);
+      sessionStorage.removeItem(MERCHANT_DRAFT_KEY);
       sessionStorage.removeItem(NOTE_DRAFT_KEY);
       sessionStorage.removeItem(AMOUNT_DRAFT_KEY);
       sessionStorage.removeItem(DATE_DRAFT_KEY);
@@ -493,32 +520,79 @@ export const AddExpensePage: React.FC = () => {
 
         <div className="shrink-0 border-t border-surface-container-high bg-white/95 px-4 py-2 backdrop-blur md:px-6 md:py-3">
           <div className="mx-auto w-full max-w-xl pb-safe">
-            {visibleNoteSuggestions.length > 0 && (
-              <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
-                {visibleNoteSuggestions.map((suggestion) => (
-                  <button
-                    key={suggestion.normalized_note}
-                    type="button"
-                    onClick={() => setNote(suggestion.note)}
-                    className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
-                  >
-                    {suggestion.note}
-                  </button>
-                ))}
-              </div>
-            )}
+            {activeSuggestionField === 'merchant' &&
+              visibleMerchantSuggestions.length > 0 && (
+                <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+                  {visibleMerchantSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.normalized_merchant}
+                      type="button"
+                      onClick={() => setMerchant(suggestion.merchant)}
+                      className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
+                    >
+                      {suggestion.merchant}
+                    </button>
+                  ))}
+                </div>
+              )}
 
-            <div className="flex items-center gap-3 md:gap-4">
+            {activeSuggestionField === 'note' &&
+              visibleNoteSuggestions.length > 0 && (
+                <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+                  {visibleNoteSuggestions.map((suggestion) => (
+                    <button
+                      key={suggestion.normalized_note}
+                      type="button"
+                      onClick={() => setNote(suggestion.note)}
+                      className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
+                    >
+                      {suggestion.note}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+            <div className="flex items-center gap-2 md:gap-3">
               <ExpenseDocumentUpload
                 disabled={isSaving || isProcessingSharedDocument}
                 onParsed={applyParsedExpense}
               />
-              <div className="relative flex-1">
+              <div className="relative min-w-0 basis-[38%]">
+                <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-secondary">
+                  storefront
+                </span>
+                <input
+                  type="text"
+                  value={merchant}
+                  onFocus={() => setActiveSuggestionField('merchant')}
+                  onChange={(event) => setMerchant(event.target.value)}
+                  placeholder="Place"
+                  maxLength={120}
+                  aria-label="Place or merchant"
+                  className="w-full rounded-lg border-none bg-surface-container-low py-2.5 pl-8 pr-8 text-base placeholder:text-secondary focus:ring-0 md:py-3"
+                />
+                {merchant && (
+                  <button
+                    type="button"
+                    onClick={() => setMerchant('')}
+                    aria-label="Clear place"
+                    title="Clear place"
+                    className="absolute right-0.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                  >
+                    <span className="material-symbols-outlined text-base">
+                      close
+                    </span>
+                  </button>
+                )}
+              </div>
+              <div className="relative min-w-0 flex-1">
                 <input
                   type="text"
                   value={note}
+                  onFocus={() => setActiveSuggestionField('note')}
                   onChange={(event) => setNote(event.target.value)}
                   placeholder="Add note..."
+                  maxLength={2000}
                   className="w-full rounded-lg border-none bg-surface-container-low px-3 py-2.5 pr-11 text-base placeholder:text-secondary focus:ring-0 md:px-4 md:py-3 md:pr-12"
                 />
                 {note && (

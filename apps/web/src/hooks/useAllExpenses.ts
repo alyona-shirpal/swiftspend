@@ -21,6 +21,8 @@ interface UseAllExpensesParams {
 function mapExpense(e: Expense, categoryMap: Map<string, Category>): RecentExpense {
   return {
     id: e.id,
+    merchant: e.merchant,
+    normalized_merchant: e.normalized_merchant,
     description: e.description,
     normalized_description: e.normalized_description,
     date: e.date,
@@ -59,6 +61,7 @@ export function useAllExpenses(params: UseAllExpensesParams = {}) {
         const mockExpenses: RecentExpense[] = [
           {
             id: '1',
+            merchant: 'Cafe Milano',
             description: 'Lunch at Cafe Milano',
             date: today,
             time: '12:30',
@@ -69,6 +72,7 @@ export function useAllExpenses(params: UseAllExpensesParams = {}) {
           },
           {
             id: '2',
+            merchant: 'Uber',
             description: 'Uber ride to office',
             date: today,
             time: '09:15',
@@ -79,6 +83,7 @@ export function useAllExpenses(params: UseAllExpensesParams = {}) {
           },
           {
             id: '3',
+            merchant: 'Coffee House',
             description: 'Coffee subscription',
             date: yesterday,
             time: '08:00',
@@ -89,6 +94,7 @@ export function useAllExpenses(params: UseAllExpensesParams = {}) {
           },
           {
             id: '4',
+            merchant: 'Corner Market',
             description: 'Weekly Groceries',
             date: twoDaysAgo,
             time: '15:45',
@@ -99,6 +105,7 @@ export function useAllExpenses(params: UseAllExpensesParams = {}) {
           },
           {
             id: '5',
+            merchant: 'Cinema City',
             description: 'Movie tickets',
             date: twoDaysAgo,
             time: '20:15',
@@ -112,6 +119,7 @@ export function useAllExpenses(params: UseAllExpensesParams = {}) {
         const filtered = mockExpenses.filter((expense) => {
           const matchesSearch =
             !search ||
+            expense.merchant?.toLowerCase().includes(search.toLowerCase()) ||
             expense.description?.toLowerCase().includes(search.toLowerCase()) ||
             expense.category?.name.toLowerCase().includes(search.toLowerCase());
           const matchesCategory = !categoryId || expense.category?.id === categoryId;

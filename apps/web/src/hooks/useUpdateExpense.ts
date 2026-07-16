@@ -8,7 +8,8 @@ interface UpdateExpensePayload {
   amount: number;
   currency: Currency;
   category_id?: string | null;
-  description?: string;
+  merchant?: string | null;
+  description?: string | null;
   date?: string;
 }
 

@@ -7,7 +7,8 @@ export interface CreateExpenseInput {
   amount: number;
   currency: string;
   category_id?: string | null;
-  description?: string;
+  merchant?: string | null;
+  description?: string | null;
   date?: string;
 }
 
@@ -32,6 +33,7 @@ export const createExpenseRecord = async (
     .insert({
       user_id: userId,
       category_id: input.category_id ?? null,
+      merchant: input.merchant ?? null,
       description: input.description ?? null,
       date: input.date ?? new Date().toISOString().split('T')[0],
       amount: input.amount,

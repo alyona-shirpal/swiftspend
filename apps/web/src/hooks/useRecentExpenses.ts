@@ -16,6 +16,7 @@ export function useRecentExpenses() {
         return [
           {
             id: '1',
+            merchant: 'Cafe Milano',
             description: 'Lunch at Cafe Milano',
             date: today,
             time: '12:30',
@@ -26,6 +27,7 @@ export function useRecentExpenses() {
           },
           {
             id: '2',
+            merchant: 'Uber',
             description: 'Uber ride to office',
             date: today,
             time: '09:15',
@@ -36,6 +38,7 @@ export function useRecentExpenses() {
           },
           {
             id: '3',
+            merchant: 'Coffee House',
             description: 'Coffee subscription',
             date: yesterday,
             time: '08:00',

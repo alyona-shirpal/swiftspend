@@ -77,8 +77,8 @@ export function computeMerchants(
   const map = new Map<string, MerchantItem & { total: number }>();
 
   for (const e of expenses) {
-    const name = e.description?.trim() || 'Unnamed expense';
-    const key = name.toLowerCase();
+    const name = e.merchant?.trim() || e.description?.trim() || 'Unnamed expense';
+    const key = e.normalized_merchant || name.toLowerCase();
     const cat = e.category_id ? categoryMap.get(e.category_id) : null;
     const amt = getExpenseAmountInCurrency(e, currency);
 

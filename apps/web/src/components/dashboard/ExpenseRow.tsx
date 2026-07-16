@@ -49,8 +49,14 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
   const categoryName = expense.category?.name || 'Uncategorized';
   const icon = expense.category?.icon || 'receipt';
 
-  // Description falls back to category name
-  const title = expense.description || categoryName;
+  const title = expense.merchant || expense.description || categoryName;
+  const subtitle = [
+    expense.merchant ? expense.description : null,
+    categoryName,
+    subtitleTime,
+  ]
+    .filter(Boolean)
+    .join(' • ');
 
   // Show the amount in the selected dashboard currency
   const displayAmount =
@@ -87,8 +93,8 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
           <h4 className="font-body text-md font-semibold text-primary truncate">
             {title}
           </h4>
-          <p className="font-label text-xs text-secondary opacity-70">
-            {categoryName} • {subtitleTime}
+          <p className="truncate font-label text-xs text-secondary opacity-70">
+            {subtitle}
           </p>
         </div>
       </div>

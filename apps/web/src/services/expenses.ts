@@ -5,9 +5,10 @@ export interface ParsedDocumentExpense {
   amount: number;
   currency: string;
   category_id: string;
-  date: string;
-  place: string;
+  date: string | null;
+  merchant: string | null;
   items: string[];
+  extra_info: string | null;
   description: string;
 }
 

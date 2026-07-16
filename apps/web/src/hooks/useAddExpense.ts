@@ -8,6 +8,7 @@ interface AddExpensePayload {
   amount: number;
   currency: Currency;
   category_id?: string;
+  merchant?: string;
   description?: string;
   date?: string;
 }
@@ -32,6 +33,7 @@ export function useAddExpense() {
       queryClient.invalidateQueries({ queryKey: ['expenses', 'all'] });
       queryClient.invalidateQueries({ queryKey: ['expenses', 'monthly-total'] });
       queryClient.invalidateQueries({ queryKey: ['expenses', 'note-suggestions'] });
+      queryClient.invalidateQueries({ queryKey: ['expenses', 'merchant-suggestions'] });
       queryClient.invalidateQueries({ queryKey: ['categories', 'recent'] });
     },
   });

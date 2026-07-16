@@ -156,6 +156,7 @@ export const AllExpensesPage: React.FC = () => {
   };
 
   const deleteTitle =
+    expensePendingDelete?.merchant ||
     expensePendingDelete?.description ||
     expensePendingDelete?.category?.name ||
     'this expense';
@@ -229,7 +230,7 @@ export const AllExpensesPage: React.FC = () => {
             </span>
             <input
               type="text"
-              placeholder="Search by description..."
+              placeholder="Search by merchant or note..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               className="w-full h-12 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-outline-variant/75 transition-all"

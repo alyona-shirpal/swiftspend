@@ -4,6 +4,7 @@ import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { useCategories } from '../../hooks/useCategories';
 import { useAddExpense } from '../../hooks/useAddExpense';
 import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
+import { useExpenseMerchantSuggestions } from '../../hooks/useExpenseMerchantSuggestions';
 import { CategoryPill } from './CategoryPill';
 import { Category } from '../../types/api';
 import toast from 'react-hot-toast';
@@ -14,6 +15,7 @@ export const InstantLogging: React.FC = () => {
   const [amountStr, setAmountStr] = useState<string>('');
   const [currency, setCurrency] = useState<Currency>(Currency.ALL);
   const [categoryId, setCategoryId] = useState<string>('');
+  const [merchant, setMerchant] = useState<string>('');
   const [description, setDescription] = useState<string>('');
   const [isSaving, setIsSaving] = useState(false);
 
@@ -24,6 +26,16 @@ export const InstantLogging: React.FC = () => {
   const { data: noteSuggestions = [] } = useExpenseNoteSuggestions(categoryId, description);
   const visibleNoteSuggestions = noteSuggestions
     .filter((suggestion) => suggestion.normalized_note !== normalizedDescription)
+    .slice(0, 5);
+  const normalizedMerchant = merchant.trim().toLowerCase();
+  const { data: merchantSuggestions = [] } = useExpenseMerchantSuggestions(
+    categoryId,
+    merchant,
+  );
+  const visibleMerchantSuggestions = merchantSuggestions
+    .filter(
+      (suggestion) => suggestion.normalized_merchant !== normalizedMerchant,
+    )
     .slice(0, 5);
 
   // All categories to show: real recent ones take priority, else show all from DB
@@ -74,6 +86,7 @@ export const InstantLogging: React.FC = () => {
         amount,
         currency,
         category_id: categoryId || undefined,
+        merchant: merchant.trim() || undefined,
         description: description || undefined,
       });
 
@@ -81,6 +94,7 @@ export const InstantLogging: React.FC = () => {
       await Promise.all([refetchRecent(), refetchAll()]);
 
       setAmountStr('');
+      setMerchant('');
       setDescription('');
       toast.success('Expense added', {
         style: { background: '#009668', color: '#ffffff' },
@@ -147,6 +161,62 @@ export const InstantLogging: React.FC = () => {
                 onClick={() => setCategoryId(cat.id)}
               />
             ))}
+          </div>
+        </div>
+
+        {/* Place */}
+        <div className="space-y-2">
+          {visibleMerchantSuggestions.length > 0 && (
+            <div className="flex items-center gap-2 rounded-lg border border-outline-variant/20 bg-white/75 px-2 py-2 shadow-inner">
+              <span className="material-symbols-outlined shrink-0 text-[16px] text-secondary">
+                storefront
+              </span>
+              <div className="flex min-w-0 flex-1 gap-1.5 overflow-x-auto no-scrollbar">
+                {visibleMerchantSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.normalized_merchant}
+                    type="button"
+                    onClick={() => setMerchant(suggestion.merchant)}
+                    disabled={isSaving}
+                    title={suggestion.merchant}
+                    className="group flex max-w-[11rem] shrink-0 items-center gap-1.5 rounded-full border border-outline-variant/20 bg-surface-container-lowest px-2.5 py-1.5 text-left text-xs font-semibold text-primary shadow-sm transition-all hover:border-primary/30 hover:bg-surface-container-low active:scale-[0.98] disabled:opacity-50"
+                  >
+                    <span className="min-w-0 truncate">
+                      {suggestion.merchant}
+                    </span>
+                    {suggestion.count > 1 && (
+                      <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-bold leading-none text-primary">
+                        {suggestion.count}
+                      </span>
+                    )}
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="relative">
+            <input
+              type="text"
+              placeholder="Where was this?"
+              value={merchant}
+              onChange={(e) => setMerchant(e.target.value)}
+              disabled={isSaving}
+              maxLength={120}
+              className="w-full bg-transparent border-b-2 border-surface-container-highest py-3 pr-10 font-body font-medium text-on-surface transition-colors placeholder:text-secondary/50 focus:border-on-tertiary-container focus:outline-none focus:ring-0"
+            />
+            {merchant && (
+              <button
+                type="button"
+                onClick={() => setMerchant('')}
+                disabled={isSaving}
+                aria-label="Clear place"
+                title="Clear place"
+                className="absolute right-0 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary disabled:opacity-50"
+              >
+                <span className="material-symbols-outlined text-base">close</span>
+              </button>
+            )}
           </div>
         </div>
 

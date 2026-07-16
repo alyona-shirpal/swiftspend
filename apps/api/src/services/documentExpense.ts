@@ -19,9 +19,10 @@ export interface ParsedDocumentExpense {
   amount: number;
   currency: string;
   category_id: string;
-  date: string;
-  place: string;
+  date: string | null;
+  merchant: string | null;
   items: string[];
+  extra_info: string | null;
   description: string;
 }
 
@@ -30,22 +31,35 @@ const ModelExpenseSchema = z.object({
   amount: z.coerce.number().positive(),
   currency: z.string().min(3).max(3),
   category_id: z.string().uuid(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
-  place: z.string().trim().min(1).max(120),
-  items: z.array(z.string().trim().min(1).max(120)).max(100),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).nullable(),
+  merchant: z.string().trim().min(1).max(120).nullable(),
+  items: z.array(z.string().trim().min(1).max(160)).max(30),
+  extra_info: z.string().trim().min(1).max(500).nullable(),
 });
 
 const JSON_SCHEMA = {
   type: 'object',
   additionalProperties: false,
-  required: ['amount', 'currency', 'category_id', 'date', 'place', 'items'],
+  required: [
+    'amount',
+    'currency',
+    'category_id',
+    'date',
+    'merchant',
+    'items',
+    'extra_info',
+  ],
   properties: {
     amount: { type: 'number' },
     currency: { type: 'string' },
     category_id: { type: 'string' },
-    date: { type: 'string', description: 'YYYY-MM-DD' },
-    place: { type: 'string' },
+    date: {
+      type: ['string', 'null'],
+      description: 'YYYY-MM-DD when the date can be parsed; otherwise null',
+    },
+    merchant: { type: ['string', 'null'] },
     items: { type: 'array', items: { type: 'string' } },
+    extra_info: { type: ['string', 'null'] },
   },
 } as const;
 
@@ -53,7 +67,16 @@ const JSON_SCHEMA = {
 const GEMINI_JSON_SCHEMA = {
   type: JSON_SCHEMA.type,
   required: JSON_SCHEMA.required,
-  properties: JSON_SCHEMA.properties,
+  properties: {
+    ...JSON_SCHEMA.properties,
+    date: {
+      type: 'string',
+      nullable: true,
+      description: 'YYYY-MM-DD when the date can be parsed; otherwise null',
+    },
+    merchant: { type: 'string', nullable: true },
+    extra_info: { type: 'string', nullable: true },
+  },
 } as const;
 
 const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
@@ -129,9 +152,10 @@ Rules:
 - amount is the final total paid, as a positive number. Do not sum line items when a final total is visible.
 - currency must be one of: ${context.currencies.join(', ')}.
 - category_id must be the best general-knowledge match from this exact list: ${JSON.stringify(context.categories)}.
-- date must be YYYY-MM-DD. Prefer the transaction/purchase date.
-- place is the merchant, store, vendor, or payee name.
-- items is a concise list of things purchased, without prices. Use an empty array only when no items can be determined.
+- date must be YYYY-MM-DD when it can be reliably parsed. Prefer the transaction/purchase date. If the date cannot be parsed, return null. Do not guess or invent a date.
+- merchant is only the merchant, shop, store, vendor, or payee name. Keep it separate from items and extra_info. Return null when it cannot be determined.
+- items contains concise receipt/check item lines. Preserve a visible quantity and item price or line total, including the printed currency or symbol, for example "2 x Coffee - 6.00 EUR". Never calculate or invent a price. Exclude subtotal, tax, tip, total, change, and payment-method lines. Use an empty array only when no purchased items can be determined.
+- extra_info is a concise note for useful transaction details that are neither the merchant nor purchased items, such as a discount, tip, service charge, order reference, or payment context. Return null when there is no useful extra information.
 - Do not invent financial facts. If multiple transactions exist, choose the document's primary/final transaction.
 `.trim();
 
@@ -337,7 +361,12 @@ export const parseExpenseDocument = async (
         throw new Error(`Unsupported currency ${parsed.currency}`);
       if (!context.categories.some(({ id }) => id === parsed.category_id))
         throw new Error('Unknown category_id');
-      const description = `${parsed.place}.${parsed.items.length ? ` ${parsed.items.join(', ')}` : ''}`;
+      const description = [
+        parsed.items.join('; '),
+        parsed.extra_info,
+      ]
+        .filter((value): value is string => Boolean(value))
+        .join('. ');
       return { provider: config.provider, expense: { ...parsed, description } };
     } catch (error) {
       const message = axios.isAxiosError(error)

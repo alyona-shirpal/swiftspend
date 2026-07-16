@@ -7,6 +7,7 @@ import {
   deleteExpense,
   getRecentExpenses,
   getNoteSuggestions,
+  getMerchantSuggestions,
   getMonthlyTotal
 } from '../controllers/expenses';
 import { requireAuth } from '../middleware/auth';
@@ -19,6 +20,7 @@ router.use(requireAuth);
 router.get('/recent', getRecentExpenses);
 router.get('/monthly-total', getMonthlyTotal);
 router.get('/note-suggestions', getNoteSuggestions);
+router.get('/merchant-suggestions', getMerchantSuggestions);
 router.get('/document/config', getDocumentExpenseConfig);
 router.post('/document', express.raw({ type: '*/*', limit: '15mb' }), processExpenseDocument);
 router.get('/', getExpenses);

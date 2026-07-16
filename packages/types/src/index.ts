@@ -34,6 +34,8 @@ export interface Expense {
   id: string
   user_id: string
   category_id: string | null
+  merchant: string | null
+  normalized_merchant: string | null
   description: string | null
   normalized_description: string | null
   date: string
@@ -58,6 +60,7 @@ export interface CreateExpenseBody {
   amount: number
   currency: Currency
   category_id?: string
+  merchant?: string
   description?: string
 }
 

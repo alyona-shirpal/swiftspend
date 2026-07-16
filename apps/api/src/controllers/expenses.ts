@@ -14,13 +14,14 @@ const ExpenseSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().min(3).max(3),
   category_id: z.string().uuid().nullable().optional(),
-  description: z.string().max(200).optional(),
+  merchant: z.string().trim().max(120).nullable().optional(),
+  description: z.string().max(2000).nullable().optional(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(), // YYYY-MM-DD from the client date picker
 });
 
-const NoteSuggestionsSchema = z.object({
+const TextSuggestionsSchema = z.object({
   category_id: z.string().uuid(),
-  q: z.string().max(200).optional(),
+  q: z.string().max(2000).optional(),
   limit: z.string().regex(/^\d+$/).optional(),
 });
 
@@ -71,7 +72,11 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: NextFun
     if (category_id) query = query.eq('category_id', category_id);
     if (currency) query = query.eq('currency', currency);
     const normalizedSearch = normalizeNote(typeof search === 'string' ? search : undefined);
-    if (normalizedSearch) query = query.ilike('normalized_description', `%${normalizedSearch}%`);
+    if (normalizedSearch) {
+      query = query.or(
+        `normalized_description.ilike.%${normalizedSearch}%,normalized_merchant.ilike.%${normalizedSearch}%`,
+      );
+    }
 
     const pageNum = parseInt(page as string);
     const limitNum = parseInt(limit as string);
@@ -94,7 +99,7 @@ export const getExpenses = async (req: AuthRequest, res: Response, next: NextFun
 
 export const getNoteSuggestions = async (req: AuthRequest, res: Response, next: NextFunction) => {
   try {
-    const { category_id, q, limit } = NoteSuggestionsSchema.parse(req.query);
+    const { category_id, q, limit } = TextSuggestionsSchema.parse(req.query);
     const normalizedQuery = normalizeNote(q);
     const resultLimit = Math.min(parseInt(limit ?? '6', 10), 12);
     const supabase = createSupabaseUserClient(req.accessToken!);
@@ -134,6 +139,59 @@ export const getNoteSuggestions = async (req: AuthRequest, res: Response, next: 
       suggestions.set(normalizedNote, {
         note: displayNote,
         normalized_note: normalizedNote,
+        count: 1,
+        last_used_at: row.created_at,
+      });
+    }
+
+    res.json(Array.from(suggestions.values()).slice(0, resultLimit));
+  } catch (err) {
+    next(err);
+  }
+};
+
+export const getMerchantSuggestions = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const { category_id, q, limit } = TextSuggestionsSchema.parse(req.query);
+    const normalizedQuery = normalizeNote(q);
+    const resultLimit = Math.min(parseInt(limit ?? '6', 10), 12);
+    const supabase = createSupabaseUserClient(req.accessToken!);
+
+    let query = supabase
+      .from('expenses')
+      .select('merchant, normalized_merchant, created_at')
+      .eq('user_id', req.user!.id)
+      .eq('category_id', category_id)
+      .not('normalized_merchant', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(200);
+
+    if (normalizedQuery) {
+      query = query.ilike('normalized_merchant', `%${normalizedQuery}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+
+    const suggestions = new Map<
+      string,
+      { merchant: string; normalized_merchant: string; count: number; last_used_at: string }
+    >();
+
+    for (const row of data ?? []) {
+      const normalizedMerchant = normalizeNote(row.normalized_merchant);
+      const displayMerchant = row.merchant?.trim();
+      if (!normalizedMerchant || !displayMerchant) continue;
+
+      const existing = suggestions.get(normalizedMerchant);
+      if (existing) {
+        existing.count += 1;
+        continue;
+      }
+
+      suggestions.set(normalizedMerchant, {
+        merchant: displayMerchant,
+        normalized_merchant: normalizedMerchant,
         count: 1,
         last_used_at: row.created_at,
       });
@@ -194,6 +252,7 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
 
     let updatePayload: Record<string, unknown> = {
       ...(validated.category_id !== undefined ? { category_id: validated.category_id } : {}),
+      ...(validated.merchant !== undefined ? { merchant: validated.merchant } : {}),
       ...(validated.description !== undefined ? { description: validated.description } : {}),
       ...(validated.date !== undefined ? { date: validated.date } : {}),
       ...(validated.amount !== undefined ? { amount: validated.amount } : {}),
@@ -278,6 +337,7 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
       .from('expenses')
       .select(`
         id,
+        merchant,
         description,
         date,
         created_at,
@@ -302,6 +362,7 @@ export const getRecentExpenses = async (req: AuthRequest, res: Response, next: N
 
     const formattedData = rows.map((item) => ({
       id: item.id,
+      merchant: item.merchant,
       description: item.description,
       date: item.date,
       time: item.created_at,

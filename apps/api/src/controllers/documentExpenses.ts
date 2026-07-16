@@ -46,7 +46,10 @@ export const processExpenseDocument = async (req: AuthRequest, res: Response, ne
       return res.json({ status: 'parsed', ...parsed });
     }
 
-    const expense = await createExpenseRecord(req.accessToken!, req.user!.id, parsed.expense);
+    const expense = await createExpenseRecord(req.accessToken!, req.user!.id, {
+      ...parsed.expense,
+      date: parsed.expense.date ?? new Date().toISOString().split('T')[0],
+    });
     return res.status(201).json({ status: 'created', provider: parsed.provider, expense });
   } catch (error) {
     next(error);

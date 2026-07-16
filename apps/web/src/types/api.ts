@@ -10,6 +10,8 @@ export interface Category {
 
 export interface RecentExpense {
   id: string;
+  merchant: string | null;
+  normalized_merchant?: string | null;
   description: string | null;
   normalized_description?: string | null;
   date: string;
@@ -23,6 +25,13 @@ export interface RecentExpense {
 export interface NoteSuggestion {
   note: string;
   normalized_note: string;
+  count: number;
+  last_used_at: string;
+}
+
+export interface MerchantSuggestion {
+  merchant: string;
+  normalized_merchant: string;
   count: number;
   last_used_at: string;
 }

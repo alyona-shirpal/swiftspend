@@ -27,6 +27,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
   const [currency, setCurrency] = useState<Currency>(expense.currency);
   const [categoryId, setCategoryId] = useState(expense.category?.id ?? '');
   const [date, setDate] = useState(expense.date);
+  const [merchant, setMerchant] = useState(expense.merchant ?? '');
   const [description, setDescription] = useState(expense.description ?? '');
 
   const closeDialog = () => {
@@ -47,7 +48,8 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
         amount: numericAmount,
         currency,
         category_id: categoryId || null,
-        description: description.trim() || undefined,
+        merchant: merchant.trim() || null,
+        description: description.trim() || null,
         date: date || undefined,
       });
       toast.success('Expense updated');
@@ -192,13 +194,27 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
 
           <label className="block">
             <span className="text-xs font-bold uppercase tracking-wider text-secondary">
+              Place
+            </span>
+            <input
+              type="text"
+              value={merchant}
+              onChange={(event) => setMerchant(event.target.value)}
+              maxLength={120}
+              className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+              placeholder="Merchant or shop..."
+            />
+          </label>
+
+          <label className="block">
+            <span className="text-xs font-bold uppercase tracking-wider text-secondary">
               Note
             </span>
             <input
               type="text"
               value={description}
               onChange={(event) => setDescription(event.target.value)}
-              maxLength={200}
+              maxLength={2000}
               className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="Add note..."
             />

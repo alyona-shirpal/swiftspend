@@ -175,7 +175,7 @@ export const getDailyReport = async (req: AuthRequest, res: Response, next: Next
     const { data: expenses, error } = await supabase
       .from('expenses')
       .select(`
-        id, category_id, description, date, created_at, amount, currency, amounts,
+        id, category_id, merchant, description, date, created_at, amount, currency, amounts,
         categories (id, name, icon, color)
       `)
       .eq('user_id', userId)

@@ -15,6 +15,8 @@ export type RecentExpenseCategoryJoinRow = {
 
 export type RecentExpenseJoinRow = {
   id: string;
+  merchant: string | null;
+  normalized_merchant?: string | null;
   description: string | null;
   normalized_description?: string | null;
   date: string;
