@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import toast from 'react-hot-toast';
 import { useCreateCategory } from '../../hooks/useCreateCategory';
 import { useCategories } from '../../hooks/useCategories';
-import { BottomNavigation } from '../../components/layout/BottomNavigation';
+import { AppLayout } from '../../components/layout/AppLayout';
 import type { Category } from '../../types/api';
 
 const CATEGORY_DRAFT_KEY = 'swiftspend.add-expense.selected-category';
@@ -43,28 +43,7 @@ export const AllCategoriesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface font-body text-on-surface">
-      <header className="sticky top-0 z-50 flex items-center justify-between bg-[#f2f4f6] px-6 py-4">
-        <div className="flex items-center gap-4">
-          <button
-            type="button"
-            onClick={() => navigate('/expenses/new')}
-            className="flex h-10 w-10 items-center justify-center rounded-full transition-colors hover:bg-surface-container-highest active:scale-90"
-          >
-            <span className="material-symbols-outlined text-primary">arrow_back</span>
-          </button>
-          <h1 className="font-headline text-xl font-black tracking-tight text-black">Select Category</h1>
-        </div>
-
-        <button
-          type="button"
-          className="rounded-full p-2 transition-colors hover:bg-[#e0e3e5]"
-        >
-          <span className="material-symbols-outlined text-secondary">account_circle</span>
-        </button>
-      </header>
-
-      <main className="px-6 pb-32 pt-4">
+    <AppLayout title="Select Category" backTo="/expenses/new" width="3xl">
         <section>
           <p className="mb-4 font-label text-[10px] font-medium uppercase tracking-wide text-secondary">
             All Categories
@@ -133,13 +112,10 @@ export const AllCategoriesPage: React.FC = () => {
             <span className="material-symbols-outlined text-[20px]">add</span>
             {isPending ? 'Creating...' : 'Create Category'}
           </button>
-        </section>
-      </main>
-
-      <BottomNavigation />
+      </section>
 
       <div className="pointer-events-none fixed right-0 top-0 -z-10 h-64 w-64 rounded-full bg-secondary/5 blur-[120px]" />
       <div className="pointer-events-none fixed bottom-0 left-0 -z-10 h-96 w-96 rounded-full bg-on-tertiary-container/5 blur-[120px]" />
-    </div>
+    </AppLayout>
   );
 };

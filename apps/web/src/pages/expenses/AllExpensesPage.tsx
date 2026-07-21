@@ -5,12 +5,15 @@ import toast from 'react-hot-toast';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { useAllExpenses } from '../../hooks/useAllExpenses';
 import { useCategories } from '../../hooks/useCategories';
-import { useUserCurrencies, UserCurrency } from '../../hooks/useUserCurrencies';
+import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { useDeleteExpense } from '../../hooks/useDeleteExpense';
 import { ExpenseRow } from '../../components/dashboard/ExpenseRow';
 import { DeleteExpenseDialog } from '../../components/expenses/DeleteExpenseDialog';
 import { EditExpenseDialog } from '../../components/expenses/EditExpenseDialog';
-import { BottomNavigation } from '../../components/layout/BottomNavigation';
+import {
+  AppLayout,
+  HeaderCurrencyToggle,
+} from '../../components/layout/AppLayout';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { RecentExpense } from '../../types/api';
 
@@ -165,46 +168,19 @@ export const AllExpensesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen w-full max-w-full overflow-x-hidden bg-surface pb-32 font-body text-on-surface">
-      {/* TopAppBar */}
-      <header className="docked full-width sticky top-0 z-40 flex w-full min-w-0 items-center justify-between gap-2 border-b border-outline-variant/10 bg-[#f7f9fb] px-4 py-4 sm:px-6">
-        <div className="flex min-w-0 items-center gap-2 sm:gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/')}
-            className="p-2 -ml-2 rounded-full text-secondary hover:bg-surface-container-low transition-colors"
-            aria-label="Back to dashboard"
-          >
-            <span className="material-symbols-outlined text-black">
-              arrow_back
-            </span>
-          </button>
-          <h1 className="truncate text-xl font-headline font-black text-black">
-            All Expenses
-          </h1>
-        </div>
-
-        {/* Currency Switcher */}
-        {userCurrencies?.currencies && userCurrencies.currencies.length > 1 && (
-          <div className="flex max-w-[48%] shrink-0 gap-1 overflow-x-auto rounded-full border border-outline-variant/20 bg-surface-container-low p-1 scrollbar-none">
-            {userCurrencies.currencies.map((c: UserCurrency) => (
-              <button
-                key={c.currency}
-                onClick={() => setSelectedCurrency(c.currency as Currency)}
-                className={`shrink-0 rounded-full px-3 py-1 text-xs font-bold transition-all ${
-                  selectedCurrency === c.currency
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-secondary hover:text-primary'
-                }`}
-              >
-                {c.currency}
-              </button>
-            ))}
-          </div>
-        )}
-      </header>
-
-      <main className="mx-auto w-full min-w-0 max-w-3xl space-y-4 px-4 py-4">
+    <AppLayout
+      title="All Expenses"
+      backTo="/"
+      actions={
+        <HeaderCurrencyToggle
+          options={userCurrencies?.currencies?.map((c) => c.currency) ?? []}
+          value={selectedCurrency}
+          onChange={(currency) => setSelectedCurrency(currency as Currency)}
+        />
+      }
+      width="3xl"
+      mainClassName="space-y-4"
+    >
         {/* Total stats card */}
         <section className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 flex justify-between items-center shadow-sm">
           <div>
@@ -372,10 +348,7 @@ export const AllExpensesPage: React.FC = () => {
               )}
             </div>
           )}
-        </section>
-      </main>
-
-      <BottomNavigation />
+      </section>
 
       {expensePendingDelete && (
         <DeleteExpenseDialog
@@ -393,6 +366,6 @@ export const AllExpensesPage: React.FC = () => {
           onClose={() => setExpensePendingEdit(null)}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };

@@ -97,9 +97,10 @@ export const AddExpensePage: React.FC = () => {
   const [merchant, setMerchant] = useState(
     () => sessionStorage.getItem(MERCHANT_DRAFT_KEY) ?? '',
   );
-  const [activeSuggestionField, setActiveSuggestionField] = useState<
-    'merchant' | 'note'
-  >('merchant');
+  // Which detail (place or note) is expanded into the full-width editor
+  const [editingField, setEditingField] = useState<'merchant' | 'note' | null>(
+    null,
+  );
   const [amountInput, setAmountInput] = useState(
     () => sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00',
   );
@@ -271,6 +272,14 @@ export const AddExpensePage: React.FC = () => {
       day: 'numeric',
     });
   }, [selectedDate]);
+
+  // Collapse the detail editor when focus leaves the bottom bar (e.g. the
+  // user taps the keypad); focus moves inside the bar keep it open.
+  const handleDetailsBlur = (event: React.FocusEvent<HTMLDivElement>) => {
+    if (!event.currentTarget.contains(event.relatedTarget as Node | null)) {
+      setEditingField(null);
+    }
+  };
 
   const handleKeyPress = (key: (typeof KEYS)[number]) => {
     if (key === 'backspace') {
@@ -519,15 +528,21 @@ export const AddExpensePage: React.FC = () => {
         </main>
 
         <div className="shrink-0 border-t border-surface-container-high bg-white/95 px-4 py-2 backdrop-blur md:px-6 md:py-3">
-          <div className="mx-auto w-full max-w-xl pb-safe">
-            {activeSuggestionField === 'merchant' &&
-              visibleMerchantSuggestions.length > 0 && (
-                <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
+          <div
+            className="mx-auto w-full max-w-xl pb-safe"
+            onBlur={handleDetailsBlur}
+          >
+            {editingField === 'merchant' &&
+              !!visibleMerchantSuggestions.length && (
+                <div className="no-scrollbar mb-2 flex gap-1.5 overflow-x-auto pb-1">
                   {visibleMerchantSuggestions.map((suggestion) => (
                     <button
                       key={suggestion.normalized_merchant}
                       type="button"
-                      onClick={() => setMerchant(suggestion.merchant)}
+                      onClick={() => {
+                        setMerchant(suggestion.merchant);
+                        setEditingField(null);
+                      }}
                       className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
                     >
                       {suggestion.merchant}
@@ -536,107 +551,167 @@ export const AddExpensePage: React.FC = () => {
                 </div>
               )}
 
-            {activeSuggestionField === 'note' &&
-              visibleNoteSuggestions.length > 0 && (
-                <div className="mb-2 flex gap-1.5 overflow-x-auto pb-1">
-                  {visibleNoteSuggestions.map((suggestion) => (
-                    <button
-                      key={suggestion.normalized_note}
-                      type="button"
-                      onClick={() => setNote(suggestion.note)}
-                      className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
-                    >
-                      {suggestion.note}
-                    </button>
-                  ))}
-                </div>
-              )}
+            {editingField === 'note' && !!visibleNoteSuggestions.length && (
+              <div className="no-scrollbar mb-2 flex gap-1.5 overflow-x-auto pb-1">
+                {visibleNoteSuggestions.map((suggestion) => (
+                  <button
+                    key={suggestion.normalized_note}
+                    type="button"
+                    onClick={() => {
+                      setNote(suggestion.note);
+                      setEditingField(null);
+                    }}
+                    className="shrink-0 rounded-full bg-surface-container-low px-3 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-high"
+                  >
+                    {suggestion.note}
+                  </button>
+                ))}
+              </div>
+            )}
 
-            <div className="flex items-center gap-2 md:gap-3">
-              <ExpenseDocumentUpload
-                disabled={isSaving || isProcessingSharedDocument}
-                onParsed={applyParsedExpense}
-              />
-              <div className="relative min-w-0 basis-[38%]">
-                <span className="material-symbols-outlined pointer-events-none absolute left-2.5 top-1/2 -translate-y-1/2 text-[16px] text-secondary">
-                  storefront
-                </span>
-                <input
-                  type="text"
-                  value={merchant}
-                  onFocus={() => setActiveSuggestionField('merchant')}
-                  onChange={(event) => setMerchant(event.target.value)}
-                  placeholder="Place"
-                  maxLength={120}
-                  aria-label="Place or merchant"
-                  className="w-full rounded-lg border-none bg-surface-container-low py-2.5 pl-8 pr-8 text-base placeholder:text-secondary focus:ring-0 md:py-3"
-                />
-                {merchant && (
-                  <button
-                    type="button"
-                    onClick={() => setMerchant('')}
-                    aria-label="Clear place"
-                    title="Clear place"
-                    className="absolute right-0.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
-                  >
-                    <span className="material-symbols-outlined text-base">
-                      close
-                    </span>
-                  </button>
-                )}
-              </div>
-              <div className="relative min-w-0 flex-1">
-                <input
-                  type="text"
-                  value={note}
-                  onFocus={() => setActiveSuggestionField('note')}
-                  onChange={(event) => setNote(event.target.value)}
-                  placeholder="Add note..."
-                  maxLength={2000}
-                  className="w-full rounded-lg border-none bg-surface-container-low px-3 py-2.5 pr-11 text-base placeholder:text-secondary focus:ring-0 md:px-4 md:py-3 md:pr-12"
-                />
-                {note && (
-                  <button
-                    type="button"
-                    onClick={() => setNote('')}
-                    aria-label="Clear note"
-                    title="Clear note"
-                    className="absolute right-1.5 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
-                  >
-                    <span className="material-symbols-outlined text-base">
-                      close
-                    </span>
-                  </button>
-                )}
-              </div>
-              <button
-                type="button"
-                onClick={() => void handleSave()}
-                disabled={isSaving || isProcessingSharedDocument}
-                aria-label={
-                  isParsedTransactionPending
-                    ? 'Confirm parsed transaction'
-                    : 'Save expense'
-                }
-                title={
-                  isParsedTransactionPending
-                    ? 'Confirm parsed transaction'
-                    : 'Save expense'
-                }
-                className={`flex h-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 ${
-                  isParsedTransactionPending ? 'gap-1.5 px-3.5' : 'w-11 md:w-12'
-                }`}
-              >
-                <span className="material-symbols-outlined font-bold">
-                  check
-                </span>
-                {isParsedTransactionPending && (
-                  <span className="text-[10px] font-bold uppercase tracking-wider">
-                    Confirm
+            {editingField ? (
+              /* Focused editor: the tapped detail gets the full width */
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="relative min-w-0 flex-1">
+                  <span className="material-symbols-outlined pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[18px] text-secondary">
+                    {editingField === 'merchant' ? 'storefront' : 'edit_note'}
                   </span>
-                )}
-              </button>
-            </div>
+                  <input
+                    type="text"
+                    autoFocus
+                    value={editingField === 'merchant' ? merchant : note}
+                    onChange={(event) =>
+                      editingField === 'merchant'
+                        ? setMerchant(event.target.value)
+                        : setNote(event.target.value)
+                    }
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter' || event.key === 'Escape') {
+                        event.preventDefault();
+                        setEditingField(null);
+                      }
+                    }}
+                    placeholder={
+                      editingField === 'merchant'
+                        ? 'Where did you spend?'
+                        : 'What was it for?'
+                    }
+                    maxLength={editingField === 'merchant' ? 120 : 2000}
+                    aria-label={
+                      editingField === 'merchant' ? 'Place or merchant' : 'Note'
+                    }
+                    className="h-11 w-full rounded-lg border-none bg-surface-container-low pl-10 pr-10 text-base placeholder:text-secondary focus:ring-0 md:h-12"
+                  />
+                  {!!(editingField === 'merchant' ? merchant : note) && (
+                    <button
+                      type="button"
+                      onMouseDown={(event) => event.preventDefault()}
+                      onClick={() =>
+                        editingField === 'merchant'
+                          ? setMerchant('')
+                          : setNote('')
+                      }
+                      aria-label={
+                        editingField === 'merchant'
+                          ? 'Clear place'
+                          : 'Clear note'
+                      }
+                      className="absolute right-1 top-1/2 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full text-secondary transition-colors hover:bg-surface-container-high hover:text-primary"
+                    >
+                      <span className="material-symbols-outlined text-base">
+                        close
+                      </span>
+                    </button>
+                  )}
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setEditingField(null)}
+                  className="h-11 shrink-0 rounded-lg bg-surface-container-highest px-4 font-label text-sm font-bold text-primary transition-all active:scale-95 md:h-12"
+                >
+                  Done
+                </button>
+              </div>
+            ) : (
+              /* Collapsed bar: detail chips + document upload + save */
+              <div className="flex items-center gap-2 md:gap-3">
+                <ExpenseDocumentUpload
+                  disabled={isSaving || isProcessingSharedDocument}
+                  onParsed={applyParsedExpense}
+                />
+                <button
+                  type="button"
+                  onClick={() => setEditingField('merchant')}
+                  aria-label={merchant ? `Place: ${merchant}` : 'Add place'}
+                  className={`flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-3 text-left transition-colors md:h-12 ${
+                    merchant
+                      ? 'bg-white text-primary shadow-sm ring-1 ring-outline-variant/40'
+                      : 'bg-surface-container-low text-secondary hover:bg-surface-container'
+                  }`}
+                >
+                  <span className="material-symbols-outlined shrink-0 text-[18px]">
+                    storefront
+                  </span>
+                  <span
+                    className={`min-w-0 flex-1 truncate text-sm ${
+                      merchant ? 'font-semibold' : 'font-medium'
+                    }`}
+                  >
+                    {merchant || 'Place'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setEditingField('note')}
+                  aria-label={note ? `Note: ${note}` : 'Add note'}
+                  className={`flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-3 text-left transition-colors md:h-12 ${
+                    note
+                      ? 'bg-white text-primary shadow-sm ring-1 ring-outline-variant/40'
+                      : 'bg-surface-container-low text-secondary hover:bg-surface-container'
+                  }`}
+                >
+                  <span className="material-symbols-outlined shrink-0 text-[18px]">
+                    edit_note
+                  </span>
+                  <span
+                    className={`min-w-0 flex-1 truncate text-sm ${
+                      note ? 'font-semibold' : 'font-medium'
+                    }`}
+                  >
+                    {note || 'Note'}
+                  </span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => void handleSave()}
+                  disabled={isSaving || isProcessingSharedDocument}
+                  aria-label={
+                    isParsedTransactionPending
+                      ? 'Confirm parsed transaction'
+                      : 'Save expense'
+                  }
+                  title={
+                    isParsedTransactionPending
+                      ? 'Confirm parsed transaction'
+                      : 'Save expense'
+                  }
+                  className={`flex h-11 shrink-0 items-center justify-center rounded-full bg-primary text-on-primary shadow-lg transition-all active:scale-95 disabled:opacity-50 md:h-12 ${
+                    isParsedTransactionPending
+                      ? 'gap-1.5 px-3.5'
+                      : 'w-11 md:w-12'
+                  }`}
+                >
+                  <span className="material-symbols-outlined font-bold">
+                    check
+                  </span>
+                  {isParsedTransactionPending && (
+                    <span className="text-[10px] font-bold uppercase tracking-wider">
+                      Confirm
+                    </span>
+                  )}
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </div>

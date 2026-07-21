@@ -5,8 +5,7 @@ import { useDailyReport } from '../../hooks/useReports';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { formatCurrency, getCurrencyIcon, getCurrencySymbol } from '../../utils/formatCurrency';
 import { ReportSkeleton } from '../../components/ReportSkeleton';
-import { ReportBottomNav } from '../../components/reports/ReportBottomNav';
-import { ReportHeader } from '../../components/reports/ReportHeader';
+import { ReportLayout } from '../../components/reports/ReportLayout';
 import { ReportPeriodNav } from '../../components/reports/ReportPeriodNav';
 import { TopCategoriesAccordion } from '../../components/reports/TopCategoriesAccordion';
 
@@ -27,8 +26,8 @@ export const DailyReportPage: React.FC = () => {
   
   if (error) {
     return (
-      <div className="bg-surface text-on-surface min-h-screen pb-24 flex items-center justify-center">
-        <div className="text-center">
+      <ReportLayout>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
           <span className="material-symbols-outlined text-4xl text-error mb-4">error</span>
           <h2 className="text-xl font-bold mb-2">Failed to load report</h2>
           <p className="text-secondary mb-4">Please try again later</p>
@@ -39,10 +38,10 @@ export const DailyReportPage: React.FC = () => {
             Retry
           </button>
         </div>
-      </div>
+      </ReportLayout>
     );
   }
-  
+
   if (!report) {
     return <ReportSkeleton />;
   }
@@ -50,11 +49,8 @@ export const DailyReportPage: React.FC = () => {
   // Handle empty state
   if (!report.has_data) {
     return (
-      <div className="bg-surface text-on-surface min-h-screen pb-24">
-        <ReportHeader />
-
-        <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
-          <ReportPeriodNav activePeriod="daily" />
+      <ReportLayout>
+        <ReportPeriodNav activePeriod="daily" />
 
           {/* Empty State */}
           <section className="flex flex-col items-center justify-center py-20">
@@ -65,21 +61,17 @@ export const DailyReportPage: React.FC = () => {
               onClick={() => navigate('/expenses/new')}
               className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
             >
-              Add Expense
-            </button>
-          </section>
-        </main>
-      </div>
+            Add Expense
+          </button>
+        </section>
+      </ReportLayout>
     );
   }
 
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen pb-24">
-      <ReportHeader />
-
-      <main className="pt-10 pb-24 px-4 max-w-md mx-auto">
-        <ReportPeriodNav activePeriod="daily" />
+    <ReportLayout>
+      <ReportPeriodNav activePeriod="daily" />
 
         {/* Hero Card (Total Spending) */}
         <section className="relative">
@@ -202,11 +194,7 @@ export const DailyReportPage: React.FC = () => {
           className="bg-surface-container-lowest rounded-xl overflow-hidden"
           headerClassName="px-6 py-4 border-b border-surface-container-low flex justify-between items-center"
           itemClassName="px-4 py-3 hover:bg-surface-container-low transition-colors"
-        />
-
-              </main>
-
-      <ReportBottomNav />
-    </div>
+      />
+    </ReportLayout>
   );
 };

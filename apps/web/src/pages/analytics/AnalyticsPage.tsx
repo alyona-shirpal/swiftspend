@@ -1,5 +1,4 @@
 import React, { useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Currency } from '@swiftspend/types';
 import { AnalyticsSearch } from '../../components/analytics/AnalyticsSearch';
 import { AnalyticsQuickStats } from '../../components/analytics/AnalyticsQuickStats';
@@ -7,7 +6,10 @@ import { AnalyticsCategoryBreakdown } from '../../components/analytics/Analytics
 import { AnalyticsCategoryTrends } from '../../components/analytics/AnalyticsCategoryTrends';
 import { AnalyticsTopMerchants } from '../../components/analytics/AnalyticsTopMerchants';
 import { AnalyticsDensityCalendar } from '../../components/analytics/AnalyticsDensityCalendar';
-import { BottomNavigation } from '../../components/layout/BottomNavigation';
+import {
+  AppLayout,
+  HeaderCurrencyToggle,
+} from '../../components/layout/AppLayout';
 import { useAnalyticsData } from '../../hooks/useAnalyticsData';
 import { useDensityCalendar } from '../../hooks/useDensityCalendar';
 import { useCategories } from '../../hooks/useCategories';
@@ -26,7 +28,6 @@ import {
 } from '../../utils/calendarBounds';
 
 export const AnalyticsPage: React.FC = () => {
-  const navigate = useNavigate();
   const { data: categories = [] } = useCategories();
   const { data: userCurrencies } = useUserCurrencies();
 
@@ -111,39 +112,19 @@ export const AnalyticsPage: React.FC = () => {
   );
 
   return (
-    <div className="bg-surface text-on-surface min-h-screen pb-32">
-      <header className="fixed top-0 left-0 right-0 z-[60] bg-surface flex justify-between items-center w-full px-6 py-4">
-        <button
-          type="button"
-          onClick={() => navigate('/reports/daily')}
-          className="p-2 rounded-full hover:bg-surface-container-low/50 transition-colors"
-        >
-          <span className="material-symbols-outlined text-black">
-            arrow_back
-          </span>
-        </button>
-        <h1 className="font-display text-sm uppercase font-black tracking-tighter text-primary">
-          Analytics
-        </h1>
-        <div className="flex rounded-lg bg-surface-container-low p-0.5">
-          {currencyOptions.map((currency) => (
-            <button
-              key={currency}
-              type="button"
-              onClick={() => setSelectedCurrency(currency)}
-              className={`rounded-md px-2 py-1 text-[10px] font-bold uppercase tracking-wider transition-all ${
-                selectedCurrency === currency
-                  ? 'bg-surface-container-lowest text-primary shadow-sm'
-                  : 'text-secondary'
-              }`}
-            >
-              {currency}
-            </button>
-          ))}
-        </div>
-      </header>
-
-      <main className="pt-16 px-6 space-y-8 max-w-2xl mx-auto">
+    <AppLayout
+      title="Analytics"
+      backTo="/reports/daily"
+      actions={
+        <HeaderCurrencyToggle
+          options={currencyOptions}
+          value={selectedCurrency}
+          onChange={(currency) => setSelectedCurrency(currency as Currency)}
+        />
+      }
+      width="2xl"
+      mainClassName="space-y-8"
+    >
         <AnalyticsSearch
           searchQuery={searchQuery}
           activeQuickFilter={activeQuickFilter}
@@ -234,11 +215,8 @@ export const AnalyticsPage: React.FC = () => {
           }
           highlightDate={highlightDate}
           currency={selectedCurrency}
-          isLoading={showDensityLoading}
-        />
-      </main>
-
-      <BottomNavigation />
-    </div>
+        isLoading={showDensityLoading}
+      />
+    </AppLayout>
   );
 };

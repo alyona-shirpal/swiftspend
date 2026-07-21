@@ -5,8 +5,7 @@ import { useYearlyReport } from '../../hooks/useReports';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { formatCurrency, getCurrencyIcon, getCurrencySymbol } from '../../utils/formatCurrency';
 import { ReportSkeleton } from '../../components/ReportSkeleton';
-import { ReportBottomNav } from '../../components/reports/ReportBottomNav';
-import { ReportHeader } from '../../components/reports/ReportHeader';
+import { ReportLayout } from '../../components/reports/ReportLayout';
 import { ReportPeriodNav } from '../../components/reports/ReportPeriodNav';
 import { TopCategoriesAccordion } from '../../components/reports/TopCategoriesAccordion';
 
@@ -29,8 +28,8 @@ export const YearlyReportPage: React.FC = () => {
   
   if (error) {
     return (
-      <div className="bg-surface text-on-surface min-h-screen pb-24 flex items-center justify-center">
-        <div className="text-center">
+      <ReportLayout>
+        <div className="flex flex-col items-center justify-center py-24 text-center">
           <span className="material-symbols-outlined text-4xl text-error mb-4">error</span>
           <h2 className="text-xl font-bold mb-2">Failed to load report</h2>
           <p className="text-secondary mb-4">Please try again later</p>
@@ -41,10 +40,10 @@ export const YearlyReportPage: React.FC = () => {
             Retry
           </button>
         </div>
-      </div>
+      </ReportLayout>
     );
   }
-  
+
   if (!report) {
     return <ReportSkeleton />;
   }
@@ -57,11 +56,8 @@ export const YearlyReportPage: React.FC = () => {
   // Handle empty state
   if (!report.has_data) {
     return (
-      <div className="bg-surface text-on-surface min-h-screen pb-24">
-        <ReportHeader />
-
-        <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
-          <ReportPeriodNav activePeriod="yearly" />
+      <ReportLayout>
+        <ReportPeriodNav activePeriod="yearly" />
 
           {/* Empty State */}
           <section className="flex flex-col items-center justify-center py-20">
@@ -72,21 +68,17 @@ export const YearlyReportPage: React.FC = () => {
               onClick={() => navigate('/expenses/new')}
               className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
             >
-              Add Expense
-            </button>
-          </section>
-        </main>
-      </div>
+            Add Expense
+          </button>
+        </section>
+      </ReportLayout>
     );
   }
 
 
   return (
-    <div className="bg-surface text-on-surface font-body antialiased pb-24">
-      <ReportHeader />
-
-      <main className="pt-14 pb-28 px-6 max-w-md mx-auto">
-        <ReportPeriodNav activePeriod="yearly" />
+    <ReportLayout>
+      <ReportPeriodNav activePeriod="yearly" />
 
         {/* Hero Card (Total Spending) */}
         <section className="relative">
@@ -225,10 +217,7 @@ export const YearlyReportPage: React.FC = () => {
               <path d="M0 15 Q 10 10 20 12 T 40 8 T 60 14 T 80 5 T 100 10" fill="none" stroke="#009668" strokeWidth="1.5"></path>
             </svg>
           </div>
-        </section>
-      </main>
-
-      <ReportBottomNav />
-    </div>
+      </section>
+    </ReportLayout>
   );
 };

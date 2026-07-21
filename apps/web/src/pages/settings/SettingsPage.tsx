@@ -19,6 +19,7 @@ import {
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
 import { toast } from 'react-hot-toast';
+import { AppLayout } from '../../components/layout/AppLayout';
 import api from '../../services/api';
 import { supabase } from '../../services/supabase.ts';
 import { clearPersistedQueryCache } from '../../services/queryCachePersister';
@@ -267,21 +268,13 @@ export const SettingsPage = () => {
   }
 
   return (
-    <div className="min-h-screen bg-surface pb-24">
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#f7f9fb] flex items-center w-full px-6 py-2">
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={() => navigate('/dashboard')}
-            className="p-2 rounded-full hover:bg-surface-container-low/50 transition-colors"
-          >
-            <span className="material-symbols-outlined text-black">arrow_back</span>
-          </button>
-          <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Settings</h1>
-        </div>
-      </header>
-
-      <main className="pt-20 px-5 space-y-5">
+    <AppLayout
+      title="Settings"
+      backTo="/"
+      width="md"
+      bottomNav={false}
+      mainClassName="space-y-5"
+    >
         {/* Profile Section */}
         <section className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
           <div className="flex items-center justify-between">
@@ -452,8 +445,7 @@ export const SettingsPage = () => {
               </button>
             )}
           </div>
-        </section>
-      </main>
+      </section>
 
       {/* Add Currency Modal */}
       {isAddModalOpen && (
@@ -505,6 +497,6 @@ export const SettingsPage = () => {
           </div>
         </div>
       )}
-    </div>
+    </AppLayout>
   );
 };

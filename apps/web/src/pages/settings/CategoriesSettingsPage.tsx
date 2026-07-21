@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Category } from '@swiftspend/types';
+import { AppLayout } from '../../components/layout/AppLayout';
 import api from '../../services/api';
 import { useAuth } from '../../hooks/useAuth';
 import { toast } from 'react-hot-toast';
@@ -161,7 +162,18 @@ export const CategoriesSettingsPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-surface text-on-surface font-body relative overflow-hidden">
+    <AppLayout
+      title="Categories"
+      onBack={() => void handleSaveAndBack()}
+      backDisabled={isSubmitting}
+      actions={
+        isSubmitting ? (
+          <div className="h-5 w-5 animate-spin rounded-full border-2 border-primary/30 border-t-primary" />
+        ) : undefined
+      }
+      width="md"
+      bottomNav={false}
+    >
       <style>{`
         .category-grid {
           display: grid;
@@ -172,25 +184,6 @@ export const CategoriesSettingsPage: React.FC = () => {
           font-variation-settings: 'FILL' 1;
         }
       `}</style>
-
-      {/* Header */}
-      <header className="fixed top-0 left-0 right-0 z-50 bg-[#f7f9fb] flex items-center justify-between px-6 py-4 border-b border-surface-container-low/30">
-        <div className="flex items-center gap-3">
-          <button 
-            onClick={handleSaveAndBack}
-            disabled={isSubmitting}
-            className="p-2 -ml-2 rounded-full hover:bg-surface-container-low transition-colors"
-          >
-            <span className="material-symbols-outlined text-black">arrow_back</span>
-          </button>
-          <h1 className="text-xl font-extrabold font-headline tracking-tight text-black">Categories</h1>
-        </div>
-        {isSubmitting && (
-           <div className="w-5 h-5 border-2 border-primary/30 border-t-primary rounded-full animate-spin" />
-        )}
-      </header>
-
-      <main className="pt-24 pb-32 px-6 max-w-md mx-auto">
         <div className="mb-8">
           <p className="text-sm text-secondary font-medium">Toggle categories to hide the ones you don't need, or add new ones.</p>
         </div>
@@ -286,7 +279,6 @@ export const CategoriesSettingsPage: React.FC = () => {
             </div>
           </>
         )}
-      </main>
-    </div>
+    </AppLayout>
   );
 };

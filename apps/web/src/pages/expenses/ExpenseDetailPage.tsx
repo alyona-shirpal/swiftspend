@@ -2,6 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { Currency } from '@swiftspend/types';
 import { useLocation, useNavigate, useParams } from 'react-router-dom';
 import toast from 'react-hot-toast';
+import { AppLayout } from '../../components/layout/AppLayout';
 import { DeleteExpenseDialog } from '../../components/expenses/DeleteExpenseDialog';
 import { EditExpenseDialog } from '../../components/expenses/EditExpenseDialog';
 import { useDeleteExpense } from '../../hooks/useDeleteExpense';
@@ -107,30 +108,7 @@ export const ExpenseDetailPage: React.FC = () => {
   );
 
   return (
-    <div className="min-h-[100dvh] bg-surface pb-10 font-body text-on-surface">
-      <header className="sticky top-0 z-40 border-b border-outline-variant/10 bg-surface/95 px-4 py-3 backdrop-blur sm:px-6">
-        <div className="mx-auto flex max-w-xl items-center justify-between">
-          <button
-            type="button"
-            onClick={handleBack}
-            className="flex h-10 w-10 items-center justify-center rounded-full text-primary transition-colors hover:bg-surface-container-low"
-            aria-label="Back"
-          >
-            <span className="material-symbols-outlined">arrow_back</span>
-          </button>
-          <div className="text-center">
-            <p className="font-label text-[9px] font-bold uppercase tracking-[0.24em] text-secondary">
-              Transaction
-            </p>
-            <h1 className="font-headline text-lg font-black text-primary">
-              Receipt
-            </h1>
-          </div>
-          <div className="h-10 w-10" aria-hidden="true" />
-        </div>
-      </header>
-
-      <main className="mx-auto w-full max-w-xl px-4 py-6 sm:px-6 sm:py-8">
+    <AppLayout title="Receipt" onBack={handleBack} width="xl" bottomNav={false}>
         <article className="drop-shadow-[0_20px_35px_rgba(25,28,30,0.16)]">
           <div className="h-3" style={receiptEdgeStyle} aria-hidden="true" />
           <div className="bg-[#fffdf7] px-5 py-6 sm:px-8 sm:py-8">
@@ -254,8 +232,7 @@ export const ExpenseDetailPage: React.FC = () => {
             </span>
             Delete
           </button>
-        </div>
-      </main>
+      </div>
 
       {isEditOpen && (
         <EditExpenseDialog
@@ -276,6 +253,6 @@ export const ExpenseDetailPage: React.FC = () => {
           onConfirm={handleConfirmDelete}
         />
       )}
-    </div>
+    </AppLayout>
   );
 };
