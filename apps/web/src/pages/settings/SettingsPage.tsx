@@ -25,6 +25,7 @@ import { supabase } from '../../services/supabase.ts';
 import { clearPersistedQueryCache } from '../../services/queryCachePersister';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
+import { getStoredTheme, setStoredTheme, Theme } from '../../utils/theme';
 
 // --- Types ---
 interface Currency {
@@ -99,10 +100,18 @@ export const SettingsPage = () => {
   const [addSearchQuery, setAddSearchQuery] = useState('');
   
   // Local Preferences State
+  const [theme, setTheme] = useState<Theme>(() => getStoredTheme());
   const [defaultReportView, setDefaultReportView] = useState(() => localStorage.getItem('pref_report_view') || 'Monthly');
   const [firstDayOfWeek, setFirstDayOfWeek] = useState(() => localStorage.getItem('pref_first_day') || 'Monday');
 
   // Handle local preference changes
+  const handleThemeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value as Theme;
+    setTheme(val);
+    setStoredTheme(val);
+    toast.success(`Theme updated to ${val}`);
+  };
+
   const handleReportViewChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const val = e.target.value;
     setDefaultReportView(val);
@@ -355,6 +364,18 @@ export const SettingsPage = () => {
           <h3 className="font-display font-medium text-headline-sm text-primary mb-4">App Preferences</h3>
           <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 divide-y divide-surface-container-low">
             <div className="p-4 flex items-center justify-between">
+              <label className="font-body text-title-md text-primary">Theme</label>
+              <select
+                value={theme}
+                onChange={handleThemeChange}
+                className="bg-transparent border-none text-secondary font-body text-sm focus:ring-0 cursor-pointer pr-8"
+              >
+                <option value="system">System (Default)</option>
+                <option value="light">Light</option>
+                <option value="dark">Dark</option>
+              </select>
+            </div>
+            <div className="p-4 flex items-center justify-between">
               <label className="font-body text-title-md text-primary">Default Report View</label>
               <select
                 value={defaultReportView}
@@ -364,6 +385,7 @@ export const SettingsPage = () => {
                 <option value="Daily">Daily</option>
                 <option value="Monthly">Monthly</option>
                 <option value="Yearly">Yearly</option>
+                <option value="Analytics">Analytics</option>
               </select>
             </div>
             <div className="p-4 flex items-center justify-between">

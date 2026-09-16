@@ -216,7 +216,7 @@ export const CategoriesSettingsPage: React.FC = () => {
                     className={`flex items-center justify-between gap-1 px-2.5 py-2 transition-all active:scale-95 group rounded-full border shadow-sm ${
                       c.is_hidden 
                         ? 'bg-surface-container-low opacity-50 border-dashed border-outline-variant' 
-                        : 'bg-white border-surface-container hover:bg-surface-container-low'
+                        : 'bg-surface-container-lowest border-surface-container hover:bg-surface-container-low'
                     }`}
                   >
                     <div className="flex items-center gap-1.5 overflow-hidden">

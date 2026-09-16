@@ -83,12 +83,25 @@ export default defineConfig({
           method: 'POST',
           enctype: 'multipart/form-data',
           params: {
+            title: 'title',
+            text: 'text',
+            url: 'url',
             files: [
               {
                 name: 'documents',
                 accept: [
                   'image/*',
+                  'video/*',
+                  '.png',
+                  '.jpg',
+                  '.jpeg',
+                  '.webp',
+                  '.heic',
+                  '.heif',
+                  '.mov',
+                  '.mp4',
                   'application/pdf',
+                  '.pdf',
                   'text/*',
                   'application/json',
                   'application/xml',

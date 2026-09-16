@@ -83,11 +83,11 @@ const trimTrailingSlash = (value: string) => value.replace(/\/+$/, '');
 
 const configs: Record<AiProvider, ProviderConfig | null> = {
   gemini:
-    process.env.GEMINI_API_KEY && process.env.GEMINI_MODEL
+    process.env.GEMINI_API_KEY
       ? {
           provider: 'gemini',
           apiKey: process.env.GEMINI_API_KEY,
-          model: process.env.GEMINI_MODEL,
+          model: process.env.GEMINI_MODEL || 'gemini-3.5-flash-lite',
           baseUrl: trimTrailingSlash(
             process.env.GEMINI_BASE_URL ??
               'https://generativelanguage.googleapis.com/v1beta',
@@ -173,6 +173,22 @@ const callGemini = async (
   mimeType: string,
   prompt: string,
 ) => {
+  let normalizedMimeType = mimeType.toLowerCase();
+  if (normalizedMimeType === 'image/jpg') {
+    normalizedMimeType = 'image/jpeg';
+  } else if (!normalizedMimeType || normalizedMimeType === 'application/octet-stream') {
+    // Detect basic magic bytes
+    if (file.length >= 3 && file[0] === 0xff && file[1] === 0xd8 && file[2] === 0xff) {
+      normalizedMimeType = 'image/jpeg';
+    } else if (file.length >= 8 && file.slice(0, 8).toString('hex') === '89504e470d0a1a0a') {
+      normalizedMimeType = 'image/png';
+    } else if (file.length >= 4 && file.slice(0, 4).toString('utf8') === '%PDF') {
+      normalizedMimeType = 'application/pdf';
+    } else {
+      normalizedMimeType = 'image/jpeg';
+    }
+  }
+
   const { data } = await axios.post(
     `${config.baseUrl}/models/${encodeURIComponent(config.model)}:generateContent`,
     {
@@ -180,7 +196,7 @@ const callGemini = async (
         {
           role: 'user',
           parts: [
-            { inlineData: { mimeType, data: file.toString('base64') } },
+            { inlineData: { mimeType: normalizedMimeType, data: file.toString('base64') } },
             { text: prompt },
           ],
         },

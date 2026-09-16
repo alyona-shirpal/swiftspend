@@ -214,7 +214,7 @@ export default function CategoryOnboardingPage() {
       <div className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-surface-container-highest to-transparent -z-10 opacity-20 pointer-events-none" />
 
       {/* Header */}
-      <header className="bg-[#f7f9fb] text-black flex justify-center items-center w-full px-6 py-6 fixed top-0 z-50 border-b border-surface-container">
+      <header className="bg-surface text-primary flex justify-center items-center w-full px-6 py-6 fixed top-0 z-50 border-b border-surface-container">
         <div className="w-full max-w-md mx-auto relative flex items-center justify-between">
           <button
             onClick={() => navigate('/onboarding/currencies')}
@@ -237,7 +237,7 @@ export default function CategoryOnboardingPage() {
       </header>
 
       <main className="flex-grow flex items-center justify-center pt-24 pb-32 px-6">
-        <div className="w-full max-w-md bg-white rounded-3xl p-8 shadow-sm border border-surface-container">
+        <div className="w-full max-w-md bg-surface-container-lowest rounded-3xl p-8 shadow-sm border border-surface-container">
           <div className="mb-8">
             <h1 className="text-2xl font-black text-primary font-headline mb-2">
               Refine your categories
@@ -282,7 +282,7 @@ export default function CategoryOnboardingPage() {
                       className={`flex items-center justify-between gap-1 px-2.5 py-2 transition-all active:scale-95 group rounded-full border shadow-sm ${
                         c.is_hidden
                           ? 'bg-surface-container-low opacity-50 border-dashed border-outline-variant'
-                          : 'bg-white border-surface-container hover:bg-surface-container-low'
+                          : 'bg-surface-container-lowest border-surface-container hover:bg-surface-container-low'
                       }`}
                     >
                       <div className="flex items-center gap-1.5 overflow-hidden">
@@ -338,7 +338,7 @@ export default function CategoryOnboardingPage() {
                       onKeyDown={(e) =>
                         e.key === 'Enter' && handleAddCategory()
                       }
-                      className="w-full bg-white border border-surface-container rounded-lg h-12 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium text-primary px-4 placeholder:text-outline-variant shadow-sm transition-all"
+                      className="w-full bg-surface-container-lowest border border-surface-container rounded-lg h-12 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium text-primary px-4 placeholder:text-outline-variant shadow-sm transition-all"
                     />
                   </div>
                   <button

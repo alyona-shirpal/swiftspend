@@ -59,7 +59,7 @@ export const AllCategoriesPage: React.FC = () => {
                   onClick={() => handleSelect(category)}
                   className={`aspect-square rounded-lg border-2 transition-all hover:bg-surface-container-low active:scale-95 ${
                     isSelected 
-                      ? 'border-primary shadow-lg bg-white' 
+                      ? 'border-primary shadow-lg bg-surface-container-lowest' 
                       : 'border-transparent bg-surface-container-lowest'
                   }`}
                 >

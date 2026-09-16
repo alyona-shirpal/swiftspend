@@ -6,10 +6,7 @@ import { AnalyticsCategoryBreakdown } from '../../components/analytics/Analytics
 import { AnalyticsCategoryTrends } from '../../components/analytics/AnalyticsCategoryTrends';
 import { AnalyticsTopMerchants } from '../../components/analytics/AnalyticsTopMerchants';
 import { AnalyticsDensityCalendar } from '../../components/analytics/AnalyticsDensityCalendar';
-import {
-  AppLayout,
-  HeaderCurrencyToggle,
-} from '../../components/layout/AppLayout';
+import { ReportLayout } from '../../components/reports/ReportLayout';
 import { useAnalyticsData } from '../../hooks/useAnalyticsData';
 import { useDensityCalendar } from '../../hooks/useDensityCalendar';
 import { useCategories } from '../../hooks/useCategories';
@@ -112,18 +109,12 @@ export const AnalyticsPage: React.FC = () => {
   );
 
   return (
-    <AppLayout
-      title="Analytics"
-      backTo="/reports/daily"
-      actions={
-        <HeaderCurrencyToggle
-          options={currencyOptions}
-          value={selectedCurrency}
-          onChange={(currency) => setSelectedCurrency(currency as Currency)}
-        />
-      }
-      width="2xl"
-      mainClassName="space-y-8"
+    <ReportLayout
+      activeTab="analytics"
+      currencyOptions={currencyOptions}
+      selectedCurrency={selectedCurrency}
+      onCurrencyChange={(currency) => setSelectedCurrency(currency as Currency)}
+      mainClassName="space-y-6"
     >
         <AnalyticsSearch
           searchQuery={searchQuery}
@@ -217,6 +208,6 @@ export const AnalyticsPage: React.FC = () => {
           currency={selectedCurrency}
         isLoading={showDensityLoading}
       />
-    </AppLayout>
+    </ReportLayout>
   );
 };

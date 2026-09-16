@@ -4,6 +4,7 @@ import { QueryClient } from '@tanstack/react-query';
 import { PersistQueryClientProvider } from '@tanstack/react-query-persist-client';
 import App from './App.tsx';
 import './index.css';
+import './utils/theme';
 import { createQueryCachePersister } from './services/queryCachePersister';
 import { registerServiceWorker } from './services/serviceWorker';
 

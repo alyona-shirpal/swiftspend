@@ -88,8 +88,8 @@ export const MonthlyHero: React.FC<MonthlyHeroProps> = ({ selectedCurrency, onCu
                 onClick={() => onCurrencyChange(option)}
                 className={`rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider transition-all ${
                   selectedCurrency === option
-                    ? 'bg-white text-primary shadow-sm'
-                    : 'text-secondary hover:bg-white/50'
+                    ? 'bg-surface-container-lowest text-primary shadow-sm'
+                    : 'text-secondary hover:bg-surface-container-lowest/50'
                 }`}
               >
                 {option}

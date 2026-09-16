@@ -6,7 +6,6 @@ import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { formatCurrency, getCurrencyIcon, getCurrencySymbol } from '../../utils/formatCurrency';
 import { ReportSkeleton } from '../../components/ReportSkeleton';
 import { ReportLayout } from '../../components/reports/ReportLayout';
-import { ReportPeriodNav } from '../../components/reports/ReportPeriodNav';
 import { TopCategoriesAccordion } from '../../components/reports/TopCategoriesAccordion';
 
 export const DailyReportPage: React.FC = () => {
@@ -26,7 +25,12 @@ export const DailyReportPage: React.FC = () => {
   
   if (error) {
     return (
-      <ReportLayout>
+      <ReportLayout
+        activeTab="daily"
+        currencyOptions={currencyOptions}
+        selectedCurrency={selectedCurrency}
+        onCurrencyChange={setSelectedCurrency}
+      >
         <div className="flex flex-col items-center justify-center py-24 text-center">
           <span className="material-symbols-outlined text-4xl text-error mb-4">error</span>
           <h2 className="text-xl font-bold mb-2">Failed to load report</h2>
@@ -49,18 +53,21 @@ export const DailyReportPage: React.FC = () => {
   // Handle empty state
   if (!report.has_data) {
     return (
-      <ReportLayout>
-        <ReportPeriodNav activePeriod="daily" />
-
-          {/* Empty State */}
-          <section className="flex flex-col items-center justify-center py-20">
-            <span className="material-symbols-outlined text-6xl text-secondary mb-4">receipt_long</span>
-            <h2 className="text-xl font-bold text-primary mb-2">No expenses yet</h2>
-            <p className="text-secondary text-center mb-6">There are no expenses recorded for this day</p>
-            <button 
-              onClick={() => navigate('/expenses/new')}
-              className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
-            >
+      <ReportLayout
+        activeTab="daily"
+        currencyOptions={currencyOptions}
+        selectedCurrency={selectedCurrency}
+        onCurrencyChange={setSelectedCurrency}
+      >
+        {/* Empty State */}
+        <section className="flex flex-col items-center justify-center py-20">
+          <span className="material-symbols-outlined text-6xl text-secondary mb-4">receipt_long</span>
+          <h2 className="text-xl font-bold text-primary mb-2">No expenses yet</h2>
+          <p className="text-secondary text-center mb-6">There are no expenses recorded for this day</p>
+          <button 
+            onClick={() => navigate('/expenses/new')}
+            className="px-6 py-3 bg-primary text-on-primary rounded-lg font-medium"
+          >
             Add Expense
           </button>
         </section>
@@ -68,35 +75,21 @@ export const DailyReportPage: React.FC = () => {
     );
   }
 
-
   return (
-    <ReportLayout>
-      <ReportPeriodNav activePeriod="daily" />
-
-        {/* Hero Card (Total Spending) */}
-        <section className="relative">
-          <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
-            <div>
-              <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-2 block">
-                Daily Statement — {new Date(selectedDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
-              </span>
-              {/* Currency Selector */}
-              <div className="flex rounded-lg bg-surface-container-low p-1 mb-4">
-                {currencyOptions.map((currency: Currency) => (
-                  <button
-                    key={currency}
-                    onClick={() => setSelectedCurrency(currency)}
-                    className={`rounded-md px-3 py-1 text-xs font-bold uppercase tracking-wider transition-all ${
-                      selectedCurrency === currency
-                        ? 'bg-surface-container-lowest text-primary shadow-sm'
-                        : 'text-secondary hover:bg-surface-container-lowest/50'
-                    }`}
-                  >
-                    {currency}
-                  </button>
-                ))}
-              </div>
-              <div className="flex items-baseline gap-4">
+    <ReportLayout
+      activeTab="daily"
+      currencyOptions={currencyOptions}
+      selectedCurrency={selectedCurrency}
+      onCurrencyChange={setSelectedCurrency}
+    >
+      {/* Hero Card (Total Spending) */}
+      <section className="relative">
+        <div className="flex flex-col md:flex-row md:items-end justify-between gap-6">
+          <div>
+            <span className="font-label text-[10px] font-medium tracking-[0.2em] text-secondary uppercase py-2 block">
+              Daily Statement — {new Date(selectedDate!).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}
+            </span>
+            <div className="flex items-baseline gap-4 mt-2">
                 <span className={`text-[2.5rem] text-primary ${selectedCurrency === Currency.UAH ? '' : 'material-symbols-outlined'}`}>
                   {selectedCurrency === Currency.UAH ? getCurrencySymbol(selectedCurrency) : getCurrencyIcon(selectedCurrency)}
                 </span>

@@ -29,7 +29,7 @@ export const DashboardPage: React.FC = () => {
   return (
     <AppLayout
       title={
-        <h1 className="text-xl font-black uppercase tracking-widest text-black">
+        <h1 className="text-xl font-black uppercase tracking-widest text-primary">
           <AnimatedBrandText />
         </h1>
       }

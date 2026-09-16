@@ -385,8 +385,8 @@ export const AddExpensePage: React.FC = () => {
                     onClick={() => setCurrency(option)}
                     className={`rounded-md px-2.5 py-1 text-[9px] font-headline uppercase tracking-wider transition-all md:px-4 md:py-1.5 md:text-[10px] ${
                       isActive
-                        ? 'bg-white font-bold text-primary shadow-sm'
-                        : 'font-medium text-secondary hover:bg-white/50'
+                        ? 'bg-surface-container-lowest font-bold text-primary shadow-sm'
+                        : 'font-medium text-secondary hover:bg-surface-container-lowest/50'
                     }`}
                   >
                     {option}
@@ -455,7 +455,7 @@ export const AddExpensePage: React.FC = () => {
                             key={category.id}
                             type="button"
                             onClick={() => setSelectedCategoryId(category.id)}
-                            className={`flex h-[clamp(2.6rem,8dvh,3.1rem)] min-w-0 flex-col items-center justify-center rounded-lg border bg-white px-1 text-center shadow-sm transition-all active:scale-[0.97] md:h-16 md:rounded-xl md:border-2 md:px-2 ${
+                            className={`flex h-[clamp(2.6rem,8dvh,3.1rem)] min-w-0 flex-col items-center justify-center rounded-lg border bg-surface-container-lowest px-1 text-center shadow-sm transition-all active:scale-[0.97] md:h-16 md:rounded-xl md:border-2 md:px-2 ${
                               isActive
                                 ? 'border-primary shadow-md md:shadow-lg'
                                 : 'border-transparent hover:border-outline-variant'
@@ -505,7 +505,7 @@ export const AddExpensePage: React.FC = () => {
             )}
           </section>
 
-          <section className="mb-2 shrink-0 rounded-[1rem] bg-white p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.08)] ring-1 ring-outline-variant/30 md:mb-4 md:rounded-[1.25rem] md:p-2">
+          <section className="mb-2 shrink-0 rounded-[1rem] bg-surface-container-lowest p-1.5 shadow-[0_18px_45px_rgba(0,0,0,0.08)] ring-1 ring-outline-variant/30 md:mb-4 md:rounded-[1.25rem] md:p-2">
             <div className="grid grid-cols-3 gap-1 md:gap-1.5">
               {KEYS.map((key) => (
                 <button
@@ -527,7 +527,7 @@ export const AddExpensePage: React.FC = () => {
           </section>
         </main>
 
-        <div className="shrink-0 border-t border-surface-container-high bg-white/95 px-4 py-2 backdrop-blur md:px-6 md:py-3">
+        <div className="shrink-0 border-t border-surface-container-high bg-surface-container-lowest/95 px-4 py-2 backdrop-blur md:px-6 md:py-3">
           <div
             className="mx-auto w-full max-w-xl pb-safe"
             onBlur={handleDetailsBlur}
@@ -645,7 +645,7 @@ export const AddExpensePage: React.FC = () => {
                   aria-label={merchant ? `Place: ${merchant}` : 'Add place'}
                   className={`flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-3 text-left transition-colors md:h-12 ${
                     merchant
-                      ? 'bg-white text-primary shadow-sm ring-1 ring-outline-variant/40'
+                      ? 'bg-surface-container-lowest text-primary shadow-sm ring-1 ring-outline-variant/40'
                       : 'bg-surface-container-low text-secondary hover:bg-surface-container'
                   }`}
                 >
@@ -666,7 +666,7 @@ export const AddExpensePage: React.FC = () => {
                   aria-label={note ? `Note: ${note}` : 'Add note'}
                   className={`flex h-11 min-w-0 flex-1 items-center gap-1.5 rounded-lg px-3 text-left transition-colors md:h-12 ${
                     note
-                      ? 'bg-white text-primary shadow-sm ring-1 ring-outline-variant/40'
+                      ? 'bg-surface-container-lowest text-primary shadow-sm ring-1 ring-outline-variant/40'
                       : 'bg-surface-container-low text-secondary hover:bg-surface-container'
                   }`}
                 >
@@ -716,22 +716,22 @@ export const AddExpensePage: React.FC = () => {
         </div>
       </div>
 
-      <nav className="hidden fixed left-0 top-0 h-full w-20 flex-col items-center gap-10 border-r border-surface-container-high bg-white py-8 md:flex">
-        <div className="font-headline text-xl font-black tracking-tighter">
+      <nav className="hidden fixed left-0 top-0 h-full w-20 flex-col items-center gap-10 border-r border-surface-container-high bg-surface-container-lowest py-8 md:flex">
+        <div className="font-headline text-xl font-black tracking-tighter text-primary">
           S.
         </div>
         <div className="flex flex-col gap-8">
           <button
             type="button"
             onClick={() => navigate('/')}
-            className="text-secondary opacity-60"
+            className="text-secondary opacity-60 hover:opacity-100"
           >
             <span className="material-symbols-outlined">dashboard</span>
           </button>
-          <button type="button" className="text-secondary opacity-60">
+          <button type="button" onClick={() => navigate('/reports')} className="text-secondary opacity-60 hover:opacity-100">
             <span className="material-symbols-outlined">insert_chart</span>
           </button>
-          <div className="rounded-lg bg-black p-2 text-white">
+          <div className="rounded-lg bg-primary p-2 text-on-primary">
             <span
               className="material-symbols-outlined"
               style={{ fontVariationSettings: "'FILL' 1" }}
@@ -739,7 +739,7 @@ export const AddExpensePage: React.FC = () => {
               add_circle
             </span>
           </div>
-          <button type="button" className="text-secondary opacity-60">
+          <button type="button" onClick={() => navigate('/analytics')} className="text-secondary opacity-60 hover:opacity-100">
             <span className="material-symbols-outlined">search</span>
           </button>
         </div>
@@ -752,7 +752,7 @@ export const AddExpensePage: React.FC = () => {
           aria-live="polite"
           aria-label="Parsing shared document"
         >
-          <div className="flex max-w-xs flex-col items-center rounded-2xl bg-white px-8 py-7 text-center shadow-2xl ring-1 ring-outline-variant/30">
+          <div className="flex max-w-xs flex-col items-center rounded-2xl bg-surface-container-lowest px-8 py-7 text-center shadow-2xl ring-1 ring-outline-variant/30">
             <span className="h-9 w-9 animate-spin rounded-full border-[3px] border-secondary/20 border-t-primary" />
             <p className="mt-4 font-headline text-sm font-black uppercase tracking-widest text-primary">
               Parsing document

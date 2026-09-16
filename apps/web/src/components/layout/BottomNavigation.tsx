@@ -42,7 +42,7 @@ export const BottomNavigation: React.FC = () => {
       className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe pt-2"
       aria-label="Primary"
     >
-      <div className="mx-auto grid h-[76px] max-w-md grid-cols-[1fr_auto_1fr] items-center rounded-[28px] border border-white bg-surface-container-lowest px-3 shadow-[0_-16px_40px_rgba(25,28,30,0.12),0_2px_0_rgba(255,255,255,0.9)_inset]">
+      <div className="mx-auto grid h-[76px] max-w-md grid-cols-[1fr_auto_1fr] items-center rounded-[28px] border border-outline-variant/40 bg-surface-container-lowest px-3 shadow-[0_-16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_-16px_40px_rgba(0,0,0,0.4)]">
         {items.map((item, index) => (
           <React.Fragment key={item.label}>
             <button

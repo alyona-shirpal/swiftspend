@@ -64,7 +64,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
             </button>
           )}
           {typeof title === 'string' ? (
-            <h1 className="truncate font-headline text-xl font-black tracking-tight text-black">
+            <h1 className="truncate font-headline text-xl font-black tracking-tight text-primary">
               {title}
             </h1>
           ) : (

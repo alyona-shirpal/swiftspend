@@ -12,13 +12,31 @@ const redirectToAddExpense = (params) => {
   return Response.redirect(url.href, 303);
 };
 
+const parseDataUrl = (dataUrl, defaultName = 'shared-screenshot.png') => {
+  try {
+    const parts = dataUrl.split(',');
+    if (parts.length < 2) return null;
+    const match = parts[0].match(/data:(.*?);base64/);
+    const mime = match ? match[1] : 'image/png';
+    const binary = atob(parts[1]);
+    const array = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      array[i] = binary.charCodeAt(i);
+    }
+    return new File([array], defaultName, { type: mime });
+  } catch {
+    return null;
+  }
+};
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
+  const normalizedPath = url.pathname.replace(/\/+$/, '') || '/';
 
   if (
     event.request.method !== 'POST' ||
     url.origin !== self.location.origin ||
-    url.pathname !== SHARE_TARGET_PATH
+    normalizedPath !== SHARE_TARGET_PATH
   ) {
     return;
   }
@@ -27,9 +45,37 @@ self.addEventListener('fetch', (event) => {
     (async () => {
       try {
         const formData = await event.request.formData();
-        const file = formData
-          .getAll('documents')
-          .find((value) => typeof value !== 'string' && value.size > 0);
+
+        // Collect all file-like entries from all form fields
+        const allFiles = [];
+        for (const [, value] of formData.entries()) {
+          if (value && typeof value === 'object' && typeof value.size === 'number' && value.size > 0) {
+            allFiles.push(value);
+          }
+        }
+
+        let file = null;
+
+        if (allFiles.length > 0) {
+          // When multiple files are shared (e.g., Live Photo sends both an image and a video),
+          // prioritize the static image over the video stream.
+          const imageFile = allFiles.find(
+            (f) =>
+              (f.type && f.type.startsWith('image/')) ||
+              /\.(png|jpe?g|webp|heic|heif)$/i.test(f.name || ''),
+          );
+          file = imageFile || allFiles[0];
+        }
+
+        // Check if any text/url parameter contains a base64 data URL (e.g. from screenshot utilities)
+        if (!file) {
+          for (const [, value] of formData.entries()) {
+            if (typeof value === 'string' && value.trim().startsWith('data:image/')) {
+              file = parseDataUrl(value.trim());
+              if (file) break;
+            }
+          }
+        }
 
         if (!file) {
           return redirectToAddExpense({ shareError: 'missing-file' });

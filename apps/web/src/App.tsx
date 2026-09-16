@@ -24,6 +24,7 @@ const REPORT_PATH_BY_VIEW: Record<string, string> = {
   Daily: '/reports/daily',
   Monthly: '/reports/monthly',
   Yearly: '/reports/yearly',
+  Analytics: '/analytics',
 };
 
 /**

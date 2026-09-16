@@ -1,5 +1,6 @@
 import { Expense } from '@swiftspend/types';
 import api from './api';
+import { normalizeExpenseDocument } from '../utils/imageNormalization';
 
 export interface ParsedDocumentExpense {
   amount: number;
@@ -17,13 +18,14 @@ export type DocumentExpenseResponse =
   | { status: 'created'; provider: string; expense: Expense };
 
 export async function processExpenseDocument(file: File, auto: boolean) {
+  const normalizedFile = await normalizeExpenseDocument(file);
   const { data } = await api.post<DocumentExpenseResponse>(
     `/expenses/document?auto=${auto}`,
-    file,
+    normalizedFile,
     {
       headers: {
-        'Content-Type': file.type || 'application/octet-stream',
-        'X-File-Name': encodeURIComponent(file.name),
+        'Content-Type': normalizedFile.type || 'application/octet-stream',
+        'X-File-Name': encodeURIComponent(normalizedFile.name),
       },
     },
   );

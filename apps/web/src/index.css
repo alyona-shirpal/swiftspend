@@ -6,6 +6,74 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --surface: 247 249 251;
+    --surface-dim: 216 218 220;
+    --surface-bright: 247 249 251;
+    --surface-container-lowest: 255 255 255;
+    --surface-container-low: 242 244 246;
+    --surface-container: 236 238 240;
+    --surface-container-high: 230 232 234;
+    --surface-container-highest: 224 227 229;
+    --surface-variant: 224 227 229;
+    --on-surface: 25 28 30;
+    --on-surface-variant: 68 71 76;
+    --primary: 0 0 0;
+    --on-primary: 255 255 255;
+    --primary-container: 16 27 48;
+    --on-primary-container: 121 132 157;
+    --secondary: 71 96 126;
+    --on-secondary: 255 255 255;
+    --secondary-container: 194 220 255;
+    --on-secondary-container: 72 97 126;
+    --tertiary: 0 0 0;
+    --on-tertiary: 255 255 255;
+    --tertiary-container: 0 33 19;
+    --on-tertiary-container: 0 150 104;
+    --outline: 116 119 125;
+    --outline-variant: 196 198 204;
+    --error: 186 26 26;
+    --on-error: 255 255 255;
+    --error-container: 255 218 214;
+    --on-error-container: 147 0 10;
+    --background: 247 249 251;
+    --on-background: 25 28 30;
+  }
+
+  .dark {
+    --surface: 15 20 28;
+    --surface-dim: 12 16 22;
+    --surface-bright: 26 33 44;
+    --surface-container-lowest: 18 23 32;
+    --surface-container-low: 24 30 40;
+    --surface-container: 30 38 50;
+    --surface-container-high: 37 47 62;
+    --surface-container-highest: 45 57 74;
+    --surface-variant: 45 57 74;
+    --on-surface: 228 232 238;
+    --on-surface-variant: 168 178 193;
+    --primary: 255 255 255;
+    --on-primary: 15 20 28;
+    --primary-container: 45 57 74;
+    --on-primary-container: 215 226 255;
+    --secondary: 156 181 214;
+    --on-secondary: 15 20 28;
+    --secondary-container: 34 50 72;
+    --on-secondary-container: 209 228 255;
+    --tertiary: 255 255 255;
+    --on-tertiary: 15 20 28;
+    --tertiary-container: 0 45 28;
+    --on-tertiary-container: 78 222 163;
+    --outline: 110 120 135;
+    --outline-variant: 48 58 75;
+    --error: 255 180 171;
+    --on-error: 105 0 5;
+    --error-container: 147 0 10;
+    --on-error-container: 255 218 214;
+    --background: 15 20 28;
+    --on-background: 228 232 238;
+  }
+
   body {
     @apply font-body bg-surface text-on-surface antialiased;
     min-height: 100dvh;
