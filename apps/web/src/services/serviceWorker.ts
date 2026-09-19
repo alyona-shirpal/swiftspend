@@ -7,6 +7,15 @@ export function registerServiceWorker() {
 
   registerSW({
     immediate: true,
+    onRegistered(registration) {
+      if (registration) {
+        window.addEventListener('visibilitychange', () => {
+          if (document.visibilityState === 'visible') {
+            void registration.update();
+          }
+        });
+      }
+    },
     onRegisterError(error) {
       console.warn('[SwiftSpend] Service worker registration failed:', error);
     },

@@ -121,6 +121,9 @@ export const AddExpensePage: React.FC = () => {
   const [shareError] = useState(() =>
     new URLSearchParams(window.location.search).get('shareError'),
   );
+  const [shareDebug] = useState(() =>
+    new URLSearchParams(window.location.search).get('shareDebug'),
+  );
   const normalizedNote = note.trim().toLowerCase();
   const { data: noteSuggestions = [] } = useExpenseNoteSuggestions(
     selectedCategoryId,
@@ -159,10 +162,18 @@ export const AddExpensePage: React.FC = () => {
     window.history.replaceState(window.history.state, '', '/expenses/new');
 
     if (shareError) {
+      if (shareDebug) {
+        console.warn('[SwiftSpend] Share error diagnostics:', shareDebug);
+      }
       toast.error(
         shareError === 'missing-file'
-          ? 'No document was included in the share.'
-          : 'Could not receive the shared document. Share it again.',
+          ? (shareDebug
+              ? `No document was included in the share. (${shareDebug})`
+              : 'No document was included in the share.')
+          : (shareDebug
+              ? `Could not receive the shared document. (${shareDebug})`
+              : 'Could not receive the shared document. Share it again.'),
+        { duration: shareDebug ? 8000 : 4000 },
       );
       return undefined;
     }
