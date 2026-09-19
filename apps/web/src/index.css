@@ -38,6 +38,7 @@
     --on-error-container: 147 0 10;
     --background: 247 249 251;
     --on-background: 25 28 30;
+    --receipt-bg: #fffdf7;
   }
 
   .dark {
@@ -72,6 +73,7 @@
     --on-error-container: 255 218 214;
     --background: 15 20 28;
     --on-background: 228 232 238;
+    --receipt-bg: #1c2433;
   }
 
   body {

@@ -13,7 +13,7 @@ import { formatCurrency } from '../../utils/formatCurrency';
 const receiptEdgeStyle: React.CSSProperties = {
   backgroundColor: 'transparent',
   backgroundImage:
-    'radial-gradient(circle at 6px 0, transparent 5.5px, #fffdf7 6px)',
+    'radial-gradient(circle at 6px 0, transparent 5.5px, var(--receipt-bg) 6px)',
   backgroundRepeat: 'repeat-x',
   backgroundSize: '12px 12px',
 };
@@ -109,109 +109,109 @@ export const ExpenseDetailPage: React.FC = () => {
 
   return (
     <AppLayout title="Receipt" onBack={handleBack} width="xl" bottomNav={false}>
-        <article className="drop-shadow-[0_20px_35px_rgba(25,28,30,0.16)]">
-          <div className="h-3" style={receiptEdgeStyle} aria-hidden="true" />
-          <div className="bg-[#fffdf7] px-5 py-6 sm:px-8 sm:py-8">
-            <div className="text-center">
-              <div
-                className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-sm"
-                style={{
-                  backgroundColor: expense.category?.color ?? '#45474a',
-                }}
-              >
-                <span className="material-symbols-outlined text-[28px]">
-                  {expense.category?.icon ?? 'receipt_long'}
-                </span>
-              </div>
-              <p className="mt-4 font-label text-[10px] font-bold uppercase tracking-[0.22em] text-secondary">
-                {expense.category?.name ?? 'Uncategorized'}
-              </p>
-              <h2 className="mt-1 font-headline text-2xl font-black text-primary sm:text-3xl">
-                {expense.merchant || 'Expense'}
-              </h2>
-              <p className="mt-2 font-mono text-xs uppercase tracking-wider text-outline">
-                {transactionDate.toLocaleDateString('en-US', {
-                  month: 'short',
-                  day: '2-digit',
-                  year: 'numeric',
-                })}{' '}
-                ·{' '}
-                {createdAt.toLocaleTimeString([], {
-                  hour: '2-digit',
-                  minute: '2-digit',
-                })}
-              </p>
+      <article className="drop-shadow-[0_20px_35px_rgba(25,28,30,0.16)] dark:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)]">
+        <div className="h-3" style={receiptEdgeStyle} aria-hidden="true" />
+        <div className="bg-[var(--receipt-bg)] px-5 py-6 sm:px-8 sm:py-8 transition-colors">
+          <div className="text-center">
+            <div
+              className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-sm ring-1 ring-black/10 dark:ring-white/10"
+              style={{
+                backgroundColor: expense.category?.color ?? '#45474a',
+              }}
+            >
+              <span className="material-symbols-outlined text-[28px]">
+                {expense.category?.icon ?? 'receipt_long'}
+              </span>
             </div>
+            <p className="mt-4 font-label text-[10px] font-bold uppercase tracking-[0.22em] text-secondary">
+              {expense.category?.name ?? 'Uncategorized'}
+            </p>
+            <h2 className="mt-1 font-headline text-2xl font-black text-primary sm:text-3xl">
+              {expense.merchant || 'Expense'}
+            </h2>
+            <p className="mt-2 font-mono text-xs uppercase tracking-wider text-outline">
+              {transactionDate.toLocaleDateString('en-US', {
+                month: 'short',
+                day: '2-digit',
+                year: 'numeric',
+              })}{' '}
+              ·{' '}
+              {createdAt.toLocaleTimeString([], {
+                hour: '2-digit',
+                minute: '2-digit',
+              })}
+            </p>
+          </div>
 
-            <div className="my-6 border-t border-dashed border-outline-variant" />
+          <div className="my-6 border-t border-dashed border-outline-variant/60" />
 
-            <div className="space-y-3 font-mono text-sm">
-              {descriptionLines?.length ? (
-                descriptionLines.map((line, index) => (
-                  <div key={`${line}-${index}`} className="flex gap-3">
-                    <span className="text-outline">
-                      {String(index + 1).padStart(2, '0')}
-                    </span>
-                    <span className="min-w-0 flex-1 whitespace-pre-wrap text-primary">
-                      {line}
-                    </span>
-                  </div>
-                ))
-              ) : (
-                <div className="flex justify-between gap-3 text-secondary">
-                  <span>Details</span>
-                  <span>No note</span>
+          <div className="space-y-3 font-mono text-sm">
+            {descriptionLines?.length ? (
+              descriptionLines.map((line, index) => (
+                <div key={`${line}-${index}`} className="flex gap-3">
+                  <span className="text-outline">
+                    {String(index + 1).padStart(2, '0')}
+                  </span>
+                  <span className="min-w-0 flex-1 whitespace-pre-wrap text-primary">
+                    {line}
+                  </span>
                 </div>
-              )}
-            </div>
-
-            <div className="my-6 border-t border-dashed border-outline-variant" />
-
-            <div className="flex items-end justify-between gap-4">
-              <div>
-                <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
-                  Total paid
-                </p>
-                <p className="mt-1 font-mono text-xs text-outline">
-                  {expense.currency} · original amount
-                </p>
-              </div>
-              <p className="font-headline text-3xl font-black text-primary sm:text-4xl">
-                {formatCurrency(expense.amount, expense.currency)}
-              </p>
-            </div>
-
-            {convertedAmounts.length > 0 && (
-              <div className="mt-5 rounded-xl bg-surface-container-low/70 px-4 py-3">
-                <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-secondary">
-                  Converted values
-                </p>
-                <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-primary">
-                  {convertedAmounts.map(([currency, amount]) => (
-                    <div key={currency} className="flex justify-between gap-2">
-                      <span>{currency}</span>
-                      <span>
-                        {formatCurrency(amount as number, currency as Currency)}
-                      </span>
-                    </div>
-                  ))}
-                </div>
+              ))
+            ) : (
+              <div className="flex justify-between gap-3 text-secondary">
+                <span>Details</span>
+                <span>No note</span>
               </div>
             )}
+          </div>
 
-            <div className="mt-6 border-t border-dashed border-outline-variant pt-4 text-center font-mono text-[10px] uppercase tracking-wider text-outline">
-              <p>Expense #{expense.id.slice(0, 8)}</p>
-              <p className="mt-1">
-                Recorded {createdAt.toLocaleDateString('en-US')}
+          <div className="my-6 border-t border-dashed border-outline-variant/60" />
+
+          <div className="flex items-end justify-between gap-4">
+            <div>
+              <p className="font-label text-[10px] font-bold uppercase tracking-[0.2em] text-secondary">
+                Total paid
+              </p>
+              <p className="mt-1 font-mono text-xs text-outline">
+                {expense.currency} · original amount
               </p>
             </div>
+            <p className="font-headline text-3xl font-black text-primary sm:text-4xl">
+              {formatCurrency(expense.amount, expense.currency)}
+            </p>
           </div>
-          <div
-            className="h-3 rotate-180"
-            style={receiptEdgeStyle}
-            aria-hidden="true"
-          />
-        </article>
+
+          {convertedAmounts.length > 0 && (
+            <div className="mt-5 rounded-xl bg-surface-container-low/70 dark:bg-surface-container-lowest/60 border border-outline-variant/20 dark:border-white/5 px-4 py-3">
+              <p className="font-label text-[9px] font-bold uppercase tracking-[0.2em] text-secondary">
+                Converted values
+              </p>
+              <div className="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 font-mono text-xs text-primary">
+                {convertedAmounts.map(([currency, amount]) => (
+                  <div key={currency} className="flex justify-between gap-2">
+                    <span className="text-secondary">{currency}</span>
+                    <span className="font-semibold">
+                      {formatCurrency(amount as number, currency as Currency)}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          <div className="mt-6 border-t border-dashed border-outline-variant/60 pt-4 text-center font-mono text-[10px] uppercase tracking-wider text-outline">
+            <p>Expense #{expense.id.slice(0, 8)}</p>
+            <p className="mt-1">
+              Recorded {createdAt.toLocaleDateString('en-US')}
+            </p>
+          </div>
+        </div>
+        <div
+          className="h-3 rotate-180"
+          style={receiptEdgeStyle}
+          aria-hidden="true"
+        />
+      </article>
 
         <div className="mt-6 grid grid-cols-2 gap-3">
           <button
