@@ -108,7 +108,14 @@ export const ExpenseDetailPage: React.FC = () => {
   );
 
   return (
-    <AppLayout title="Receipt" onBack={handleBack} width="xl" bottomNav={false}>
+    <AppLayout
+      title="Receipt"
+      onBack={handleBack}
+      width="xl"
+      bottomNav={false}
+      containerClassName="pb-0"
+      mainClassName="pb-4 pb-safe"
+    >
       <article className="drop-shadow-[0_20px_35px_rgba(25,28,30,0.16)] dark:drop-shadow-[0_20px_35px_rgba(0,0,0,0.5)]">
         <div className="h-3" style={receiptEdgeStyle} aria-hidden="true" />
         <div className="bg-[var(--receipt-bg)] px-5 py-6 sm:px-8 sm:py-8 transition-colors">

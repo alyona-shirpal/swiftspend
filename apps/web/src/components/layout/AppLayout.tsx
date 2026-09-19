@@ -23,6 +23,7 @@ type AppLayoutProps = {
   width?: keyof typeof MAX_WIDTH_CLASSES;
   bottomNav?: boolean;
   mainClassName?: string;
+  containerClassName?: string;
   children: React.ReactNode;
 };
 
@@ -39,6 +40,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
   width = 'md',
   bottomNav = true,
   mainClassName,
+  containerClassName,
   children,
 }) => {
   const navigate = useNavigate();
@@ -46,9 +48,12 @@ export const AppLayout: React.FC<AppLayoutProps> = ({
 
   return (
     <div
-      className={`min-h-screen bg-surface font-body text-on-surface ${
-        bottomNav ? 'pb-32' : 'pb-10'
-      }`}
+      className={[
+        'min-h-screen bg-surface font-body text-on-surface',
+        containerClassName ?? (bottomNav ? 'pb-32' : 'pb-10'),
+      ]
+        .filter(Boolean)
+        .join(' ')}
     >
       <header className="sticky top-0 z-40 flex w-full items-center justify-between gap-2 bg-surface px-4 py-2 sm:px-6">
         <div className="flex min-w-0 items-center gap-2 sm:gap-3">
