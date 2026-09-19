@@ -195,7 +195,7 @@ export default function CategoryOnboardingPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#f7f9fb] flex flex-col font-body relative overflow-hidden">
+    <div className="min-h-screen bg-surface flex flex-col font-body relative overflow-hidden">
       <style>{`
         .category-grid {
           display: grid;
