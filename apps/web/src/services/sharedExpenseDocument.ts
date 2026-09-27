@@ -39,6 +39,11 @@ const readSharedDocument = async (documentId: string): Promise<File> => {
   }
 
   const blob = await response.blob();
+  if (blob.size === 0) {
+    throw new Error(
+      'The shared document was empty (0 bytes). Check that the source app provided the file data.',
+    );
+  }
   return new File([blob], fileName, {
     type: response.headers.get('Content-Type') || blob.type,
     lastModified: Date.now(),

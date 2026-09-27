@@ -16,6 +16,10 @@ import {
   ParsedDocumentExpense,
 } from '../../services/expenses';
 import { processSharedExpenseDocument } from '../../services/sharedExpenseDocument';
+import {
+  ShareErrorBanner,
+  ShareErrorInfo,
+} from '../../components/expenses/ShareErrorBanner';
 
 const CURRENCY_OPTIONS = [
   Currency.USD,
@@ -124,6 +128,17 @@ export const AddExpensePage: React.FC = () => {
   const [shareDebug] = useState(() =>
     new URLSearchParams(window.location.search).get('shareDebug'),
   );
+  const [shareErrorInfo, setShareErrorInfo] = useState<ShareErrorInfo | null>(
+    () => {
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('shareError');
+      if (!code) return null;
+      return {
+        errorType: code,
+        debugString: params.get('shareDebug'),
+      };
+    },
+  );
   const normalizedNote = note.trim().toLowerCase();
   const { data: noteSuggestions = [] } = useExpenseNoteSuggestions(
     selectedCategoryId,
@@ -167,13 +182,9 @@ export const AddExpensePage: React.FC = () => {
       }
       toast.error(
         shareError === 'missing-file'
-          ? (shareDebug
-              ? `No document was included in the share. (${shareDebug})`
-              : 'No document was included in the share.')
-          : (shareDebug
-              ? `Could not receive the shared document. (${shareDebug})`
-              : 'Could not receive the shared document. Share it again.'),
-        { duration: shareDebug ? 8000 : 4000 },
+          ? 'No document was received from the share sheet. See debug details above.'
+          : 'Could not receive the shared document. See debug details above.',
+        { duration: 5000 },
       );
       return undefined;
     }
@@ -195,7 +206,12 @@ export const AddExpensePage: React.FC = () => {
       })
       .catch((error) => {
         if (isActive) {
-          toast.error(getDocumentProcessingErrorMessage(error));
+          const message = getDocumentProcessingErrorMessage(error);
+          toast.error(message);
+          setShareErrorInfo({
+            errorType: 'processing-failed',
+            debugString: `error=${encodeURIComponent(message)}`,
+          });
         }
       })
       .finally(() => {
@@ -385,6 +401,14 @@ export const AddExpensePage: React.FC = () => {
         </header>
 
         <main className="mx-auto flex min-h-0 w-full max-w-xl flex-1 flex-col px-4 pt-2 md:px-6 md:pt-4">
+          {shareErrorInfo && (
+            <ShareErrorBanner
+              errorType={shareErrorInfo.errorType}
+              debugString={shareErrorInfo.debugString}
+              onDismiss={() => setShareErrorInfo(null)}
+            />
+          )}
+
           <section className="mb-2 flex shrink-0 items-center justify-between gap-3 md:mb-4">
             <div className="flex rounded-lg bg-surface-container-low p-0.5 shadow-inner md:p-1">
               {CURRENCY_OPTIONS.map((option) => {

@@ -130,7 +130,7 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        importScripts: ['/share-target.js?v=20260919-v2'],
+        importScripts: ['/share-target.js?v=20260927-v1'],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/auth\/callback/, /^\/share-target/],
