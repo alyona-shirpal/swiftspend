@@ -52,7 +52,7 @@ export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
     <section className="lg:col-span-7 space-y-4 order-2 lg:order-1">
       <div className="flex justify-between items-center">
         <h3 className="font-headline text-2xl font-bold tracking-tight text-primary">
-          Recent Spend
+          Recent
         </h3>
         <button
           onClick={() => navigate('/expenses')}
