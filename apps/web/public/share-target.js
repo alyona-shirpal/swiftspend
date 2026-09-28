@@ -1,7 +1,15 @@
 const SHARED_DOCUMENT_CACHE = 'swiftspend-shared-documents-v1';
 const SHARE_TARGET_PATH = '/share-target';
 const SHARED_DOCUMENT_PATH = '/__shared-document/';
-const SW_VERSION = '20260927-v1';
+
+// Dynamic version from script URL query param or fallback
+const SW_VERSION = (() => {
+  try {
+    return new URL(self.location.href).searchParams.get('v') || '20260928-v2';
+  } catch {
+    return '20260928-v2';
+  }
+})();
 
 self.addEventListener('install', () => {
   self.skipWaiting();
@@ -120,6 +128,118 @@ const fetchUrlAsFile = async (urlStr, defaultName = 'shared-image.jpg') => {
   }
 };
 
+/**
+ * Custom binary multipart/form-data parser.
+ * Used as a fallback when browser's Request/Response formData() fails or drops
+ * streaming parts on Android Chromium.
+ */
+const parseMultipartBuffer = (arrayBuffer, contentType) => {
+  if (!contentType || !contentType.includes('boundary=')) return [];
+  const match = contentType.match(/boundary=(?:"([^"]+)"|([^;\s]+))/i);
+  if (!match) return [];
+  const boundary = match[1] || match[2];
+  const decoder = new TextDecoder('utf-8');
+  const u8 = new Uint8Array(arrayBuffer);
+
+  const delimiter = new TextEncoder().encode('--' + boundary);
+  const delimiterLen = delimiter.length;
+
+  const results = [];
+  const indices = [];
+  for (let i = 0; i <= u8.length - delimiterLen; i++) {
+    let found = true;
+    for (let j = 0; j < delimiterLen; j++) {
+      if (u8[i + j] !== delimiter[j]) {
+        found = false;
+        break;
+      }
+    }
+    if (found) {
+      indices.push(i);
+      i += delimiterLen - 1;
+    }
+  }
+
+  for (let k = 0; k < indices.length - 1; k++) {
+    const start = indices[k] + delimiterLen;
+    const end = indices[k + 1];
+    let partSlice = u8.subarray(start, end);
+    if (partSlice[0] === 13 && partSlice[1] === 10) partSlice = partSlice.subarray(2);
+    else if (partSlice[0] === 10) partSlice = partSlice.subarray(1);
+
+    if (
+      partSlice.length >= 2 &&
+      partSlice[partSlice.length - 2] === 13 &&
+      partSlice[partSlice.length - 1] === 10
+    ) {
+      partSlice = partSlice.subarray(0, partSlice.length - 2);
+    } else if (partSlice.length >= 1 && partSlice[partSlice.length - 1] === 10) {
+      partSlice = partSlice.subarray(0, partSlice.length - 1);
+    }
+
+    let bodyIndex = -1;
+    let headerLength = 0;
+    for (let i = 0; i < partSlice.length - 3; i++) {
+      if (
+        partSlice[i] === 13 &&
+        partSlice[i + 1] === 10 &&
+        partSlice[i + 2] === 13 &&
+        partSlice[i + 3] === 10
+      ) {
+        bodyIndex = i + 4;
+        headerLength = i;
+        break;
+      }
+    }
+    if (bodyIndex === -1) {
+      for (let i = 0; i < partSlice.length - 1; i++) {
+        if (partSlice[i] === 10 && partSlice[i + 1] === 10) {
+          bodyIndex = i + 2;
+          headerLength = i;
+          break;
+        }
+      }
+    }
+    if (bodyIndex === -1) continue;
+
+    const headerText = decoder.decode(partSlice.subarray(0, headerLength));
+    const bodyBytes = partSlice.subarray(bodyIndex);
+
+    const nameMatch = headerText.match(/name=(?:"([^"]+)"|([^;\s]+))/i);
+    const filenameMatch = headerText.match(/filename=(?:"([^"]+)"|([^;\s]+))/i);
+    const typeMatch = headerText.match(/Content-Type:\s*([^\r\n]+)/i);
+
+    const fieldName = nameMatch ? nameMatch[1] || nameMatch[2] : 'unknown';
+    const filename = filenameMatch ? filenameMatch[1] || filenameMatch[2] : null;
+    const mimeType = typeMatch
+      ? typeMatch[1].trim()
+      : filename
+        ? 'application/octet-stream'
+        : 'text/plain';
+
+    if (filename || (typeMatch && !typeMatch[1].startsWith('text/plain'))) {
+      if (bodyBytes.length > 0) {
+        results.push({
+          isFile: true,
+          name: fieldName,
+          file: new File([bodyBytes], filename || 'shared-document', {
+            type: mimeType,
+            lastModified: Date.now(),
+          }),
+        });
+      }
+    } else {
+      results.push({
+        isString: true,
+        name: fieldName,
+        value: decoder.decode(bodyBytes),
+      });
+    }
+  }
+
+  return results;
+};
+
 self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   const normalizedPath = url.pathname.replace(/\/+$/, '') || '/';
@@ -197,34 +317,67 @@ self.addEventListener('fetch', (event) => {
 
       try {
         let formData = null;
-        let formParseErr = null;
+        let rawBuffer = null;
+        let rawBufferErr = null;
 
+        // Step 1: Read raw body bytes directly from the request stream.
+        // This avoids stream-teeing bugs on Android Chromium and allows manual parsing
+        // if the browser's native formData() drops the stream.
         try {
-          const reqClone = event.request.clone();
-          formData = await reqClone.formData();
-        } catch (err1) {
+          rawBuffer = await event.request.arrayBuffer();
+        } catch (err) {
+          rawBufferErr = (err && (err.name || err.message)) || String(err);
+        }
+
+        if (rawBuffer && rawBuffer.byteLength > 0) {
+          diagnostics.push(`rawBytes=${rawBuffer.byteLength}`);
+
+          // Try parsing using standard Response.formData()
+          try {
+            const tempResponse = new Response(rawBuffer, {
+              headers: { 'Content-Type': reqContentType },
+            });
+            formData = await tempResponse.formData();
+          } catch (err) {
+            diagnostics.push(
+              `resFormDataErr=${encodeURIComponent((err && err.message) || String(err))}`,
+            );
+          }
+
+          // If Response.formData() returned 0 entries or failed, use our custom multipart parser
+          const formEntries = formData ? Array.from(formData.entries()) : [];
+          if (formEntries.length === 0 && reqContentType.includes('multipart/form-data')) {
+            const customParts = parseMultipartBuffer(rawBuffer, reqContentType);
+            diagnostics.push(`customParts=${customParts.length}`);
+            for (const part of customParts) {
+              if (part.isFile) {
+                candidateFiles.push(part.file);
+                diagnostics.push(
+                  `${part.name}:file(name=${part.file.name},type=${part.file.type},size=${part.file.size})`,
+                );
+              } else if (part.isString) {
+                candidateStrings.push(part.value.trim());
+                diagnostics.push(
+                  `${part.name}:string(${encodeURIComponent(part.value.trim().slice(0, 40))})`,
+                );
+              }
+            }
+          }
+        } else if (rawBuffer && rawBuffer.byteLength === 0) {
+          diagnostics.push('rawBytes=0');
+        } else if (rawBufferErr) {
+          diagnostics.push(`arrayBufferErr=${encodeURIComponent(rawBufferErr)}`);
+          // Fallback: try reading formData directly from request if arrayBuffer failed
           try {
             formData = await event.request.formData();
-          } catch (err2) {
-            formParseErr =
-              (err2 && (err2.name || err2.message)) ||
-              (err1 && (err1.name || err1.message)) ||
-              'formData-parse-failed';
+          } catch (err) {
+            diagnostics.push(
+              `directFormDataErr=${encodeURIComponent((err && err.message) || String(err))}`,
+            );
           }
         }
 
-        if (formParseErr) {
-          diagnostics.push(`formParseErr=${formParseErr}`);
-          try {
-            const textBody = await event.request.text();
-            if (textBody) {
-              diagnostics.push(`bodySnippet=${encodeURIComponent(textBody.slice(0, 60))}`);
-            }
-          } catch {
-            // ignore
-          }
-        }
-
+        // Process standard formData entries if present
         if (formData) {
           for (const [key, value] of formData.entries()) {
             entryCount++;
@@ -235,19 +388,15 @@ self.addEventListener('fetch', (event) => {
               let arrayBuffer = null;
               let readErr = null;
 
-              // In Chromium on Android, streamed content URI file parts can report size 0
-              // before the underlying stream is read. Read arrayBuffer to check true size.
               if (size === 0 && typeof value.arrayBuffer === 'function') {
                 try {
                   arrayBuffer = await value.arrayBuffer();
                   size = arrayBuffer ? arrayBuffer.byteLength : 0;
                 } catch (err) {
                   readErr = (err && (err.name || err.message)) || 'read-err';
-                  console.warn('[SwiftSpend] Failed to read arrayBuffer of 0-size entry:', err);
                 }
               }
 
-              // Fallback for 0-size entries: try Response(value).blob() if size is still 0
               if (size === 0 && !arrayBuffer && typeof Response !== 'undefined') {
                 try {
                   const resBlob = await new Response(value).blob();
@@ -269,8 +418,8 @@ self.addEventListener('fetch', (event) => {
 
               if (size > 0) {
                 const fileObj = arrayBuffer
-                  ? new File([arrayBuffer], name || 'shared-screenshot.png', {
-                      type: type || 'image/png',
+                  ? new File([arrayBuffer], name || 'shared-document', {
+                      type: type || 'application/octet-stream',
                       lastModified: value.lastModified || Date.now(),
                     })
                   : value;
@@ -342,7 +491,7 @@ self.addEventListener('fetch', (event) => {
           const debugParts = [
             `sw=${SW_VERSION}`,
             `method=${reqMethod}`,
-            `ct=${reqContentType}`,
+            `ct=${encodeURIComponent(reqContentType)}`,
             `cl=${reqContentLength}`,
             `entries=${entryCount}`,
           ];
@@ -361,7 +510,7 @@ self.addEventListener('fetch', (event) => {
         const errDetail = error && error.message ? error.message : String(error);
         return redirectToAddExpense({
           shareError: 'receive-failed',
-          shareDebug: `sw=${SW_VERSION};method=${reqMethod};ct=${reqContentType};err=${encodeURIComponent(errDetail)}`,
+          shareDebug: `sw=${SW_VERSION};method=${reqMethod};ct=${encodeURIComponent(reqContentType)};err=${encodeURIComponent(errDetail)}`,
         });
       }
     })(),

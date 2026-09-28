@@ -23,6 +23,7 @@ import { AppLayout } from '../../components/layout/AppLayout';
 import api from '../../services/api';
 import { supabase } from '../../services/supabase.ts';
 import { clearPersistedQueryCache } from '../../services/queryCachePersister';
+import { bustPwaCacheAndReload, PWA_VERSION } from '../../services/serviceWorker';
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { getStoredTheme, setStoredTheme, Theme } from '../../utils/theme';
@@ -94,6 +95,7 @@ export const SettingsPage = () => {
   const [passwordPrompt, setPasswordPrompt] = useState(false);
   const [password, setPassword] = useState('');
   const [isClearingCache, setIsClearingCache] = useState(false);
+  const [isBustingPwa, setIsBustingPwa] = useState(false);
   
   // Add Currency Modal State
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
@@ -233,6 +235,12 @@ export const SettingsPage = () => {
     } finally {
       setIsClearingCache(false);
     }
+  };
+
+  const handleBustPwa = async () => {
+    setIsBustingPwa(true);
+    toast.loading('Busting PWA cache and reloading...');
+    await bustPwaCacheAndReload();
   };
 
   // --- DnD Handlers ---
@@ -404,14 +412,30 @@ export const SettingsPage = () => {
 
         {/* Storage Section */}
         <section>
-          <h3 className="font-display font-medium text-headline-sm text-primary mb-4">Storage</h3>
-          <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="font-display font-medium text-headline-sm text-primary">Storage & App Version</h3>
+            <span className="font-mono text-xs text-secondary bg-surface-container-high px-2 py-0.5 rounded">
+              v{PWA_VERSION}
+            </span>
+          </div>
+          <div className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10 space-y-3">
             <button
               onClick={clearCache}
-              disabled={isClearingCache}
-              className="w-full py-4 text-center font-body text-sm font-semibold text-primary bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50"
+              disabled={isClearingCache || isBustingPwa}
+              className="w-full py-3.5 text-center font-body text-sm font-semibold text-primary bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50"
             >
-              {isClearingCache ? 'Clearing...' : 'Clear Cache'}
+              {isClearingCache ? 'Clearing...' : 'Clear Query Data Cache'}
+            </button>
+            <button
+              onClick={handleBustPwa}
+              disabled={isBustingPwa || isClearingCache}
+              title="Unregisters all service workers, deletes cached assets, and reloads the latest version"
+              className="w-full py-3.5 text-center font-body text-sm font-semibold text-primary bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+            >
+              <span className={`material-symbols-outlined text-base ${isBustingPwa ? 'animate-spin' : ''}`}>
+                cached
+              </span>
+              <span>{isBustingPwa ? 'Busting PWA Cache...' : 'Bust PWA Cache & Update App'}</span>
             </button>
           </div>
         </section>

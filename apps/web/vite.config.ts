@@ -2,8 +2,15 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import { VitePWA } from 'vite-plugin-pwa';
 
+const PWA_VERSION =
+  process.env.VITE_PWA_VERSION ||
+  new Date().toISOString().replace(/[-:T.]/g, '').slice(0, 14);
+
 // https://vitejs.dev/config/
 export default defineConfig({
+  define: {
+    __PWA_VERSION__: JSON.stringify(PWA_VERSION),
+  },
   plugins: [
     react(),
     VitePWA({
@@ -130,7 +137,7 @@ export default defineConfig({
       },
       workbox: {
         cleanupOutdatedCaches: true,
-        importScripts: ['/share-target.js?v=20260927-v1'],
+        importScripts: [`/share-target.js?v=${PWA_VERSION}`],
         globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
         navigateFallback: '/index.html',
         navigateFallbackDenylist: [/^\/api\//, /^\/auth\/callback/, /^\/share-target/],

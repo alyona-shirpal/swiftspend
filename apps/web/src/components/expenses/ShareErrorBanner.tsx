@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { bustPwaCacheAndReload, PWA_VERSION } from '../../services/serviceWorker';
 
 export interface ShareErrorInfo {
   errorType: string;
@@ -17,6 +18,8 @@ interface ParsedDebugInfo {
   contentType?: string;
   contentLength?: string;
   entriesCount?: string;
+  rawBytes?: string;
+  customParts?: string;
   items: Array<{
     type: 'file' | 'string' | 'error' | 'other';
     name?: string;
@@ -50,15 +53,33 @@ function parseDebugString(debug: string | null | undefined): ParsedDebugInfo {
     } else if (trimmed.startsWith('method=')) {
       result.method = trimmed.slice(7);
     } else if (trimmed.startsWith('ct=')) {
-      result.contentType = trimmed.slice(3);
+      try {
+        result.contentType = decodeURIComponent(trimmed.slice(3));
+      } catch {
+        result.contentType = trimmed.slice(3);
+      }
     } else if (trimmed.startsWith('cl=')) {
       result.contentLength = trimmed.slice(3);
     } else if (trimmed.startsWith('entries=')) {
       result.entriesCount = trimmed.slice(8);
+    } else if (trimmed.startsWith('rawBytes=')) {
+      result.rawBytes = trimmed.slice(9);
+      if (result.rawBytes === '0') {
+        result.errors.push('HTTP request body was empty (0 bytes received)');
+      }
+    } else if (trimmed.startsWith('customParts=')) {
+      result.customParts = trimmed.slice(12);
     } else if (trimmed.startsWith('formParseErr=')) {
       const err = trimmed.slice(13);
       result.errors.push(`Form parse error: ${err}`);
       result.items.push({ type: 'error', details: `Form parse error: ${err}` });
+    } else if (trimmed.startsWith('resFormDataErr=')) {
+      try {
+        const err = decodeURIComponent(trimmed.slice(15));
+        result.items.push({ type: 'error', details: `Response.formData error: ${err}` });
+      } catch {
+        result.items.push({ type: 'error', details: trimmed });
+      }
     } else if (trimmed.includes(':file(') || trimmed.startsWith('file(')) {
       result.items.push({ type: 'file', details: trimmed });
       if (trimmed.includes('size=0')) {
@@ -94,7 +115,10 @@ function parseDebugString(debug: string | null | undefined): ParsedDebugInfo {
   }
 
   // Derive human-readable diagnosis hint
-  if (result.method === 'GET') {
+  if (result.rawBytes === '0') {
+    result.diagnosisHint =
+      'The browser sent an empty request body (0 bytes). On Android Chrome 153, this is a known bug where the browser drops the file stream when sharing from certain apps. Try sharing via Google Photos, or save the image and use the "Upload receipt" button in SwiftSpend.';
+  } else if (result.method === 'GET') {
     result.diagnosisHint =
       'The share was submitted as an HTTP GET request instead of a multipart POST. GET requests cannot carry binary file attachments.';
   } else if (result.entriesCount === '0' || parts.includes('no-entries')) {
@@ -126,6 +150,7 @@ export const ShareErrorBanner: React.FC<Props> = ({
 }) => {
   const [showDetails, setShowDetails] = useState(false);
   const [copied, setCopied] = useState(false);
+  const [isBusting, setIsBusting] = useState(false);
 
   const parsed = useMemo(() => parseDebugString(debugString), [debugString]);
 
@@ -149,10 +174,12 @@ export const ShareErrorBanner: React.FC<Props> = ({
       `Error Type: ${errorType}`,
       `Title: ${title}`,
       `Diagnosis: ${parsed.diagnosisHint}`,
+      `App Version: ${PWA_VERSION}`,
       `Service Worker: ${parsed.swVersion || 'unknown'}`,
       `HTTP Method: ${parsed.method || 'unknown'}`,
       `Content-Type: ${parsed.contentType || 'unknown'}`,
       `Content-Length: ${parsed.contentLength || 'unknown'}`,
+      `Body Bytes: ${parsed.rawBytes || 'unknown'}`,
       `Entries Count: ${parsed.entriesCount || 'unknown'}`,
       `User Agent: ${navigator.userAgent}`,
       '',
@@ -194,6 +221,11 @@ export const ShareErrorBanner: React.FC<Props> = ({
       setCopied(true);
       setTimeout(() => setCopied(false), 2500);
     }
+  };
+
+  const handleBustCache = async () => {
+    setIsBusting(true);
+    await bustPwaCacheAndReload();
   };
 
   return (
@@ -241,6 +273,19 @@ export const ShareErrorBanner: React.FC<Props> = ({
 
         <button
           type="button"
+          onClick={handleBustCache}
+          disabled={isBusting}
+          title="Unregisters the service worker, clears cached assets, and reloads the latest version"
+          className="inline-flex items-center gap-1.5 rounded-lg bg-surface-container-high px-2.5 py-1.5 text-xs font-semibold text-primary transition-colors hover:bg-surface-container-highest disabled:opacity-50"
+        >
+          <span className={`material-symbols-outlined text-sm ${isBusting ? 'animate-spin' : ''}`}>
+            cached
+          </span>
+          <span>{isBusting ? 'Busting cache...' : 'Bust PWA cache & reload'}</span>
+        </button>
+
+        <button
+          type="button"
           onClick={() => setShowDetails((prev) => !prev)}
           className="inline-flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium text-secondary transition-colors hover:bg-surface-container-low hover:text-primary"
         >
@@ -258,8 +303,16 @@ export const ShareErrorBanner: React.FC<Props> = ({
               <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary">
                 SW Version
               </span>
-              <span className="font-mono text-primary font-semibold">
+              <span className="font-mono text-primary font-semibold truncate block" title={parsed.swVersion}>
                 {parsed.swVersion || 'N/A'}
+              </span>
+            </div>
+            <div className="rounded-lg bg-surface-container-low p-2">
+              <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary">
+                App Version
+              </span>
+              <span className="font-mono text-primary font-semibold truncate block" title={PWA_VERSION}>
+                {PWA_VERSION}
               </span>
             </div>
             <div className="rounded-lg bg-surface-container-low p-2">
@@ -272,23 +325,24 @@ export const ShareErrorBanner: React.FC<Props> = ({
             </div>
             <div className="rounded-lg bg-surface-container-low p-2">
               <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary">
-                Content-Type
-              </span>
-              <span
-                className="block truncate font-mono text-primary font-semibold"
-                title={parsed.contentType || 'N/A'}
-              >
-                {parsed.contentType || 'N/A'}
-              </span>
-            </div>
-            <div className="rounded-lg bg-surface-container-low p-2">
-              <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary">
-                Entries Count
+                Body Bytes
               </span>
               <span className="font-mono text-primary font-semibold">
-                {parsed.entriesCount ?? '0'}
+                {parsed.rawBytes !== undefined ? `${parsed.rawBytes} B` : (parsed.contentLength || 'N/A')}
               </span>
             </div>
+          </div>
+
+          <div className="rounded-lg bg-surface-container-low p-2">
+            <span className="block text-[10px] font-bold uppercase tracking-wider text-secondary">
+              Content-Type
+            </span>
+            <span
+              className="block truncate font-mono text-primary font-semibold"
+              title={parsed.contentType || 'N/A'}
+            >
+              {parsed.contentType || 'N/A'}
+            </span>
           </div>
 
           {parsed.items.length > 0 && (
