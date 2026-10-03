@@ -2,6 +2,8 @@ import { Currency } from '../types';
 import { createSupabaseUserClient } from './supabase';
 import { ExchangeRateService } from './exchangeRate';
 import { ensureUserCurrencies } from './userCurrencies';
+import { triggerSheetSync } from './triggerSheetSync';
+
 
 export interface CreateExpenseInput {
   amount: number;
@@ -54,6 +56,10 @@ export const createExpenseRecord = async (
       .eq('user_id', userId);
     if (categoryError) throw categoryError;
   }
+
+  // SYNC_SPEC_V1: Trigger Google Sheets auto-sync for the expense's month (fire-and-forget).
+  const expenseDate: string = (data as { date: string }).date;
+  triggerSheetSync(userId, expenseDate.slice(0, 7));
 
   return data;
 };

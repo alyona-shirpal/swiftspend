@@ -6,6 +6,7 @@ import reportsRoutes from './routes/reports';
 import exchangeRatesRoutes from './routes/exchangeRates';
 import userCurrenciesRoutes from './routes/userCurrencies';
 import authRoutes from './routes/auth';
+import integrationsRoutes from './routes/integrations';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp() {
@@ -24,6 +25,7 @@ export function createApp() {
   app.use('/exchange-rates', exchangeRatesRoutes);
   app.use('/user-currencies', userCurrenciesRoutes);
   app.use('/auth', authRoutes);
+  app.use('/integrations', integrationsRoutes);
 
   app.use(errorHandler);
 

@@ -27,6 +27,7 @@ import { bustPwaCacheAndReload, PWA_VERSION } from '../../services/serviceWorker
 import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { getStoredTheme, setStoredTheme, Theme } from '../../utils/theme';
+import { GoogleSheetsSection } from '../../components/settings/GoogleSheetsSection';
 
 // --- Types ---
 interface Currency {
@@ -409,6 +410,9 @@ export const SettingsPage = () => {
             </div>
           </div>
         </section>
+
+        {/* Google Sheets Section */}
+        <GoogleSheetsSection />
 
         {/* Storage Section */}
         <section>

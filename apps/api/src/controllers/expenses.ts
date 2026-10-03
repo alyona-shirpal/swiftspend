@@ -10,6 +10,8 @@ import { z } from 'zod';
 import { Currency } from '../types';
 import { createExpenseRecord } from '../services/createExpense';
 import type { RateSnapshot } from '@swiftspend/types';
+import { triggerSheetSync } from '../services/triggerSheetSync';
+
 
 const ExpenseSchema = z.object({
   amount: z.number().positive(),
@@ -316,6 +318,16 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
     ) {
       await markCategoryLastUsed(supabase, req.user!.id, validated.category_id);
     }
+
+    // SYNC_SPEC_V1: Trigger Google Sheets auto-sync for affected month(s) (fire-and-forget).
+    // If the expense date changed to a different month, sync both the new and old months.
+    const newMonth: string = (data as { date: string }).date.slice(0, 7);
+    const oldMonth: string | undefined = existing.date ? (existing.date as string).slice(0, 7) : undefined;
+    triggerSheetSync(req.user!.id, newMonth);
+    if (oldMonth && oldMonth !== newMonth) {
+      triggerSheetSync(req.user!.id, oldMonth);
+    }
+
     res.json(data);
   } catch (err) {
     next(err);
@@ -329,7 +341,7 @@ export const deleteExpense = async (req: AuthRequest, res: Response, next: NextF
 
     const { data: existing } = await supabase
       .from('expenses')
-      .select('id')
+      .select('id, date')
       .eq('id', id)
       .eq('user_id', req.user!.id)
       .single();
@@ -342,6 +354,11 @@ export const deleteExpense = async (req: AuthRequest, res: Response, next: NextF
       .eq('id', id);
 
     if (error) throw error;
+
+    // SYNC_SPEC_V1: Trigger Google Sheets auto-sync for the deleted expense's month (fire-and-forget).
+    const affectedDate: string = (existing as { date: string }).date;
+    triggerSheetSync(req.user!.id, affectedDate.slice(0, 7));
+
     res.status(204).send();
   } catch (err) {
     next(err);
