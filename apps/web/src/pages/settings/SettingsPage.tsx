@@ -380,7 +380,7 @@ export const SettingsPage = () => {
               <select
                 value={theme}
                 onChange={handleThemeChange}
-                className="bg-transparent border-none text-secondary font-body text-sm focus:ring-0 cursor-pointer pr-8"
+                className="bg-transparent border-none text-secondary font-body text-base md:text-sm focus:ring-0 cursor-pointer pr-8"
               >
                 <option value="system">System (Default)</option>
                 <option value="light">Light</option>
@@ -392,7 +392,7 @@ export const SettingsPage = () => {
               <select
                 value={defaultReportView}
                 onChange={handleReportViewChange}
-                className="bg-transparent border-none text-secondary font-body text-sm focus:ring-0 cursor-pointer pr-8"
+                className="bg-transparent border-none text-secondary font-body text-base md:text-sm focus:ring-0 cursor-pointer pr-8"
               >
                 <option value="Daily">Daily</option>
                 <option value="Monthly">Monthly</option>
@@ -405,7 +405,7 @@ export const SettingsPage = () => {
               <select
                 value={firstDayOfWeek}
                 onChange={handleFirstDayChange}
-                className="bg-transparent border-none text-secondary font-body text-sm focus:ring-0 cursor-pointer pr-8"
+                className="bg-transparent border-none text-secondary font-body text-base md:text-sm focus:ring-0 cursor-pointer pr-8"
               >
                 <option value="Monday">Monday</option>
                 <option value="Sunday">Sunday</option>
@@ -474,7 +474,7 @@ export const SettingsPage = () => {
                   placeholder="Your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full bg-surface-container-high border-none rounded-lg p-3 text-primary placeholder:text-on-surface-variant focus:ring-1 focus:ring-error"
+                  className="w-full bg-surface-container-high border-none rounded-lg p-3 text-base md:text-sm text-primary placeholder:text-on-surface-variant focus:ring-1 focus:ring-error"
                 />
                 <div className="grid grid-cols-2 gap-3">
                   <button
@@ -524,7 +524,7 @@ export const SettingsPage = () => {
                 placeholder="Search currencies..."
                 value={addSearchQuery}
                 onChange={(e) => setAddSearchQuery(e.target.value)}
-                className="w-full h-12 pl-11 pr-4 bg-surface-container-low border-none rounded-xl text-primary font-body text-sm focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-outline/60"
+                className="w-full h-12 pl-11 pr-4 bg-surface-container-low border-none rounded-xl text-primary font-body text-base md:text-sm focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-outline/60"
               />
             </div>
 

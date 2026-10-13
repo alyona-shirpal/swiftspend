@@ -37,7 +37,7 @@ export const AnalyticsSearch: React.FC<AnalyticsSearchProps> = ({
             if (e.key === 'Backspace' && searchQuery === '') onClear();
           }}
           placeholder="Search category, date, or year..."
-          className="w-full bg-transparent border-none focus:ring-0 pl-12 pr-4 py-3 text-sm font-body text-on-surface placeholder:text-outline"
+          className="w-full bg-transparent border-none focus:ring-0 pl-12 pr-4 py-3 text-base md:text-sm font-body text-on-surface placeholder:text-outline"
         />
         {searchQuery && (
           <button

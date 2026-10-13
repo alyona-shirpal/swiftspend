@@ -212,7 +212,7 @@ export const AllExpensesPage: React.FC = () => {
               placeholder="Search by merchant or note..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-outline-variant/75 transition-all"
+              className="w-full h-12 pl-12 pr-4 bg-surface-container-lowest border border-outline-variant/20 rounded-xl text-base md:text-sm font-medium focus:ring-1 focus:ring-primary focus:border-primary placeholder:text-outline-variant/75 transition-all"
             />
           </div>
 

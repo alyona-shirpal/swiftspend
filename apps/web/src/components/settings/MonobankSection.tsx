@@ -232,7 +232,7 @@ function ConnectForm({ onSuccess, onCancel, isExpandable }: ConnectFormProps) {
             value={displayName}
             onChange={(e) => setDisplayName(e.target.value)}
             disabled={connect.isPending}
-            className="w-full bg-surface-container-high border-none rounded-lg p-3 text-sm text-primary placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary"
+            className="w-full bg-surface-container-high border-none rounded-lg p-3 text-base md:text-sm text-primary placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary"
           />
         </div>
 
@@ -247,7 +247,7 @@ function ConnectForm({ onSuccess, onCancel, isExpandable }: ConnectFormProps) {
             onChange={(e) => setToken(e.target.value)}
             disabled={connect.isPending}
             required
-            className="w-full bg-surface-container-high border-none rounded-lg p-3 text-sm text-primary font-mono placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary"
+            className="w-full bg-surface-container-high border-none rounded-lg p-3 text-base md:text-sm text-primary font-mono placeholder:text-on-surface-variant focus:ring-1 focus:ring-primary"
           />
         </div>
       </div>

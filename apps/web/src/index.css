@@ -76,6 +76,10 @@
     --receipt-bg: #1c2433;
   }
 
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
   body {
     @apply font-body bg-surface text-on-surface antialiased;
     min-height: 100dvh;
@@ -88,6 +92,29 @@
   h5,
   h6 {
     @apply font-headline;
+  }
+
+  /* Prevent iOS Safari from auto-zooming into form elements */
+  input,
+  textarea,
+  select {
+    font-size: 16px;
+  }
+}
+
+/*
+ * Prevent iOS Safari auto-zoom on mobile devices.
+ * iOS Safari triggers automatic viewport zoom whenever any focused input/textarea/select
+ * has a computed font-size smaller than 16px.
+ * This rule enforces a minimum 16px font-size on mobile viewports (<= 768px),
+ * overriding any utility classes (e.g. text-sm, text-xs) while preserving
+ * deliberately larger typography (e.g. text-lg, text-4xl).
+ */
+@media screen and (max-width: 768px) {
+  input:not([type='checkbox']):not([type='radio']):not([type='range']):not([type='button']):not([type='submit']):not([type='color']):not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl):not(.text-4xl):not(.text-5xl),
+  textarea:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl):not(.text-4xl):not(.text-5xl),
+  select:not(.text-lg):not(.text-xl):not(.text-2xl):not(.text-3xl):not(.text-4xl):not(.text-5xl) {
+    font-size: 16px !important;
   }
 }
 

@@ -99,7 +99,7 @@ export const AllCategoriesPage: React.FC = () => {
               value={customName}
               onChange={(event) => setCustomName(event.target.value)}
               placeholder={customName ? '' : 'e.g. Shopping, Hobbies'}
-              className="h-12 w-full rounded-lg border-outline-variant bg-surface px-4 text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary"
+              className="h-12 w-full rounded-lg border-outline-variant bg-surface px-4 text-base md:text-sm font-medium transition-all focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </div>
 

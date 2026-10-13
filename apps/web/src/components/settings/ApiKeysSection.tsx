@@ -177,7 +177,7 @@ export const ApiKeysSection: React.FC = () => {
                     value={keyName}
                     onChange={(e) => setKeyName(e.target.value)}
                     required
-                    className="w-full h-12 px-4 bg-surface-container-low border-none rounded-xl text-primary font-body text-sm focus:ring-1 focus:ring-primary/20"
+                    className="w-full h-12 px-4 bg-surface-container-low border-none rounded-xl text-primary font-body text-base md:text-sm focus:ring-1 focus:ring-primary/20"
                   />
                 </div>
 

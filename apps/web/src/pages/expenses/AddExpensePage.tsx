@@ -505,7 +505,7 @@ export const AddExpensePage: React.FC = () => {
                 value={selectedDate}
                 max="2099-12-31"
                 onChange={(event) => setSelectedDate(event.target.value)}
-                className="absolute inset-0 h-full w-full cursor-pointer opacity-0"
+                className="absolute inset-0 h-full w-full cursor-pointer opacity-0 text-base"
               />
             </div>
           </section>

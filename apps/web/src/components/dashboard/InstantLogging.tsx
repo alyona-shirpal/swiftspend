@@ -245,7 +245,7 @@ export const InstantLogging: React.FC = () => {
               onChange={(e) => setMerchant(e.target.value)}
               disabled={isSaving}
               maxLength={120}
-              className="w-full border-none bg-transparent px-0 py-3 font-body text-sm font-medium text-on-surface placeholder:text-secondary/50 focus:ring-0"
+              className="w-full border-none bg-transparent px-0 py-3 font-body text-base md:text-sm font-medium text-on-surface placeholder:text-secondary/50 focus:ring-0"
             />
             {merchant && (
               <button
@@ -285,7 +285,7 @@ export const InstantLogging: React.FC = () => {
               value={description}
               onChange={(e) => setDescription(e.target.value)}
               disabled={isSaving}
-              className="w-full border-none bg-transparent px-0 py-3 font-body text-sm font-medium text-on-surface placeholder:text-secondary/50 focus:ring-0"
+              className="w-full border-none bg-transparent px-0 py-3 font-body text-base md:text-sm font-medium text-on-surface placeholder:text-secondary/50 focus:ring-0"
             />
             {description && (
               <button

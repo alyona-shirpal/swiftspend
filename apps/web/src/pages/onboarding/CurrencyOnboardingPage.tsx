@@ -267,7 +267,7 @@ export default function CurrencyOnboardingPage() {
               placeholder="Search currencies..."
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              className="w-full h-12 pl-11 pr-4 bg-surface-container-low border-none rounded-xl text-primary font-body text-sm focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-outline/60"
+              className="w-full h-12 pl-11 pr-4 bg-surface-container-low border-none rounded-xl text-primary font-body text-base md:text-sm focus:ring-1 focus:ring-primary/20 transition-all placeholder:text-outline/60"
             />
           </div>
 

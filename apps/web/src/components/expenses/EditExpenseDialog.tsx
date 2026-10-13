@@ -106,7 +106,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
               step="0.01"
               value={amount}
               onChange={(event) => setAmount(event.target.value)}
-              className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+              className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-base md:text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
             />
           </label>
 
@@ -120,7 +120,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
                 onChange={(event) =>
                   setCurrency(event.target.value as Currency)
                 }
-                className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+                className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-base md:text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
               >
                 {CURRENCY_OPTIONS.map((option) => (
                   <option key={option} value={option}>
@@ -139,7 +139,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
                 value={date}
                 max="2099-12-31"
                 onChange={(event) => setDate(event.target.value)}
-                className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+                className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-3 py-3 text-base md:text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
               />
             </label>
           </div>
@@ -204,7 +204,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
               value={merchant}
               onChange={(event) => setMerchant(event.target.value)}
               maxLength={120}
-              className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+              className="mt-1 w-full rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-base md:text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="Merchant or shop..."
             />
           </label>
@@ -218,7 +218,7 @@ export const EditExpenseDialog: React.FC<EditExpenseDialogProps> = ({
               onChange={(event) => setDescription(event.target.value)}
               maxLength={2000}
               rows={3}
-              className="mt-1 w-full resize-none rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
+              className="mt-1 w-full resize-none rounded-xl border border-outline-variant/20 bg-surface-container-lowest px-4 py-3 text-base md:text-sm font-semibold text-primary focus:border-primary focus:ring-1 focus:ring-primary"
               placeholder="Add note..."
             />
           </label>

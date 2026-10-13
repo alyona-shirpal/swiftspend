@@ -338,7 +338,7 @@ export default function CategoryOnboardingPage() {
                       onKeyDown={(e) =>
                         e.key === 'Enter' && handleAddCategory()
                       }
-                      className="w-full bg-surface-container-lowest border border-surface-container rounded-lg h-12 focus:ring-1 focus:ring-primary focus:border-primary text-sm font-medium text-primary px-4 placeholder:text-outline-variant shadow-sm transition-all"
+                      className="w-full bg-surface-container-lowest border border-surface-container rounded-lg h-12 focus:ring-1 focus:ring-primary focus:border-primary text-base md:text-sm font-medium text-primary px-4 placeholder:text-outline-variant shadow-sm transition-all"
                     />
                   </div>
                   <button
