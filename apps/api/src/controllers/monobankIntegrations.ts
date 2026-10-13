@@ -29,6 +29,11 @@ const AcceptImportBodySchema = z.object({
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional(),
 });
 
+const SyncBodySchema = z.object({
+  from: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'From date must be in YYYY-MM-DD format').optional(),
+  to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'To date must be in YYYY-MM-DD format').optional(),
+});
+
 // ---------------------------------------------------------------------------
 // GET /integrations/monobank/status
 // ---------------------------------------------------------------------------
@@ -436,6 +441,34 @@ export const declinePendingImport = async (
 };
 
 // ---------------------------------------------------------------------------
+// POST /integrations/monobank/pending/clear (clear all pending imports)
+// ---------------------------------------------------------------------------
+export const clearAllPendingImports = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user!.id;
+
+    const { error: updateError } = await supabaseAdmin
+      .from('monobank_pending_imports')
+      .update({
+        status: 'declined',
+        updated_at: new Date().toISOString(),
+      })
+      .eq('user_id', userId)
+      .eq('status', 'pending');
+
+    if (updateError) throw updateError;
+
+    return res.status(200).json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------------------
 // GET /integrations/monobank/webhook/:webhookToken (PUBLIC)
 // ---------------------------------------------------------------------------
 export const validateMonobankWebhook = (req: Request, res: Response) => {
@@ -610,19 +643,43 @@ export const syncMonobankStatement = async (
       accounts = [{ id: '0', currencyCode: 980, balance: 0, creditLimit: 0, type: 'default' }];
     }
 
+    const { from: fromDateStr, to: toDateStr } = SyncBodySchema.parse(req.body || {});
+
     const now = Math.floor(Date.now() / 1000);
-    const thirtyDaysAgo = now - 30 * 24 * 60 * 60;
+    let toTimestamp = now;
+    if (toDateStr) {
+      toTimestamp = Math.min(Math.floor(new Date(`${toDateStr}T23:59:59.999Z`).getTime() / 1000), now);
+    }
+
+    let fromTimestamp = now - 30 * 24 * 60 * 60;
+    if (fromDateStr) {
+      fromTimestamp = Math.floor(new Date(`${fromDateStr}T00:00:00.000Z`).getTime() / 1000);
+    }
+
+    if (fromTimestamp > toTimestamp) {
+      return res.status(400).json({ error: 'From date cannot be after to date' });
+    }
 
     let importedCount = 0;
 
     for (const acc of accounts) {
       let statementItems: MonobankStatementItem[] = [];
-      try {
-        statementItems = await fetchStatement(token, acc.id, thirtyDaysAgo, now);
-      } catch (err) {
-        console.warn(`[syncMonobankStatement] Failed to fetch statement for account ${acc.id}:`, err);
-        // Continue to other accounts if one fails (e.g. rate limit 429)
-        continue;
+
+      // Monobank allows max 31 days (2682000 seconds) per statement request.
+      // Break the interval into <= 30 day chunks.
+      const MAX_CHUNK_SECONDS = 30 * 24 * 60 * 60;
+      let chunkFrom = fromTimestamp;
+
+      while (chunkFrom < toTimestamp) {
+        const chunkTo = Math.min(chunkFrom + MAX_CHUNK_SECONDS, toTimestamp);
+        try {
+          const items = await fetchStatement(token, acc.id, chunkFrom, chunkTo);
+          statementItems.push(...items);
+        } catch (err) {
+          console.warn(`[syncMonobankStatement] Failed to fetch statement for account ${acc.id} (${chunkFrom}-${chunkTo}):`, err);
+          break;
+        }
+        chunkFrom = chunkTo + 1;
       }
 
       for (const item of statementItems) {

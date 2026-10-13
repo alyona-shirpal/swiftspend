@@ -7,6 +7,7 @@ import {
   getPendingImports,
   acceptPendingImport,
   declinePendingImport,
+  clearAllPendingImports,
   handleMonobankWebhook,
   validateMonobankWebhook,
   syncMonobankStatement,
@@ -23,6 +24,7 @@ router.use(requireAuth);
 router.get('/status', getMonobankStatus);
 router.post('/connect', connectMonobank);
 router.get('/pending', getPendingImports);
+router.post('/pending/clear', clearAllPendingImports);
 router.post('/pending/:id/accept', acceptPendingImport);
 router.post('/pending/:id/decline', declinePendingImport);
 router.delete('/:id', disconnectMonobank);

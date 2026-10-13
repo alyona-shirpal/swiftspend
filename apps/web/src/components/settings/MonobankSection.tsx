@@ -38,8 +38,130 @@ function truncateClientId(id: string | null): string {
   return `${id.slice(0, 6)}...${id.slice(-4)}`;
 }
 
+interface SyncPeriodModalProps {
+  isOpen: boolean;
+  onClose: () => void;
+  onConfirm: (period: { from?: string; to?: string }) => void;
+  isInitial?: boolean;
+}
+
+function SyncPeriodModal({ isOpen, onClose, onConfirm, isInitial }: SyncPeriodModalProps) {
+  const getDefaultDates = (days: number) => {
+    const to = new Date().toISOString().split('T')[0];
+    const fromDate = new Date();
+    fromDate.setDate(fromDate.getDate() - days);
+    const from = fromDate.toISOString().split('T')[0];
+    return { from, to };
+  };
+
+  const [preset, setPreset] = useState<'30' | '60' | '90' | 'custom'>('30');
+  const [customFrom, setCustomFrom] = useState(() => getDefaultDates(30).from);
+  const [customTo, setCustomTo] = useState(() => getDefaultDates(30).to);
+
+  if (!isOpen) return null;
+
+  const handleApply = () => {
+    if (preset === 'custom') {
+      onConfirm({ from: customFrom, to: customTo });
+    } else {
+      const { from, to } = getDefaultDates(parseInt(preset, 10));
+      onConfirm({ from, to });
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-surface-variant/80 backdrop-blur-sm animate-in fade-in">
+      <div className="w-full max-w-sm bg-surface-container-lowest rounded-2xl p-6 shadow-xl border border-outline-variant/10 space-y-5">
+        <div>
+          <h3 className="font-headline font-bold text-lg text-primary">
+            {isInitial ? 'Initial Sync Period' : 'Select Sync Period'}
+          </h3>
+          <p className="font-body text-xs text-secondary mt-1">
+            Choose the date range to import transactions from Monobank.
+          </p>
+        </div>
+
+        <div className="grid grid-cols-4 gap-2">
+          {(['30', '60', '90'] as const).map((days) => (
+            <button
+              key={days}
+              type="button"
+              onClick={() => setPreset(days)}
+              className={`py-2 text-xs font-semibold rounded-lg border transition-all ${
+                preset === days
+                  ? 'bg-primary text-on-primary border-primary shadow-sm'
+                  : 'bg-surface-container-low text-primary border-transparent hover:bg-surface-container'
+              }`}
+            >
+              {days} days
+            </button>
+          ))}
+          <button
+            type="button"
+            onClick={() => setPreset('custom')}
+            className={`py-2 text-xs font-semibold rounded-lg border transition-all ${
+              preset === 'custom'
+                ? 'bg-primary text-on-primary border-primary shadow-sm'
+                : 'bg-surface-container-low text-primary border-transparent hover:bg-surface-container'
+            }`}
+          >
+            Custom
+          </button>
+        </div>
+
+        {preset === 'custom' && (
+          <div className="space-y-3 pt-1 animate-in fade-in">
+            <div>
+              <label className="block text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                From Date
+              </label>
+              <input
+                type="date"
+                value={customFrom}
+                max={customTo}
+                onChange={(e) => setCustomFrom(e.target.value)}
+                className="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs text-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
+            <div>
+              <label className="block text-[11px] font-semibold text-secondary uppercase tracking-wider mb-1">
+                To Date
+              </label>
+              <input
+                type="date"
+                value={customTo}
+                min={customFrom}
+                max={new Date().toISOString().split('T')[0]}
+                onChange={(e) => setCustomTo(e.target.value)}
+                className="w-full bg-surface-container-high border-none rounded-lg p-2.5 text-xs text-primary focus:ring-1 focus:ring-primary"
+              />
+            </div>
+          </div>
+        )}
+
+        <div className="flex items-center gap-2 pt-2 border-t border-outline-variant/10">
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex-1 py-2.5 px-3 font-body text-xs font-semibold text-secondary hover:bg-surface-container-high rounded-xl transition-colors"
+          >
+            {isInitial ? 'Skip Sync' : 'Cancel'}
+          </button>
+          <button
+            type="button"
+            onClick={handleApply}
+            className="flex-1 py-2.5 px-3 font-body text-xs font-semibold bg-primary text-on-primary rounded-xl hover:opacity-90 transition-opacity"
+          >
+            Sync Transactions
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 interface ConnectFormProps {
-  onSuccess?: () => void;
+  onSuccess?: (integrationId: string) => void;
   onCancel?: () => void;
   isExpandable?: boolean;
 }
@@ -56,10 +178,10 @@ function ConnectForm({ onSuccess, onCancel, isExpandable }: ConnectFormProps) {
     connect.mutate(
       { token: token.trim(), displayName: displayName.trim() || undefined },
       {
-        onSuccess: () => {
+        onSuccess: (data: any) => {
           setToken('');
           setDisplayName('');
-          onSuccess?.();
+          onSuccess?.(data?.id);
         },
       }
     );
@@ -270,6 +392,8 @@ export function MonobankSection() {
   const disconnect = useDisconnectMonobank();
   const sync = useSyncMonobank();
   const [showAddForm, setShowAddForm] = useState(false);
+  const [syncModalIntegrationId, setSyncModalIntegrationId] = useState<string | null>(null);
+  const [isInitialSync, setIsInitialSync] = useState(false);
 
   const integrations = statusData?.integrations || [];
   const hasIntegrations = integrations.length > 0;
@@ -280,8 +404,20 @@ export function MonobankSection() {
     }
   };
 
-  const handleSync = (id: string) => {
-    sync.mutate(id);
+  const handleOpenSyncModal = (id: string, isInitial: boolean = false) => {
+    setSyncModalIntegrationId(id);
+    setIsInitialSync(isInitial);
+  };
+
+  const handleConfirmSync = (period: { from?: string; to?: string }) => {
+    if (!syncModalIntegrationId) return;
+    const integrationId = syncModalIntegrationId;
+    setSyncModalIntegrationId(null);
+    sync.mutate({
+      integrationId,
+      from: period.from,
+      to: period.to,
+    });
   };
 
   return (
@@ -302,7 +438,13 @@ export function MonobankSection() {
             <div className="animate-spin rounded-full h-6 w-6 border-t-2 border-b-2 border-primary"></div>
           </div>
         ) : !hasIntegrations ? (
-          <ConnectForm />
+          <ConnectForm
+            onSuccess={(integrationId) => {
+              if (integrationId) {
+                handleOpenSyncModal(integrationId, true);
+              }
+            }}
+          />
         ) : (
           <div className="space-y-6 divide-y divide-outline-variant/10">
             {integrations.map((integration) => (
@@ -310,8 +452,8 @@ export function MonobankSection() {
                 key={integration.id}
                 integration={integration}
                 onDisconnect={handleDisconnect}
-                onSync={handleSync}
-                isSyncing={sync.isPending && sync.variables === integration.id}
+                onSync={(id) => handleOpenSyncModal(id, false)}
+                isSyncing={sync.isPending && sync.variables?.integrationId === integration.id}
                 isDisconnecting={disconnect.isPending && disconnect.variables === integration.id}
               />
             ))}
@@ -320,7 +462,12 @@ export function MonobankSection() {
               <div className="pt-6 border-t border-outline-variant/10">
                 <ConnectForm
                   isExpandable
-                  onSuccess={() => setShowAddForm(false)}
+                  onSuccess={(integrationId) => {
+                    setShowAddForm(false);
+                    if (integrationId) {
+                      handleOpenSyncModal(integrationId, true);
+                    }
+                  }}
                   onCancel={() => setShowAddForm(false)}
                 />
               </div>
@@ -339,6 +486,13 @@ export function MonobankSection() {
           </div>
         )}
       </div>
+
+      <SyncPeriodModal
+        isOpen={Boolean(syncModalIntegrationId)}
+        onClose={() => setSyncModalIntegrationId(null)}
+        onConfirm={handleConfirmSync}
+        isInitial={isInitialSync}
+      />
     </section>
   );
 }

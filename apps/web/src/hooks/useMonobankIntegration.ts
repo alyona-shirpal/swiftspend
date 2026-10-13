@@ -137,12 +137,46 @@ export function useDeclineMonobankImport() {
   });
 }
 
+export function useClearAllMonobankImports() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: async () => {
+      const { data } = await api.post('/integrations/monobank/pending/clear');
+      return data;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
+      queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
+      toast.success('Cleared all pending imports');
+    },
+    onError: (err: unknown) => {
+      const errorMsg =
+        (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Failed to clear pending imports';
+      toast.error(errorMsg);
+    },
+  });
+}
+
 export function useSyncMonobank() {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: async (integrationId: string) => {
-      const { data } = await api.post<{ imported: number }>(`/integrations/monobank/${integrationId}/sync`);
+    mutationFn: async ({
+      integrationId,
+      from,
+      to,
+    }: {
+      integrationId: string;
+      from?: string;
+      to?: string;
+    }) => {
+      const { data } = await api.post<{ imported: number }>(
+        `/integrations/monobank/${integrationId}/sync`,
+        { from, to }
+      );
       return data;
     },
     onSuccess: (data) => {

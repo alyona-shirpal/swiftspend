@@ -5,6 +5,7 @@ import {
   useMonobankPendingImports,
   useAcceptMonobankImport,
   useDeclineMonobankImport,
+  useClearAllMonobankImports,
 } from '../../hooks/useMonobankIntegration';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { Currency, MonobankPendingImport } from '@swiftspend/types';
@@ -28,6 +29,7 @@ export const MonobankPendingPage: React.FC = () => {
   const { data, isLoading } = useMonobankPendingImports();
   const acceptMutation = useAcceptMonobankImport();
   const declineMutation = useDeclineMonobankImport();
+  const clearAllMutation = useClearAllMonobankImports();
 
   const imports = data?.imports || [];
 
@@ -37,6 +39,12 @@ export const MonobankPendingPage: React.FC = () => {
 
   const handleDecline = (item: MonobankPendingImport) => {
     declineMutation.mutate({ id: item.id });
+  };
+
+  const handleClearAll = () => {
+    if (window.confirm(`Are you sure you want to dismiss all ${imports.length} pending imports?`)) {
+      clearAllMutation.mutate();
+    }
   };
 
   const handleEditAndAccept = (item: MonobankPendingImport) => {
@@ -61,14 +69,26 @@ export const MonobankPendingPage: React.FC = () => {
       width="3xl"
       mainClassName="space-y-4"
     >
-      <div className="flex items-center justify-between pb-1">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-1">
         <p className="font-body text-sm text-secondary">
           Review and confirm transactions imported from Monobank.
         </p>
         {imports.length > 0 && (
-          <span className="font-label text-xs font-semibold bg-surface-container-high text-primary px-2.5 py-1 rounded-full">
-            {imports.length} pending
-          </span>
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            <span className="font-label text-xs font-semibold bg-surface-container-high text-primary px-2.5 py-1 rounded-full">
+              {imports.length} pending
+            </span>
+            <button
+              type="button"
+              onClick={handleClearAll}
+              disabled={clearAllMutation.isPending}
+              className="px-2.5 py-1 rounded-full border border-error/30 bg-error-container/10 hover:bg-error-container/25 text-error font-body text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+              title="Dismiss all pending imports"
+            >
+              <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+              {clearAllMutation.isPending ? 'Clearing…' : 'Clear all'}
+            </button>
+          </div>
         )}
       </div>
 
