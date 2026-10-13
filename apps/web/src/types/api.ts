@@ -20,6 +20,8 @@ export interface RecentExpense {
   currency: Currency;
   amounts: CurrencyAmounts;
   category: Category | null;
+  provider?: string | null;
+  external_id?: string | null;
 }
 
 export interface ExpenseDetail extends Expense {

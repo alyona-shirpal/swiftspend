@@ -1,8 +1,14 @@
 import React, { useCallback, useEffect, useState, useMemo } from 'react';
 import { Currency } from '@swiftspend/types';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { useQueryClient } from '@tanstack/react-query';
 import toast from 'react-hot-toast';
 import useEmblaCarousel from 'embla-carousel-react';
+import api from '../../services/api';
+import {
+  MONOBANK_PENDING_QUERY_KEY,
+  MONOBANK_STATUS_QUERY_KEY,
+} from '../../hooks/useMonobankIntegration';
 import { AnimatedBrandText } from '../../components/layout/AnimatedBrandText';
 import { useAddExpense } from '../../hooks/useAddExpense';
 import { useCategories } from '../../hooks/useCategories';
@@ -51,6 +57,18 @@ const QUICK_CATEGORY_PAGE_SIZE = 12;
 
 export const AddExpensePage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+  const queryClient = useQueryClient();
+  const monoImportState = location.state as {
+    monoImportId?: string;
+    prefill?: {
+      amount?: number;
+      currency?: string;
+      merchant?: string;
+      date?: string;
+      category_id?: string;
+    };
+  } | null;
   const { mutateAsync: addExpense } = useAddExpense();
   const [emblaRef, emblaApi] = useEmblaCarousel({
     align: 'start',
@@ -226,6 +244,30 @@ export const AddExpensePage: React.FC = () => {
   }, [applyParsedExpense, shareError, sharedDocumentId]);
 
   useEffect(() => {
+    if (monoImportState?.prefill) {
+      if (monoImportState.prefill.amount !== undefined) {
+        setAmountInput(String(monoImportState.prefill.amount));
+      }
+      if (
+        monoImportState.prefill.currency &&
+        CURRENCY_OPTIONS.includes(monoImportState.prefill.currency as Currency)
+      ) {
+        setCurrency(monoImportState.prefill.currency as Currency);
+      }
+      if (monoImportState.prefill.merchant !== undefined) {
+        setMerchant(monoImportState.prefill.merchant || '');
+      }
+      if (monoImportState.prefill.date) {
+        setSelectedDate(monoImportState.prefill.date);
+      }
+      if (monoImportState.prefill.category_id) {
+        setSelectedCategoryId(monoImportState.prefill.category_id);
+      }
+      setIsParsedTransactionPending(true);
+    }
+  }, []);
+
+  useEffect(() => {
     if (!selectedCategoryId) {
       if (savedCategoryDraft) {
         setSelectedCategoryId(savedCategoryDraft);
@@ -346,6 +388,24 @@ export const AddExpensePage: React.FC = () => {
         description: note.trim() || undefined,
         date: selectedDate || undefined,
       });
+
+      if (monoImportState?.monoImportId) {
+        try {
+          await api.post(
+            `/integrations/monobank/pending/${monoImportState.monoImportId}/accept`,
+            {
+              category_id: selectedCategoryId || undefined,
+              merchant: merchant.trim() || undefined,
+              description: note.trim() || undefined,
+              date: selectedDate || undefined,
+            }
+          );
+          queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
+          queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
+        } catch (acceptError) {
+          console.error('Failed to accept Monobank import after expense save:', acceptError);
+        }
+      }
 
       setIsParsedTransactionPending(false);
 

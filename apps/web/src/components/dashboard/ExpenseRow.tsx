@@ -72,8 +72,15 @@ export const ExpenseRow: React.FC<ExpenseRowProps> = ({
   const expenseSummary = (
     <>
       <div className="flex min-w-0 items-center gap-3 sm:gap-5">
-        <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-container-low transition-colors group-hover:bg-surface-container-highest">
+        <div className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-lg bg-surface-container-low transition-colors group-hover:bg-surface-container-highest">
           <span className="material-symbols-outlined text-primary">{icon}</span>
+          {expense.provider === 'monobank' && (
+            <img
+              src="/monobank-logo.svg"
+              alt="Monobank"
+              className="absolute -bottom-1 -right-1 h-4 w-4 rounded"
+            />
+          )}
         </div>
         <div className="min-w-0">
           <h4 className="truncate font-body text-md font-semibold text-primary">

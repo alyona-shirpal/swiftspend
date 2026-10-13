@@ -1,0 +1,25 @@
+{
+  "name": "@swiftspend/mcp-server",
+  "version": "1.0.0",
+  "description": "SwiftSpend Model Context Protocol (MCP) Server for managing expenses via LLMs",
+  "main": "dist/index.js",
+  "bin": {
+    "swiftspend-mcp": "dist/index.js"
+  },
+  "type": "module",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsc --watch"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.6.0",
+    "axios": "^1.7.9",
+    "dotenv": "^16.4.7",
+    "zod": "^3.24.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.17.19",
+    "typescript": "^5.7.3"
+  }
+}

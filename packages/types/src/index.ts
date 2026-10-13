@@ -44,6 +44,8 @@ export interface Expense {
   currency: Currency
   amounts: CurrencyAmounts
   exchange_rate_snapshot: RateSnapshot
+  provider?: string | null
+  external_id?: string | null
 }
 
 export interface ExpenseWithCategory extends Expense {
@@ -82,4 +84,60 @@ export interface Category {
   last_used_at: string | null
 }
 
+export interface ApiKey {
+  id: string;
+  user_id: string;
+  name: string;
+  key_preview: string;
+  last_used_at: string | null;
+  created_at: string;
+}
+
+export interface CreateApiKeyBody {
+  name: string;
+}
+
+export interface ApiKeyCreatedResponse {
+  id: string;
+  name: string;
+  key_preview: string;
+  created_at: string;
+  api_key: string;
+}
+
 // Expense, Report types will be added here after DB schema is finalized
+
+export interface MonobankAccount {
+  id: string;
+  currencyCode: number;
+  type: string;
+  balance: number;
+  creditLimit: number;
+  maskedPan?: string[];
+  iban?: string;
+}
+
+export interface MonobankIntegration {
+  id: string;
+  display_name: string | null;
+  monobank_client_id: string | null;
+  monobank_accounts: MonobankAccount[] | null;
+  created_at: string;
+  last_synced_at: string | null;
+}
+
+export interface MonobankPendingImport {
+  id: string;
+  external_id: string;
+  account_id: string;
+  time: string;           // ISO string
+  description: string | null;
+  mcc: number | null;
+  amount: number;         // decimal, always positive (debit)
+  currency: string;       // alpha code e.g. 'UAH'
+  hold: boolean;
+  status: 'pending' | 'accepted' | 'declined';
+  suggested_category: { id: string; name: string; icon: string } | null;
+  created_at: string;
+}
+

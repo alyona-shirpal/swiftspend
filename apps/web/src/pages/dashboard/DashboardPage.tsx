@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Currency } from '@swiftspend/types';
 import { MonthlyHero } from '../../components/dashboard/MonthlyHero';
+import { MonobankPendingBanner } from '../../components/dashboard/MonobankPendingBanner';
 import { InstantLogging } from '../../components/dashboard/InstantLogging';
 import { RecentSpend } from '../../components/dashboard/RecentSpend';
 import { AnimatedBrandText } from '../../components/layout/AnimatedBrandText';
@@ -43,6 +44,9 @@ export const DashboardPage: React.FC = () => {
       width="full"
       mainClassName="space-y-5"
     >
+      {/* Monobank Pending Banner */}
+      <MonobankPendingBanner />
+
       {/* Monthly hero — currency switcher lives here */}
       <MonthlyHero
         selectedCurrency={selectedCurrency}

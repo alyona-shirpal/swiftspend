@@ -15,6 +15,7 @@ import { YearlyReportPage } from './pages/reports/YearlyReportPage';
 import { AnalyticsPage } from './pages/analytics/AnalyticsPage';
 import { SettingsPage } from './pages/settings/SettingsPage';
 import { CategoriesSettingsPage } from './pages/settings/CategoriesSettingsPage';
+import { MonobankPendingPage } from './pages/integrations/MonobankPendingPage';
 import CurrencyOnboardingPage from './pages/onboarding/CurrencyOnboardingPage';
 import CategoryOnboardingPage from './pages/onboarding/CategoryOnboardingPage';
 import { supabase } from './services/supabase.ts';
@@ -204,6 +205,14 @@ function App() {
           />
           <Route path="/onboarding/currencies" element={<CurrencyOnboardingPage />} />
           <Route path="/onboarding/categories" element={<CategoryOnboardingPage />} />
+          <Route
+            path="/integrations/monobank/pending"
+            element={
+              <ProtectedRoute>
+                <MonobankPendingPage />
+              </ProtectedRoute>
+            }
+          />
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </Router>

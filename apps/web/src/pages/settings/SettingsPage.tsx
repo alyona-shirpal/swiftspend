@@ -28,6 +28,9 @@ import { useExchangeRates } from '../../hooks/useExchangeRates';
 import { USER_CURRENCIES_QUERY_KEY, useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { getStoredTheme, setStoredTheme, Theme } from '../../utils/theme';
 import { GoogleSheetsSection } from '../../components/settings/GoogleSheetsSection';
+import { MonobankSection } from '../../components/settings/MonobankSection';
+import { ApiKeysSection } from '../../components/settings/ApiKeysSection';
+
 
 // --- Types ---
 interface Currency {
@@ -411,8 +414,14 @@ export const SettingsPage = () => {
           </div>
         </section>
 
+        {/* API Keys Section */}
+        <ApiKeysSection />
+
         {/* Google Sheets Section */}
         <GoogleSheetsSection />
+
+        {/* Monobank Section */}
+        <MonobankSection />
 
         {/* Storage Section */}
         <section>
