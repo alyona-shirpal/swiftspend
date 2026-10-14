@@ -252,6 +252,7 @@ export const getPendingImports = async (
         operation_amount,
         operation_currency_code,
         hold,
+        raw_payload,
         created_at,
         suggested_category_id,
         categories:suggested_category_id (
@@ -296,6 +297,7 @@ export const getPendingImports = async (
         amount: resolved.amount,
         currency: resolved.currency,
         hold: row.hold,
+        raw_payload: row.raw_payload ?? null,
         suggested_category: suggestedCategory,
         created_at: row.created_at,
       };

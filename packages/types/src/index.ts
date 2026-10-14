@@ -138,6 +138,7 @@ export interface MonobankPendingImport {
   hold: boolean;
   status: 'pending' | 'accepted' | 'declined';
   suggested_category: { id: string; name: string; icon: string } | null;
+  raw_payload?: Record<string, any> | null;
   created_at: string;
 }
 

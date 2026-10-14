@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '../../components/layout/AppLayout';
 import {
@@ -34,9 +34,17 @@ export const MonobankPendingPage: React.FC = () => {
   const acceptMutation = useAcceptMonobankImport();
   const declineMutation = useDeclineMonobankImport();
   const clearAllMutation = useClearAllMonobankImports();
+  const [selectedJsonItem, setSelectedJsonItem] = useState<MonobankPendingImport | null>(null);
+  const [hasCopiedJson, setHasCopiedJson] = useState(false);
 
   const imports = data?.imports || [];
   const primaryIntegration = statusData?.integrations?.[0];
+
+  const handleCopyJson = (payload: any) => {
+    navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
+    setHasCopiedJson(true);
+    setTimeout(() => setHasCopiedJson(false), 2000);
+  };
 
   const handleSyncLatest = () => {
     if (primaryIntegration?.id) {
@@ -176,9 +184,14 @@ export const MonobankPendingPage: React.FC = () => {
                         </span>
                       )}
                     </div>
-                    <p className="font-label text-xs text-secondary">
-                      {formatImportDate(item.time)}
-                    </p>
+                    <div className="flex items-center gap-2 font-label text-xs text-secondary">
+                      <span>{formatImportDate(item.time)}</span>
+                      {item.mcc && (
+                        <span className="font-mono text-[11px] bg-surface-container-high px-1.5 py-0.2 rounded text-secondary">
+                          MCC {item.mcc}
+                        </span>
+                      )}
+                    </div>
                   </div>
 
                   <div className="text-right shrink-0">
@@ -190,7 +203,7 @@ export const MonobankPendingPage: React.FC = () => {
 
                 {/* Suggested Category & Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-outline-variant/10">
-                  <div>
+                  <div className="flex items-center gap-2 flex-wrap">
                     {item.suggested_category ? (
                       <span className="inline-flex items-center gap-1.5 font-label text-xs font-semibold bg-surface-container-high text-primary px-2.5 py-1 rounded-full">
                         <span className="material-symbols-outlined text-[15px]">
@@ -203,6 +216,16 @@ export const MonobankPendingPage: React.FC = () => {
                         No category suggested
                       </span>
                     )}
+
+                    <button
+                      type="button"
+                      onClick={() => setSelectedJsonItem(item)}
+                      className="inline-flex items-center gap-1 font-label text-xs text-secondary hover:text-primary bg-surface-container-low hover:bg-surface-container-high px-2 py-1 rounded-full transition-colors"
+                      title="View raw source JSON"
+                    >
+                      <span className="material-symbols-outlined text-[14px]">data_object</span>
+                      <span>Source JSON</span>
+                    </button>
                   </div>
 
                   <div className="flex flex-wrap items-center gap-2">
@@ -252,6 +275,87 @@ export const MonobankPendingPage: React.FC = () => {
               </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Raw Source JSON Modal */}
+      {selectedJsonItem && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fadeIn">
+          <div className="bg-surface-container-lowest w-full max-w-2xl max-h-[85vh] rounded-2xl p-5 sm:p-6 shadow-xl border border-outline-variant/10 flex flex-col space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary text-xl">data_object</span>
+                <div>
+                  <h3 className="font-display font-medium text-title-md text-primary">
+                    Source Transaction JSON
+                  </h3>
+                  <p className="font-body text-xs text-secondary truncate max-w-xs sm:max-w-md">
+                    {selectedJsonItem.description || selectedJsonItem.external_id}
+                  </p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => setSelectedJsonItem(null)}
+                className="text-secondary hover:text-primary p-1 rounded-lg"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <div className="flex-1 overflow-auto bg-surface-container-lowest rounded-xl p-3 border border-outline-variant/15 text-left">
+              <pre className="font-mono text-xs text-primary whitespace-pre-wrap break-all leading-relaxed">
+                {JSON.stringify(
+                  selectedJsonItem.raw_payload || {
+                    id: selectedJsonItem.external_id,
+                    time: selectedJsonItem.time,
+                    description: selectedJsonItem.description,
+                    mcc: selectedJsonItem.mcc,
+                    amount: selectedJsonItem.amount,
+                    currency: selectedJsonItem.currency,
+                    hold: selectedJsonItem.hold,
+                    account_id: selectedJsonItem.account_id,
+                  },
+                  null,
+                  2
+                )}
+              </pre>
+            </div>
+
+            <div className="flex items-center justify-between pt-2 border-t border-outline-variant/10">
+              <button
+                type="button"
+                onClick={() =>
+                  handleCopyJson(
+                    selectedJsonItem.raw_payload || {
+                      id: selectedJsonItem.external_id,
+                      time: selectedJsonItem.time,
+                      description: selectedJsonItem.description,
+                      mcc: selectedJsonItem.mcc,
+                      amount: selectedJsonItem.amount,
+                      currency: selectedJsonItem.currency,
+                      hold: selectedJsonItem.hold,
+                      account_id: selectedJsonItem.account_id,
+                    }
+                  )
+                }
+                className="py-2 px-3.5 font-body text-xs font-semibold bg-surface-container-low hover:bg-surface-container-high text-primary rounded-xl transition-colors flex items-center gap-1.5"
+              >
+                <span className="material-symbols-outlined text-[15px]">
+                  {hasCopiedJson ? 'done' : 'content_copy'}
+                </span>
+                {hasCopiedJson ? 'Copied!' : 'Copy JSON'}
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setSelectedJsonItem(null)}
+                className="py-2 px-4 font-body text-xs font-semibold bg-primary text-on-primary rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Close
+              </button>
+            </div>
+          </div>
         </div>
       )}
     </AppLayout>
