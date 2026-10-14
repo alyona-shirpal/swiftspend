@@ -11,6 +11,7 @@ import {
   handleMonobankWebhook,
   validateMonobankWebhook,
   syncMonobankStatement,
+  verifyMonobankWebhook,
 } from '../controllers/monobankIntegrations';
 
 const router = Router();
@@ -29,5 +30,6 @@ router.post('/pending/:id/accept', acceptPendingImport);
 router.post('/pending/:id/decline', declinePendingImport);
 router.delete('/:id', disconnectMonobank);
 router.post('/:id/sync', syncMonobankStatement);
+router.post('/:id/webhook/verify', verifyMonobankWebhook);
 
 export default router;

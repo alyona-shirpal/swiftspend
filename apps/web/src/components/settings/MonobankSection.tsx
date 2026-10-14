@@ -4,6 +4,8 @@ import {
   useConnectMonobank,
   useDisconnectMonobank,
   useSyncMonobank,
+  useVerifyMonobankWebhook,
+  VerifyWebhookResult,
 } from '../../hooks/useMonobankIntegration';
 import { MonobankIntegration, MonobankAccount } from '@swiftspend/types';
 
@@ -289,16 +291,34 @@ function ConnectForm({ onSuccess, onCancel, isExpandable }: ConnectFormProps) {
 function IntegrationCard({
   integration,
   onDisconnect,
-  onSync,
+  onQuickSync,
+  onCustomSync,
   isSyncing,
   isDisconnecting,
 }: {
   integration: MonobankIntegration;
   onDisconnect: (id: string) => void;
-  onSync: (id: string) => void;
+  onQuickSync: (id: string) => void;
+  onCustomSync: (id: string) => void;
   isSyncing: boolean;
   isDisconnecting: boolean;
 }) {
+  const verifyWebhook = useVerifyMonobankWebhook();
+  const [webhookInfo, setWebhookInfo] = useState<VerifyWebhookResult | null>(null);
+  const [showWebhookModal, setShowWebhookModal] = useState(false);
+
+  const handleCheckWebhook = (reregister: boolean = false) => {
+    verifyWebhook.mutate(
+      { integrationId: integration.id, reregister },
+      {
+        onSuccess: (data) => {
+          setWebhookInfo(data);
+          setShowWebhookModal(true);
+        },
+      }
+    );
+  };
+
   return (
     <div className="space-y-4 pt-4 first:pt-0">
       <div className="flex items-start justify-between">
@@ -318,10 +338,24 @@ function IntegrationCard({
           </div>
         </div>
 
-        <span className="flex items-center gap-1 font-label text-[11px] font-semibold text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-sm uppercase tracking-wider">
-          <span className="material-symbols-outlined text-[13px] text-green-600">check_circle</span>
-          Connected
-        </span>
+        <div className="flex items-center gap-1.5">
+          <button
+            type="button"
+            onClick={() => handleCheckWebhook(false)}
+            disabled={verifyWebhook.isPending}
+            className="flex items-center gap-1 font-label text-[11px] font-semibold text-secondary hover:text-primary bg-surface-container-high hover:bg-surface-container px-2 py-0.5 rounded-sm transition-colors"
+            title="Check webhook registration status"
+          >
+            <span className="material-symbols-outlined text-[13px]">
+              {verifyWebhook.isPending ? 'sync' : 'network_check'}
+            </span>
+            Webhook
+          </button>
+          <span className="flex items-center gap-1 font-label text-[11px] font-semibold text-on-surface-variant bg-surface-container-high px-2 py-0.5 rounded-sm uppercase tracking-wider">
+            <span className="material-symbols-outlined text-[13px] text-green-600">check_circle</span>
+            Connected
+          </span>
+        </div>
       </div>
 
       {/* Account currency badges */}
@@ -351,17 +385,29 @@ function IntegrationCard({
       {/* Last synced */}
       <div className="flex items-center justify-between">
         <span className="font-body text-body-sm text-on-surface-variant">Last synced</span>
-        <span className="font-body text-sm text-primary">
-          {formatRelativeTime(integration.last_synced_at)}
-        </span>
+        <div className="flex items-center gap-2">
+          <span className="font-body text-sm text-primary">
+            {formatRelativeTime(integration.last_synced_at)}
+          </span>
+          <button
+            type="button"
+            onClick={() => onCustomSync(integration.id)}
+            disabled={isSyncing}
+            className="text-xs text-secondary hover:text-primary underline font-body"
+            title="Select custom sync date or range"
+          >
+            Custom range…
+          </button>
+        </div>
       </div>
 
       {/* Action buttons */}
       <div className="flex items-center justify-between gap-3 pt-2 border-t border-outline-variant/10">
         <button
-          onClick={() => onSync(integration.id)}
+          onClick={() => onQuickSync(integration.id)}
           disabled={isSyncing}
           className="flex-1 py-3 font-body text-sm font-semibold text-primary bg-surface-container-low hover:bg-surface-container-high rounded-lg transition-colors disabled:opacity-50 flex items-center justify-center gap-2"
+          title={integration.last_synced_at ? 'Quick sync since last sync date' : 'Sync latest transactions'}
         >
           {isSyncing ? (
             <>
@@ -372,7 +418,10 @@ function IntegrationCard({
               <span>Syncing…</span>
             </>
           ) : (
-            'Sync Now'
+            <>
+              <span className="material-symbols-outlined text-[18px]">sync</span>
+              <span>Sync Now</span>
+            </>
           )}
         </button>
         <button
@@ -383,6 +432,106 @@ function IntegrationCard({
           {isDisconnecting ? 'Disconnecting…' : 'Disconnect'}
         </button>
       </div>
+
+      {/* Webhook Status Diagnostics Modal */}
+      {showWebhookModal && webhookInfo && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4 animate-fadeIn">
+          <div className="bg-surface-container-lowest w-full max-w-lg rounded-2xl p-6 shadow-xl border border-outline-variant/10 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-display font-medium text-title-md text-primary flex items-center gap-2">
+                <span className="material-symbols-outlined text-primary">webhook</span>
+                Monobank Webhook Status
+              </h3>
+              <button
+                type="button"
+                onClick={() => setShowWebhookModal(false)}
+                className="text-secondary hover:text-primary"
+              >
+                <span className="material-symbols-outlined text-xl">close</span>
+              </button>
+            </div>
+
+            <div className="space-y-3 text-xs font-body">
+              <div className="p-3 rounded-lg bg-surface-container-low space-y-2">
+                <div>
+                  <span className="font-semibold text-secondary">Expected Webhook URL:</span>
+                  <p className="font-mono text-[11px] break-all text-primary select-all mt-0.5">
+                    {webhookInfo.expectedWebhookUrl}
+                  </p>
+                </div>
+                <div className="pt-2 border-t border-outline-variant/10">
+                  <span className="font-semibold text-secondary">Registered in Monobank:</span>
+                  <p className="font-mono text-[11px] break-all text-primary mt-0.5">
+                    {webhookInfo.currentRegisteredUrl || '(None registered)'}
+                  </p>
+                </div>
+              </div>
+
+              {webhookInfo.isRegistered ? (
+                <div className="flex items-center gap-2 p-3 rounded-lg bg-green-500/10 text-green-700 dark:text-green-400">
+                  <span className="material-symbols-outlined text-[18px]">verified</span>
+                  <span>Webhook URL matches and is registered with Monobank.</span>
+                </div>
+              ) : (
+                <div className="flex items-start gap-2 p-3 rounded-lg bg-amber-500/10 text-amber-800 dark:text-amber-300">
+                  <span className="material-symbols-outlined text-[18px] shrink-0">warning</span>
+                  <div>
+                    <p className="font-semibold">Webhook is not actively registered with Monobank.</p>
+                    <p className="mt-0.5 text-[11px]">
+                      Monobank only delivers live push transactions when a publicly reachable HTTPS URL is registered.
+                    </p>
+                  </div>
+                </div>
+              )}
+
+              {webhookInfo.isLocalhost && (
+                <div className="p-3 rounded-lg bg-error-container/20 text-error space-y-1">
+                  <p className="font-semibold flex items-center gap-1">
+                    <span className="material-symbols-outlined text-[16px]">info</span>
+                    Public HTTPS URL required
+                  </p>
+                  <p className="text-[11px] leading-relaxed">
+                    Monobank servers cannot call <code>localhost</code> or local IPs. To receive webhooks in development, run a tunnel (e.g. <code>ngrok http 3000</code> or Cloudflare Tunnel) and set <code>API_BASE_URL</code> in your backend <code>.env</code>.
+                  </p>
+                </div>
+              )}
+
+              {webhookInfo.reRegisterAttempted && (
+                <div
+                  className={`p-2.5 rounded-lg text-[11px] ${
+                    webhookInfo.reRegisterSuccess
+                      ? 'bg-green-500/10 text-green-700 dark:text-green-400'
+                      : 'bg-error-container/20 text-error'
+                  }`}
+                >
+                  {webhookInfo.reRegisterSuccess
+                    ? 'Successfully registered webhook with Monobank!'
+                    : `Re-registration failed: ${webhookInfo.reRegisterError}`}
+                </div>
+              )}
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2 border-t border-outline-variant/10">
+              <button
+                type="button"
+                onClick={() => handleCheckWebhook(true)}
+                disabled={verifyWebhook.isPending}
+                className="py-2 px-3 font-body text-xs font-semibold bg-surface-container-high hover:bg-surface-container text-primary rounded-xl transition-colors disabled:opacity-50 flex items-center gap-1"
+              >
+                <span className="material-symbols-outlined text-[14px]">refresh</span>
+                {verifyWebhook.isPending ? 'Re-registering…' : 'Re-register Webhook'}
+              </button>
+              <button
+                type="button"
+                onClick={() => setShowWebhookModal(false)}
+                className="py-2 px-3 font-body text-xs font-semibold bg-primary text-on-primary rounded-xl hover:opacity-90 transition-opacity"
+              >
+                Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -452,7 +601,8 @@ export function MonobankSection() {
                 key={integration.id}
                 integration={integration}
                 onDisconnect={handleDisconnect}
-                onSync={(id) => handleOpenSyncModal(id, false)}
+                onQuickSync={(id) => sync.mutate({ integrationId: id })}
+                onCustomSync={(id) => handleOpenSyncModal(id, false)}
                 isSyncing={sync.isPending && sync.variables?.integrationId === integration.id}
                 isDisconnecting={disconnect.isPending && disconnect.variables === integration.id}
               />

@@ -194,3 +194,39 @@ export function useSyncMonobank() {
     },
   });
 }
+
+export interface VerifyWebhookResult {
+  expectedWebhookUrl: string;
+  currentRegisteredUrl: string | null;
+  isRegistered: boolean;
+  isLocalhost: boolean;
+  reRegisterAttempted: boolean;
+  reRegisterSuccess: boolean;
+  reRegisterError: string | null;
+  tip?: string;
+}
+
+export function useVerifyMonobankWebhook() {
+  return useMutation({
+    mutationFn: async ({
+      integrationId,
+      reregister = false,
+    }: {
+      integrationId: string;
+      reregister?: boolean;
+    }) => {
+      const { data } = await api.post<VerifyWebhookResult>(
+        `/integrations/monobank/${integrationId}/webhook/verify`,
+        { reregister }
+      );
+      return data;
+    },
+    onError: (err: unknown) => {
+      const errorMsg =
+        (err as { response?: { data?: { error?: string; message?: string } } })?.response?.data?.error ||
+        (err as { response?: { data?: { message?: string } } })?.response?.data?.message ||
+        'Failed to verify webhook';
+      toast.error(errorMsg);
+    },
+  });
+}

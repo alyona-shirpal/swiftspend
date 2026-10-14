@@ -651,13 +651,24 @@ export const syncMonobankStatement = async (
       toTimestamp = Math.min(Math.floor(new Date(`${toDateStr}T23:59:59.999Z`).getTime() / 1000), now);
     }
 
-    let fromTimestamp = now - 30 * 24 * 60 * 60;
+    let fromTimestamp: number;
     if (fromDateStr) {
       fromTimestamp = Math.floor(new Date(`${fromDateStr}T00:00:00.000Z`).getTime() / 1000);
+    } else if (integration.last_synced_at) {
+      // If quick sync is triggered without an explicit 'from' date, sync from the last sync timestamp
+      fromTimestamp = Math.floor(new Date(integration.last_synced_at).getTime() / 1000);
+    } else {
+      // Initial default to last 30 days
+      fromTimestamp = now - 30 * 24 * 60 * 60;
     }
 
     if (fromTimestamp > toTimestamp) {
-      return res.status(400).json({ error: 'From date cannot be after to date' });
+      // If synced recently (e.g., within same minute or clock skew), adjust fromTimestamp to avoid invalid range
+      if (!fromDateStr && fromTimestamp - toTimestamp < 300) {
+        fromTimestamp = toTimestamp;
+      } else {
+        return res.status(400).json({ error: 'From date cannot be after to date' });
+      }
     }
 
     let importedCount = 0;
@@ -670,13 +681,16 @@ export const syncMonobankStatement = async (
       const MAX_CHUNK_SECONDS = 30 * 24 * 60 * 60;
       let chunkFrom = fromTimestamp;
 
-      while (chunkFrom < toTimestamp) {
+      while (chunkFrom <= toTimestamp) {
         const chunkTo = Math.min(chunkFrom + MAX_CHUNK_SECONDS, toTimestamp);
         try {
           const items = await fetchStatement(token, acc.id, chunkFrom, chunkTo);
           statementItems.push(...items);
         } catch (err) {
           console.warn(`[syncMonobankStatement] Failed to fetch statement for account ${acc.id} (${chunkFrom}-${chunkTo}):`, err);
+          break;
+        }
+        if (chunkTo >= toTimestamp) {
           break;
         }
         chunkFrom = chunkTo + 1;
@@ -781,6 +795,85 @@ export const syncMonobankStatement = async (
       .eq('id', integration.id);
 
     return res.status(200).json({ imported: importedCount });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// ---------------------------------------------------------------------------
+// POST /integrations/monobank/:id/webhook/verify
+// ---------------------------------------------------------------------------
+export const verifyMonobankWebhook = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction,
+) => {
+  try {
+    const userId = req.user!.id;
+    const { id } = req.params;
+
+    const { data: integration, error } = await supabaseAdmin
+      .from('user_integrations')
+      .select('*')
+      .eq('id', id)
+      .eq('user_id', userId)
+      .eq('provider', 'monobank')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!integration) {
+      return res.status(404).json({ error: 'Monobank integration not found' });
+    }
+
+    if (!integration.encrypted_token) {
+      return res.status(400).json({ error: 'Integration has no stored token' });
+    }
+
+    const token = decryptToken(integration.encrypted_token);
+
+    // Fetch client info from Monobank to check current registered webhook
+    let clientInfo;
+    try {
+      clientInfo = await fetchClientInfo(token);
+    } catch (err: any) {
+      return res.status(400).json({
+        error: `Failed to fetch client info from Monobank: ${err?.message || err}`,
+      });
+    }
+
+    const baseUrl = process.env.API_BASE_URL || 'https://api.swiftspend.app';
+    const isLocalhost = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
+
+    // Expected webhook url
+    const expectedWebhookUrl = `${baseUrl.replace(/\/+$/, '')}/integrations/monobank/webhook/${integration.webhook_token}`;
+    const currentRegisteredUrl = clientInfo.webHookUrl || null;
+
+    let reRegisterSuccess = false;
+    let reRegisterError: string | null = null;
+
+    // Attempt to register or re-register webhook if requested via query or body
+    const shouldReRegister = req.query.reregister === 'true' || req.body?.reregister === true;
+    if (shouldReRegister) {
+      try {
+        await registerWebhook(token, expectedWebhookUrl);
+        reRegisterSuccess = true;
+      } catch (err: any) {
+        reRegisterError = err?.message || String(err);
+      }
+    }
+
+    return res.json({
+      expectedWebhookUrl,
+      currentRegisteredUrl,
+      isRegistered: Boolean(currentRegisteredUrl && currentRegisteredUrl === expectedWebhookUrl),
+      isLocalhost,
+      reRegisterAttempted: shouldReRegister,
+      reRegisterSuccess,
+      reRegisterError,
+      tip: isLocalhost
+        ? 'API_BASE_URL is set to localhost or default. Monobank webhooks require a publicly accessible HTTPS URL (e.g. ngrok or deployed domain).'
+        : undefined,
+    });
   } catch (err) {
     next(err);
   }

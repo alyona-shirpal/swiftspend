@@ -6,6 +6,8 @@ import {
   useAcceptMonobankImport,
   useDeclineMonobankImport,
   useClearAllMonobankImports,
+  useMonobankStatus,
+  useSyncMonobank,
 } from '../../hooks/useMonobankIntegration';
 import { formatCurrency } from '../../utils/formatCurrency';
 import { Currency, MonobankPendingImport } from '@swiftspend/types';
@@ -27,11 +29,20 @@ function formatImportDate(isoString: string): string {
 export const MonobankPendingPage: React.FC = () => {
   const navigate = useNavigate();
   const { data, isLoading } = useMonobankPendingImports();
+  const { data: statusData } = useMonobankStatus();
+  const syncMutation = useSyncMonobank();
   const acceptMutation = useAcceptMonobankImport();
   const declineMutation = useDeclineMonobankImport();
   const clearAllMutation = useClearAllMonobankImports();
 
   const imports = data?.imports || [];
+  const primaryIntegration = statusData?.integrations?.[0];
+
+  const handleSyncLatest = () => {
+    if (primaryIntegration?.id) {
+      syncMutation.mutate({ integrationId: primaryIntegration.id });
+    }
+  };
 
   const handleAccept = (item: MonobankPendingImport) => {
     acceptMutation.mutate({ id: item.id });
@@ -73,23 +84,39 @@ export const MonobankPendingPage: React.FC = () => {
         <p className="font-body text-sm text-secondary">
           Review and confirm transactions imported from Monobank.
         </p>
-        {imports.length > 0 && (
-          <div className="flex items-center gap-2 self-start sm:self-auto">
-            <span className="font-label text-xs font-semibold bg-surface-container-high text-primary px-2.5 py-1 rounded-full">
-              {imports.length} pending
-            </span>
+        <div className="flex items-center gap-2 self-start sm:self-auto flex-wrap">
+          {primaryIntegration && (
             <button
               type="button"
-              onClick={handleClearAll}
-              disabled={clearAllMutation.isPending}
-              className="px-2.5 py-1 rounded-full border border-error/30 bg-error-container/10 hover:bg-error-container/25 text-error font-body text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
-              title="Dismiss all pending imports"
+              onClick={handleSyncLatest}
+              disabled={syncMutation.isPending}
+              className="px-2.5 py-1 rounded-full border border-outline-variant/30 bg-surface-container-low hover:bg-surface-container-high text-primary font-body text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+              title={primaryIntegration.last_synced_at ? 'Quick sync transactions since last sync' : 'Sync latest transactions'}
             >
-              <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
-              {clearAllMutation.isPending ? 'Clearing…' : 'Clear all'}
+              <span className={`material-symbols-outlined text-[14px] ${syncMutation.isPending ? 'animate-spin' : ''}`}>
+                sync
+              </span>
+              {syncMutation.isPending ? 'Syncing…' : 'Sync latest'}
             </button>
-          </div>
-        )}
+          )}
+          {imports.length > 0 && (
+            <>
+              <span className="font-label text-xs font-semibold bg-surface-container-high text-primary px-2.5 py-1 rounded-full">
+                {imports.length} pending
+              </span>
+              <button
+                type="button"
+                onClick={handleClearAll}
+                disabled={clearAllMutation.isPending}
+                className="px-2.5 py-1 rounded-full border border-error/30 bg-error-container/10 hover:bg-error-container/25 text-error font-body text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+                title="Dismiss all pending imports"
+              >
+                <span className="material-symbols-outlined text-[14px]">delete_sweep</span>
+                {clearAllMutation.isPending ? 'Clearing…' : 'Clear all'}
+              </button>
+            </>
+          )}
+        </div>
       </div>
 
       {isLoading ? (
