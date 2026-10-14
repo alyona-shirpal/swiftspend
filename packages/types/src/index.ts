@@ -133,8 +133,10 @@ export interface MonobankPendingImport {
   time: string;           // ISO string
   description: string | null;
   mcc: number | null;
-  amount: number;         // decimal, always positive (debit)
-  currency: string;       // alpha code e.g. 'UAH'
+  amount: number;         // decimal, always positive (debit) in operation/transaction currency
+  currency: string;       // alpha code e.g. 'ALL'
+  card_amount?: number;   // decimal amount written off from card (e.g. 493.55)
+  card_currency?: string; // card account currency (e.g. 'UAH')
   hold: boolean;
   status: 'pending' | 'accepted' | 'declined';
   suggested_category: { id: string; name: string; icon: string } | null;

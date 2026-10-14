@@ -195,9 +195,16 @@ export const MonobankPendingPage: React.FC = () => {
                   </div>
 
                   <div className="text-right shrink-0">
-                    <span className="font-body font-bold text-title-md text-primary">
+                    <span className="font-body font-bold text-title-md text-primary block">
                       {formattedAmount}
                     </span>
+                    {item.card_amount &&
+                      item.card_currency &&
+                      (item.card_currency !== item.currency || item.card_amount !== item.amount) && (
+                        <span className="font-label text-xs text-secondary block mt-0.5" title="Amount debited from card">
+                          ≈ -{formatCurrency(item.card_amount, item.card_currency as Currency)} (card)
+                        </span>
+                      )}
                   </div>
                 </div>
 

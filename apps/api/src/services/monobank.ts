@@ -311,32 +311,43 @@ export function resolveExpenseCurrency(
   operationCurrencyCode?: number | string,
 ): { amount: number; currency: string } {
   const numAmount = Number(amount);
-  const numCardCode = Number(currencyCode);
-  const cardCurrency = currencyNumericToAlpha(numCardCode);
-  let chosenAmount = numAmount;
-  let chosenCurrency = cardCurrency;
-
-  const numOpCode =
-    operationCurrencyCode !== undefined && operationCurrencyCode !== null && operationCurrencyCode !== ''
-      ? Number(operationCurrencyCode)
-      : undefined;
-
+  const numCurrencyCode = Number(currencyCode);
   const numOpAmount =
     operationAmount !== undefined && operationAmount !== null && operationAmount !== ''
       ? Number(operationAmount)
       : undefined;
+  const numOpCurrencyCode =
+    operationCurrencyCode !== undefined && operationCurrencyCode !== null && operationCurrencyCode !== ''
+      ? Number(operationCurrencyCode)
+      : undefined;
 
+  let chosenAmount = numAmount;
+  let chosenCurrency = currencyNumericToAlpha(numCurrencyCode);
+
+  // In Monobank statement items:
+  // - currencyCode: The currency of the transaction/merchant operation (e.g. 8 for ALL in Albania)
+  // - operationAmount: The amount in transaction currency (e.g. -88700 for 887.00 ALL)
+  // - amount: The amount written off from card (e.g. -49355 for 493.55 UAH)
+  // If operationAmount and amount differ:
+  // When currencyCode corresponds to the transaction currency and operationAmount is present,
+  // we prefer the transaction currency and operationAmount (e.g. 887.00 ALL).
   if (
-    numOpCode !== undefined &&
-    !Number.isNaN(numOpCode) &&
-    numOpCode !== numCardCode &&
     numOpAmount !== undefined &&
-    !Number.isNaN(numOpAmount)
+    !Number.isNaN(numOpAmount) &&
+    numOpAmount !== numAmount
   ) {
-    const opAlpha = NUMERIC_CURRENCY_MAP[numOpCode];
-    if (opAlpha) {
+    // If operationCurrencyCode is explicitly specified and valid, use it
+    if (numOpCurrencyCode !== undefined && !Number.isNaN(numOpCurrencyCode)) {
+      const opAlpha = NUMERIC_CURRENCY_MAP[numOpCurrencyCode];
+      if (opAlpha) {
+        chosenAmount = numOpAmount;
+        chosenCurrency = opAlpha;
+      }
+    } else {
+      // Monobank payload: currencyCode is the currency of the operation (e.g. 8 = ALL)
+      // and operationAmount is the amount in that operation currency (e.g. -88700 = 887.00 ALL).
       chosenAmount = numOpAmount;
-      chosenCurrency = opAlpha;
+      chosenCurrency = currencyNumericToAlpha(numCurrencyCode);
     }
   }
 

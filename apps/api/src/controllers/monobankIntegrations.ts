@@ -275,6 +275,10 @@ export const getPendingImports = async (
         row.operation_currency_code != null ? row.operation_currency_code : undefined,
       );
 
+      // Raw card amount is stored in row.amount (in minor units)
+      const rawCardAmount = Math.round(Math.abs(Number(row.amount))) / 100;
+      const cardCurrency = 'UAH'; // Default account currency in Monobank is UAH for standard cards
+
       let suggestedCategory: { id: string; name: string; icon: string } | null = null;
       if (row.categories) {
         const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
@@ -296,6 +300,8 @@ export const getPendingImports = async (
         mcc: row.mcc,
         amount: resolved.amount,
         currency: resolved.currency,
+        card_amount: rawCardAmount,
+        card_currency: cardCurrency,
         hold: row.hold,
         raw_payload: row.raw_payload ?? null,
         suggested_category: suggestedCategory,
