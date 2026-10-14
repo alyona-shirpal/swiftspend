@@ -150,7 +150,7 @@ Extract one expense from the attached receipt, invoice, image, or document.
 Rules:
 - Return only data matching the supplied JSON schema.
 - amount is the final total paid, as a positive number. Do not sum line items when a final total is visible.
-- currency must be one of: ${context.currencies.join(', ')}.
+- currency must be one of: ${context.currencies.join(', ')}. Pay special attention to local currency symbols and abbreviations (e.g., "грн", "UAH", "₴" map to UAH; "€", "EUR" map to EUR; "$", "USD" map to USD; "L", "ALL", "Lek" map to ALL). Do NOT confuse UAH or other currencies with ALL.
 - category_id must be the best general-knowledge match from this exact list: ${JSON.stringify(context.categories)}.
 - date must be YYYY-MM-DD when it can be reliably parsed. Prefer the transaction/purchase date. If the date cannot be parsed, return null. Do not guess or invent a date.
 - merchant is only the merchant, shop, store, vendor, or payee name. Keep it separate from items and extra_info. Return null when it cannot be determined.

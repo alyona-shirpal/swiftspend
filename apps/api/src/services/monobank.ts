@@ -162,8 +162,9 @@ export const MCC_CATEGORY_HINTS: Record<number, string> = {
   5999: 'Shopping',
 };
 
-export function currencyNumericToAlpha(code: number): string {
-  return NUMERIC_CURRENCY_MAP[code] || 'UAH';
+export function currencyNumericToAlpha(code: number | string): string {
+  const numCode = Number(code);
+  return NUMERIC_CURRENCY_MAP[numCode] || 'UAH';
 }
 
 function getEncryptionKey(): Buffer | null {
@@ -304,25 +305,37 @@ export async function fetchStatement(
 }
 
 export function resolveExpenseCurrency(
-  amount: number,
-  currencyCode: number,
-  operationAmount?: number,
-  operationCurrencyCode?: number,
+  amount: number | string,
+  currencyCode: number | string,
+  operationAmount?: number | string,
+  operationCurrencyCode?: number | string,
 ): { amount: number; currency: string } {
-  const cardCurrency = currencyNumericToAlpha(currencyCode);
-  let chosenAmount = amount;
+  const numAmount = Number(amount);
+  const numCardCode = Number(currencyCode);
+  const cardCurrency = currencyNumericToAlpha(numCardCode);
+  let chosenAmount = numAmount;
   let chosenCurrency = cardCurrency;
 
+  const numOpCode =
+    operationCurrencyCode !== undefined && operationCurrencyCode !== null && operationCurrencyCode !== ''
+      ? Number(operationCurrencyCode)
+      : undefined;
+
+  const numOpAmount =
+    operationAmount !== undefined && operationAmount !== null && operationAmount !== ''
+      ? Number(operationAmount)
+      : undefined;
+
   if (
-    operationCurrencyCode !== undefined &&
-    operationCurrencyCode !== null &&
-    operationCurrencyCode !== currencyCode &&
-    operationAmount !== undefined &&
-    operationAmount !== null
+    numOpCode !== undefined &&
+    !Number.isNaN(numOpCode) &&
+    numOpCode !== numCardCode &&
+    numOpAmount !== undefined &&
+    !Number.isNaN(numOpAmount)
   ) {
-    const opAlpha = NUMERIC_CURRENCY_MAP[operationCurrencyCode];
+    const opAlpha = NUMERIC_CURRENCY_MAP[numOpCode];
     if (opAlpha) {
-      chosenAmount = operationAmount;
+      chosenAmount = numOpAmount;
       chosenCurrency = opAlpha;
     }
   }

@@ -81,13 +81,21 @@ export const AddExpensePage: React.FC = () => {
 
   const savedCategoryDraft = sessionStorage.getItem(CATEGORY_DRAFT_KEY);
 
+  const prefill = monoImportState?.prefill;
+
   const [currency, setCurrency] = useState<Currency>(() => {
+    if (prefill?.currency) {
+      const upper = prefill.currency.toUpperCase();
+      if (CURRENCY_OPTIONS.includes(upper as Currency)) {
+        return upper as Currency;
+      }
+    }
     const saved = sessionStorage.getItem(CURRENCY_DRAFT_KEY) as Currency | null;
     return saved && CURRENCY_OPTIONS.includes(saved) ? saved : Currency.ALL;
   });
 
   const [selectedCategoryId, setSelectedCategoryId] = useState<string>(
-    savedCategoryDraft ?? '',
+    () => prefill?.category_id || savedCategoryDraft || '',
   );
 
   const quickCategories = useMemo(() => {
@@ -117,26 +125,33 @@ export const AddExpensePage: React.FC = () => {
     () => sessionStorage.getItem(NOTE_DRAFT_KEY) ?? '',
   );
   const [merchant, setMerchant] = useState(
-    () => sessionStorage.getItem(MERCHANT_DRAFT_KEY) ?? '',
+    () => prefill?.merchant ?? sessionStorage.getItem(MERCHANT_DRAFT_KEY) ?? '',
   );
   // Which detail (place or note) is expanded into the full-width editor
   const [editingField, setEditingField] = useState<'merchant' | 'note' | null>(
     null,
   );
-  const [amountInput, setAmountInput] = useState(
-    () => sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00',
-  );
-  const [selectedDate, setSelectedDate] = useState(
-    () =>
+  const [amountInput, setAmountInput] = useState(() => {
+    if (prefill?.amount !== undefined) {
+      return String(prefill.amount);
+    }
+    return sessionStorage.getItem(AMOUNT_DRAFT_KEY) ?? '0.00';
+  });
+  const [selectedDate, setSelectedDate] = useState(() => {
+    if (prefill?.date) {
+      return prefill.date;
+    }
+    return (
       sessionStorage.getItem(DATE_DRAFT_KEY) ??
       new Date().toISOString().split('T')[0] ??
-      '',
-  );
+      ''
+    );
+  });
   const [isSaving, setIsSaving] = useState(false);
   const [isProcessingSharedDocument, setIsProcessingSharedDocument] =
     useState(false);
   const [isParsedTransactionPending, setIsParsedTransactionPending] =
-    useState(false);
+    useState(() => Boolean(monoImportState?.prefill));
   const [sharedDocumentId] = useState(() =>
     new URLSearchParams(window.location.search).get('sharedDocument'),
   );
@@ -248,11 +263,11 @@ export const AddExpensePage: React.FC = () => {
       if (monoImportState.prefill.amount !== undefined) {
         setAmountInput(String(monoImportState.prefill.amount));
       }
-      if (
-        monoImportState.prefill.currency &&
-        CURRENCY_OPTIONS.includes(monoImportState.prefill.currency as Currency)
-      ) {
-        setCurrency(monoImportState.prefill.currency as Currency);
+      if (monoImportState.prefill.currency) {
+        const upper = monoImportState.prefill.currency.toUpperCase() as Currency;
+        if (CURRENCY_OPTIONS.includes(upper)) {
+          setCurrency(upper);
+        }
       }
       if (monoImportState.prefill.merchant !== undefined) {
         setMerchant(monoImportState.prefill.merchant || '');
@@ -265,7 +280,7 @@ export const AddExpensePage: React.FC = () => {
       }
       setIsParsedTransactionPending(true);
     }
-  }, []);
+  }, [monoImportState]);
 
   useEffect(() => {
     if (!selectedCategoryId) {
