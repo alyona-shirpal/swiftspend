@@ -34,6 +34,31 @@ const SyncBodySchema = z.object({
   to: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'To date must be in YYYY-MM-DD format').optional(),
 });
 
+export function getApiBaseUrl(req: Request): string {
+  // 1. Explicitly configured API_BASE_URL (if not placeholder)
+  if (process.env.API_BASE_URL && !process.env.API_BASE_URL.includes('api.swiftspend.app')) {
+    return process.env.API_BASE_URL.replace(/\/+$/, '');
+  }
+
+  // 2. Vercel deployment URL
+  if (process.env.VERCEL_PROJECT_PRODUCTION_URL) {
+    return `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.replace(/\/+$/, '')}`;
+  }
+  if (process.env.VERCEL_URL) {
+    return `https://${process.env.VERCEL_URL.replace(/\/+$/, '')}`;
+  }
+
+  // 3. Fallback to incoming request headers (x-forwarded-proto/host or host)
+  const proto = (req.headers['x-forwarded-proto'] as string) || req.protocol || 'https';
+  const host = (req.headers['x-forwarded-host'] as string) || req.get('host');
+  if (host && !host.includes('localhost') && !host.includes('127.0.0.1')) {
+    return `${proto}://${host}`;
+  }
+
+  // 4. Default fallback
+  return (process.env.API_BASE_URL || 'https://swiftspend-api.vercel.app').replace(/\/+$/, '');
+}
+
 // ---------------------------------------------------------------------------
 // GET /integrations/monobank/status
 // ---------------------------------------------------------------------------
@@ -128,8 +153,8 @@ export const connectMonobank = async (
 
     const webhookToken = crypto.randomUUID();
     const encryptedToken = encryptToken(token.trim());
-    const baseUrl = process.env.API_BASE_URL || 'https://api.swiftspend.app';
-    const webhookUrl = `${baseUrl.replace(/\/+$/, '')}/integrations/monobank/webhook/${webhookToken}`;
+    const baseUrl = getApiBaseUrl(req);
+    const webhookUrl = `${baseUrl}/integrations/monobank/webhook/${webhookToken}`;
 
     let webhookRegistered = false;
     try {
@@ -849,11 +874,14 @@ export const verifyMonobankWebhook = async (
       });
     }
 
-    const baseUrl = process.env.API_BASE_URL || 'https://api.swiftspend.app';
+    const baseUrl = getApiBaseUrl(req);
     const isLocalhost = baseUrl.includes('localhost') || baseUrl.includes('127.0.0.1');
 
-    // Expected webhook url
-    const expectedWebhookUrl = `${baseUrl.replace(/\/+$/, '')}/integrations/monobank/webhook/${integration.webhook_token}`;
+    // Expected webhook url (allow optional override in body if user has custom proxy)
+    const customUrl = req.body?.customWebhookUrl || req.query.customWebhookUrl;
+    const expectedWebhookUrl = customUrl
+      ? String(customUrl).replace(/\/+$/, '')
+      : `${baseUrl}/integrations/monobank/webhook/${integration.webhook_token}`;
     const currentRegisteredUrl = clientInfo.webHookUrl || null;
 
     let reRegisterSuccess = false;
@@ -879,7 +907,7 @@ export const verifyMonobankWebhook = async (
       reRegisterSuccess,
       reRegisterError,
       tip: isLocalhost
-        ? 'API_BASE_URL is set to localhost or default. Monobank webhooks require a publicly accessible HTTPS URL (e.g. ngrok or deployed domain).'
+        ? 'Base URL is set to localhost. Monobank webhooks require a publicly accessible HTTPS URL (e.g. ngrok or deployed domain).'
         : undefined,
     });
   } catch (err) {
