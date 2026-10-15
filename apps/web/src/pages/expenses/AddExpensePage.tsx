@@ -395,31 +395,33 @@ export const AddExpensePage: React.FC = () => {
 
     setIsSaving(true);
     try {
-      await addExpense({
-        amount: amountValue,
-        currency,
-        category_id: selectedCategoryId || undefined,
-        merchant: merchant.trim() || undefined,
-        description: note.trim() || undefined,
-        date: selectedDate || undefined,
-      });
-
       if (monoImportState?.monoImportId) {
-        try {
-          await api.post(
-            `/integrations/monobank/pending/${monoImportState.monoImportId}/accept`,
-            {
-              category_id: selectedCategoryId || undefined,
-              merchant: merchant.trim() || undefined,
-              description: note.trim() || undefined,
-              date: selectedDate || undefined,
-            }
-          );
-          queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
-          queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
-        } catch (acceptError) {
-          console.error('Failed to accept Monobank import after expense save:', acceptError);
-        }
+        // For Monobank pending imports, accept with the user's edits directly.
+        // acceptPendingImport will create the single expense record with provider='monobank'
+        // and link it to the pending import.
+        await api.post(
+          `/integrations/monobank/pending/${monoImportState.monoImportId}/accept`,
+          {
+            amount: amountValue,
+            currency,
+            category_id: selectedCategoryId || undefined,
+            merchant: merchant.trim() || undefined,
+            description: note.trim() || undefined,
+            date: selectedDate || undefined,
+          }
+        );
+        queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
+        queryClient.invalidateQueries({ queryKey: ['expenses'] });
+      } else {
+        await addExpense({
+          amount: amountValue,
+          currency,
+          category_id: selectedCategoryId || undefined,
+          merchant: merchant.trim() || undefined,
+          description: note.trim() || undefined,
+          date: selectedDate || undefined,
+        });
       }
 
       setIsParsedTransactionPending(false);

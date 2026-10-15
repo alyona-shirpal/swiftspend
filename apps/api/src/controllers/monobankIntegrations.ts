@@ -23,6 +23,8 @@ const ConnectBodySchema = z.object({
 });
 
 const AcceptImportBodySchema = z.object({
+  amount: z.number().positive().optional(),
+  currency: z.string().min(3).max(3).optional(),
   category_id: z.string().uuid().optional().nullable(),
   merchant: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
@@ -394,8 +396,8 @@ export const acceptPendingImport = async (
         : new Date().toISOString().split('T')[0]);
 
     const expense = await createExpenseRecordAdmin(userId, {
-      amount: resolved.amount,
-      currency: resolved.currency,
+      amount: overrides.amount !== undefined ? overrides.amount : resolved.amount,
+      currency: overrides.currency !== undefined ? overrides.currency : resolved.currency,
       category_id:
         overrides.category_id !== undefined
           ? overrides.category_id
