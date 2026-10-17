@@ -30,6 +30,7 @@ import { getStoredTheme, setStoredTheme, Theme } from '../../utils/theme';
 import { GoogleSheetsSection } from '../../components/settings/GoogleSheetsSection';
 import { MonobankSection } from '../../components/settings/MonobankSection';
 import { ApiKeysSection } from '../../components/settings/ApiKeysSection';
+import { Avatar3D } from '../../components/settings/Avatar3D';
 
 
 // --- Types ---
@@ -300,9 +301,10 @@ export const SettingsPage = () => {
         <section className="bg-surface-container-lowest p-4 rounded-xl shadow-sm border border-outline-variant/10">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <div className="w-16 h-16 rounded-full bg-primary-container flex items-center justify-center text-on-primary-container font-display text-xl">
-                {profile?.email?.charAt(0).toUpperCase()}
-              </div>
+              <Avatar3D
+                letter={profile?.user_metadata?.full_name || profile?.email || 'U'}
+                size={64}
+              />
               <div>
                 <h2 className="font-body font-semibold text-title-md text-primary">{profile?.user_metadata?.full_name || 'User'}</h2>
                 <p className="font-body text-body-md text-on-surface-variant">{profile?.email}</p>
