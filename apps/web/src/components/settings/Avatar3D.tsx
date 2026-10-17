@@ -12,7 +12,7 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({
   size = 64,
 }) => {
   const containerRef = useRef<HTMLDivElement>(null);
-  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, shineX: 50, shineY: 50, isHovered: false });
+  const [tilt, setTilt] = useState({ rotateX: 0, rotateY: 0, isHovered: false });
 
   const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
     if (!containerRef.current) return;
@@ -23,20 +23,14 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({
     const normalizedX = (x / rect.width) * 2 - 1; // -1 to 1
     const normalizedY = (y / rect.height) * 2 - 1; // -1 to 1
 
-    // Maximum tilt angles in degrees
-    const maxTilt = 22;
+    // Tilt angles for the 3D letter
+    const maxTilt = 28;
     const rotateY = normalizedX * maxTilt;
     const rotateX = -normalizedY * maxTilt;
-
-    // Glare / shine hotspot percentage
-    const shineX = Math.round((x / rect.width) * 100);
-    const shineY = Math.round((y / rect.height) * 100);
 
     setTilt({
       rotateX,
       rotateY,
-      shineX,
-      shineY,
       isHovered: true,
     });
   }, []);
@@ -45,99 +39,71 @@ export const Avatar3D: React.FC<Avatar3DProps> = ({
     setTilt({
       rotateX: 0,
       rotateY: 0,
-      shineX: 50,
-      shineY: 50,
       isHovered: false,
     });
   }, []);
 
   const displayChar = letter ? letter.charAt(0).toUpperCase() : '?';
 
+  // Compute 3D extruded bevel shadows based on tilt direction to create dynamic real 3D letter depth
+  const dx = -tilt.rotateY / 14;
+  const dy = tilt.rotateX / 14;
+
+  const textShadow3D = `
+    ${dx * 1}px ${dy * 1}px 0 rgb(var(--primary) / 0.75),
+    ${dx * 2}px ${dy * 2}px 0 rgb(var(--primary) / 0.6),
+    ${dx * 3}px ${dy * 3}px 0 rgb(var(--primary) / 0.45),
+    ${dx * 4}px ${dy * 4}px 0 rgb(var(--primary) / 0.3),
+    ${dx * 5 + 1}px ${dy * 5 + 3}px 8px rgb(0 0 0 / 0.35)
+  `;
+
   return (
     <div
       ref={containerRef}
       onMouseMove={handleMouseMove}
       onMouseLeave={handleMouseLeave}
-      className={`relative select-none cursor-pointer ${className}`}
+      className={`rounded-full bg-primary-container flex items-center justify-center relative overflow-hidden select-none cursor-pointer border border-outline-variant/15 ${className}`}
       style={{
         width: size,
         height: size,
-        perspective: 800,
+        perspective: 600,
       }}
       aria-label={`Avatar for ${displayChar}`}
       role="img"
     >
-      {/* 3D rotating disc container */}
-      <div
-        className="w-full h-full rounded-full relative flex items-center justify-center transition-transform duration-200 ease-out"
+      {/* 3D Bold Letter with cursor-reactive tilt, 3D extruded depth and theme-based metallic sheen */}
+      <span
+        className="font-black font-display leading-none select-none tracking-tight pointer-events-none transition-transform duration-150 ease-out"
         style={{
+          fontSize: size * 0.52,
+          transform: `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) ${tilt.isHovered ? 'scale(1.14)' : 'scale(1)'}`,
           transformStyle: 'preserve-3d',
-          transform: `rotateX(${tilt.rotateX}deg) rotateY(${tilt.rotateY}deg) ${tilt.isHovered ? 'scale3d(1.08, 1.08, 1.08)' : 'scale3d(1, 1, 1)'}`,
-          background: 'linear-gradient(135deg, #3b82f6 0%, #1d4ed8 45%, #0f172a 100%)',
-          boxShadow: tilt.isHovered
-            ? `
-                ${-tilt.rotateY * 0.8}px ${tilt.rotateX * 0.8 + 8}px 24px rgba(37, 99, 235, 0.45),
-                0 10px 25px -5px rgba(0, 0, 0, 0.35),
-                inset 0 1px 2px rgba(255, 255, 255, 0.5),
-                inset 0 -2px 4px rgba(0, 0, 0, 0.6)
-              `
+          color: 'rgb(var(--on-primary-container))',
+          textShadow: tilt.isHovered
+            ? textShadow3D
             : `
-                0 8px 20px -4px rgba(15, 23, 42, 0.3),
-                0 4px 6px -2px rgba(0, 0, 0, 0.1),
-                inset 0 1px 2px rgba(255, 255, 255, 0.4),
-                inset 0 -2px 4px rgba(0, 0, 0, 0.5)
+                0 1px 0 rgb(var(--primary) / 0.7),
+                0 2px 0 rgb(var(--primary) / 0.5),
+                0 3px 0 rgb(var(--primary) / 0.3),
+                0 4px 6px rgb(0 0 0 / 0.25)
               `,
+          filter: tilt.isHovered
+            ? 'drop-shadow(0 0 6px rgb(var(--on-primary-container) / 0.5))'
+            : 'drop-shadow(0 0 1px rgb(var(--on-primary-container) / 0.2))',
         }}
       >
-        {/* Subtle metallic rim border */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none"
-          style={{
-            border: '1.5px solid rgba(255, 255, 255, 0.25)',
-            boxShadow: 'inset 0 0 10px rgba(255, 255, 255, 0.15)',
-          }}
-        />
+        {displayChar}
+      </span>
 
-        {/* Dynamic shining glare overlay following cursor position */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none transition-opacity duration-300"
-          style={{
-            opacity: tilt.isHovered ? 0.95 : 0.4,
-            background: `radial-gradient(circle at ${tilt.shineX}% ${tilt.shineY}%, rgba(255,255,255,0.7) 0%, rgba(255,255,255,0.2) 28%, rgba(255,255,255,0) 65%)`,
-            mixBlendMode: 'overlay',
-          }}
-        />
-
-        {/* Glass reflection beam */}
-        <div
-          className="absolute inset-0 rounded-full pointer-events-none overflow-hidden"
-          style={{
-            background: 'linear-gradient(105deg, rgba(255,255,255,0.28) 0%, rgba(255,255,255,0.06) 40%, rgba(255,255,255,0) 70%)',
-          }}
-        />
-
-        {/* 3D Bold Letter popping forward */}
-        <span
-          className="relative font-extrabold font-display leading-none select-none tracking-tight pointer-events-none"
-          style={{
-            fontSize: size * 0.46,
-            transform: 'translateZ(26px)',
-            color: '#f8fafc',
-            textShadow: `
-              0 1px 0 #93c5fd,
-              0 2px 0 #60a5fa,
-              0 3px 0 #2563eb,
-              0 4px 0 #1d4ed8,
-              0 5px 0 #1e40af,
-              0 7px 12px rgba(0, 0, 0, 0.6)
-            `,
-            filter: tilt.isHovered ? 'drop-shadow(0 0 8px rgba(191, 219, 254, 0.75))' : 'drop-shadow(0 0 2px rgba(191, 219, 254, 0.3))',
-            transition: 'filter 0.2s ease-out',
-          }}
-        >
-          {displayChar}
-        </span>
-      </div>
+      {/* Shining light beam sweeping across the letter on hover */}
+      <div
+        className="absolute inset-0 pointer-events-none rounded-full"
+        style={{
+          background: 'linear-gradient(120deg, transparent 20%, rgb(255 255 255 / 0.18) 50%, transparent 80%)',
+          transform: tilt.isHovered ? 'translateX(100%)' : 'translateX(-100%)',
+          transition: 'transform 0.65s cubic-bezier(0.4, 0, 0.2, 1)',
+        }}
+      />
     </div>
   );
 };
