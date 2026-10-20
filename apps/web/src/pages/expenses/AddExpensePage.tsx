@@ -16,6 +16,7 @@ import { useRecentCategories } from '../../hooks/useRecentCategories';
 import { useExpenseNoteSuggestions } from '../../hooks/useExpenseNoteSuggestions';
 import { useExpenseMerchantSuggestions } from '../../hooks/useExpenseMerchantSuggestions';
 import { formatCurrency } from '../../utils/formatCurrency';
+import { triggerSuccessfulTransactionHaptic } from '../../utils/haptics';
 import { ExpenseDocumentUpload } from '../../components/expenses/ExpenseDocumentUpload';
 import {
   getDocumentProcessingErrorMessage,
@@ -410,6 +411,7 @@ export const AddExpensePage: React.FC = () => {
             date: selectedDate || undefined,
           }
         );
+        triggerSuccessfulTransactionHaptic();
         queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
         queryClient.invalidateQueries({ queryKey: ['expenses'] });

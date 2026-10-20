@@ -530,16 +530,28 @@ export const handleMonobankWebhook = async (
       .eq('webhook_token', webhookToken)
       .maybeSingle();
 
-    if (intError || !integration) return;
+    if (intError) {
+      console.error('[handleMonobankWebhook] Error looking up integration by webhook token:', intError);
+      return;
+    }
+
+    if (!integration) {
+      console.warn(`[handleMonobankWebhook] No integration found for token: ${webhookToken}`);
+      return;
+    }
 
     const body = req.body;
     if (!body || body.type !== 'StatementItem' || !body.data || !body.data.statementItem) {
+      console.log('[handleMonobankWebhook] Received non-StatementItem payload or empty body, ignoring:', body?.type);
       return;
     }
 
     const item: MonobankStatementItem = body.data.statementItem;
     // Only process debits: skip if item.amount >= 0 (positive = credit/income)
-    if (item.amount >= 0) return;
+    if (item.amount >= 0) {
+      console.log(`[handleMonobankWebhook] Skipping credit/non-debit transaction ${item.id} (amount: ${item.amount})`);
+      return;
+    }
 
     const accountId = body.data.account || '';
 
@@ -552,17 +564,47 @@ export const handleMonobankWebhook = async (
       .eq('external_id', item.id)
       .maybeSingle();
 
-    if (existingExpense) return;
+    if (existingExpense) {
+      console.log(`[handleMonobankWebhook] Expense already created for external_id ${item.id}, skipping`);
+      return;
+    }
 
     // Check if already in pending imports
     const { data: existingPending } = await supabaseAdmin
       .from('monobank_pending_imports')
-      .select('id')
+      .select('id, status, hold')
       .eq('user_id', integration.user_id)
       .eq('external_id', item.id)
       .maybeSingle();
 
-    if (existingPending) return;
+    // If already exists and was dismissed or accepted, do not recreate
+    if (existingPending) {
+      if (existingPending.status !== 'pending') {
+        console.log(`[handleMonobankWebhook] Transaction ${item.id} already processed (status: ${existingPending.status}), skipping`);
+        return;
+      }
+
+      // If it exists in 'pending' status, update hold state, raw_payload, and amounts if they changed
+      const { error: updatePendingError } = await supabaseAdmin
+        .from('monobank_pending_imports')
+        .update({
+          hold: item.hold ?? false,
+          amount: item.amount,
+          operation_amount: item.operationAmount,
+          currency_code: item.currencyCode,
+          operation_currency_code: item.operationCurrencyCode ?? null,
+          raw_payload: item,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', existingPending.id);
+
+      if (updatePendingError) {
+        console.error(`[handleMonobankWebhook] Error updating existing pending import ${item.id}:`, updatePendingError);
+      } else {
+        console.log(`[handleMonobankWebhook] Updated existing pending transaction ${item.id} (hold: ${item.hold})`);
+      }
+      return;
+    }
 
     // Suggest category:
     // 1. Check recent expense with matching merchant name
@@ -603,7 +645,7 @@ export const handleMonobankWebhook = async (
     }
 
     // Insert pending import
-    await supabaseAdmin
+    const { error: insertError } = await supabaseAdmin
       .from('monobank_pending_imports')
       .upsert(
         {
@@ -624,8 +666,14 @@ export const handleMonobankWebhook = async (
           suggested_category_id: suggestedCategoryId,
           status: 'pending',
         },
-        { onConflict: 'user_id,external_id', ignoreDuplicates: true },
+        { onConflict: 'user_id,external_id' },
       );
+
+    if (insertError) {
+      console.error(`[handleMonobankWebhook] Failed to insert pending import ${item.id}:`, insertError);
+    } else {
+      console.log(`[handleMonobankWebhook] Successfully recorded pending import ${item.id} for user ${integration.user_id}`);
+    }
   } catch (err) {
     // Webhook must always finish silently without throwing
     console.error('[handleMonobankWebhook] Error processing webhook:', err);

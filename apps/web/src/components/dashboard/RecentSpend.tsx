@@ -15,7 +15,7 @@ interface RecentSpendProps {
 
 export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
   const navigate = useNavigate();
-  const { data: expenses, isLoading, isError } = useRecentExpenses();
+  const { data: expenses, isLoading, isError, isFetching } = useRecentExpenses();
   const deleteExpenseMutation = useDeleteExpense();
   const [expensePendingEdit, setExpensePendingEdit] =
     useState<RecentExpense | null>(null);
@@ -51,9 +51,18 @@ export const RecentSpend: React.FC<RecentSpendProps> = ({ currency }) => {
   return (
     <section className="lg:col-span-7 space-y-4 order-2 lg:order-1">
       <div className="flex justify-between items-center">
-        <h3 className="font-headline text-2xl font-bold tracking-tight text-primary">
-          Recent
-        </h3>
+        <div className="flex items-center gap-2">
+          <h3 className="font-headline text-2xl font-bold tracking-tight text-primary">
+            Recent
+          </h3>
+          {!isLoading && isFetching && (
+            <span
+              className="h-4 w-4 animate-spin rounded-full border-2 border-primary/30 border-t-primary"
+              role="status"
+              aria-label="Updating recent expenses"
+            />
+          )}
+        </div>
         <button
           onClick={() => navigate('/expenses')}
           className="font-label text-xs font-bold text-secondary hover:underline uppercase tracking-widest"

@@ -8,9 +8,11 @@ import { RecentSpend } from '../../components/dashboard/RecentSpend';
 import { AnimatedBrandText } from '../../components/layout/AnimatedBrandText';
 import { AppLayout, HeaderIconButton } from '../../components/layout/AppLayout';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
+import { useMonobankAutoSync } from '../../hooks/useMonobankAutoSync';
 
 export const DashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  useMonobankAutoSync();
   const { data: userCurrencies } = useUserCurrencies();
 
   // Default to user's first currency (or EUR as fallback) — shared by hero + recent list

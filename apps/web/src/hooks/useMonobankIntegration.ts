@@ -2,6 +2,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import api from '../services/api';
 import { MonobankIntegration, MonobankPendingImport } from '@swiftspend/types';
+import { triggerSuccessfulTransactionHaptic } from '../utils/haptics';
 
 export const MONOBANK_STATUS_QUERY_KEY = ['monobank', 'status'] as const;
 export const MONOBANK_PENDING_QUERY_KEY = ['monobank', 'pending'] as const;
@@ -98,6 +99,7 @@ export function useAcceptMonobankImport() {
       return data;
     },
     onSuccess: () => {
+      triggerSuccessfulTransactionHaptic();
       queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
