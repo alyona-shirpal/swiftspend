@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { Link } from 'react-router-dom';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { toast } from 'react-hot-toast';
 import api from '../../services/api';
@@ -66,18 +67,27 @@ export const ApiKeysSection: React.FC = () => {
     <section>
       <div className="flex items-end justify-between mb-4">
         <div>
-          <h3 className="font-display font-medium text-headline-sm text-primary">API Keys & REST API</h3>
-          <p className="font-body text-xs text-on-surface-variant">Manage API keys for third-party integrations & MCP</p>
+          <h3 className="font-display font-medium text-headline-sm text-primary">API Keys & MCP</h3>
+          <p className="font-body text-xs text-on-surface-variant">Manage API keys for Model Context Protocol & REST API</p>
         </div>
-        <button
-          onClick={() => {
-            setNewlyCreatedKey(null);
-            setIsModalOpen(true);
-          }}
-          className="font-label text-xs font-semibold text-primary hover:underline uppercase tracking-wider"
-        >
-          + Generate Key
-        </button>
+        <div className="flex items-center gap-3">
+          <Link
+            to="/docs/mcp"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-secondary hover:text-primary transition-colors py-1"
+          >
+            <span className="material-symbols-outlined text-sm">description</span>
+            <span>MCP Docs</span>
+          </Link>
+          <button
+            onClick={() => {
+              setNewlyCreatedKey(null);
+              setIsModalOpen(true);
+            }}
+            className="font-label text-xs font-semibold text-primary hover:underline uppercase tracking-wider"
+          >
+            + Generate Key
+          </button>
+        </div>
       </div>
 
       <div className="bg-surface-container-lowest rounded-xl shadow-sm border border-outline-variant/10 divide-y divide-surface-container-low">

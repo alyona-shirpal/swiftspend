@@ -18,6 +18,7 @@ import { CategoriesSettingsPage } from './pages/settings/CategoriesSettingsPage'
 import { MonobankPendingPage } from './pages/integrations/MonobankPendingPage';
 import CurrencyOnboardingPage from './pages/onboarding/CurrencyOnboardingPage';
 import CategoryOnboardingPage from './pages/onboarding/CategoryOnboardingPage';
+import McpDocsPage from './pages/docs/McpDocsPage';
 import { supabase } from './services/supabase.ts';
 import { Toaster } from 'react-hot-toast';
 
@@ -205,6 +206,9 @@ function App() {
           />
           <Route path="/onboarding/currencies" element={<CurrencyOnboardingPage />} />
           <Route path="/onboarding/categories" element={<CategoryOnboardingPage />} />
+          <Route path="/docs/mcp" element={<McpDocsPage />} />
+          <Route path="/mcp" element={<Navigate to="/docs/mcp" replace />} />
+          <Route path="/docs" element={<Navigate to="/docs/mcp" replace />} />
           <Route
             path="/integrations/monobank/pending"
             element={
