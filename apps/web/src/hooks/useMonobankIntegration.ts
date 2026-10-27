@@ -185,7 +185,9 @@ export function useSyncMonobank() {
       queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
       const count = data?.imported ?? 0;
-      toast.success(`Imported ${count} transaction${count === 1 ? '' : 's'}`);
+      if (count > 0) {
+        toast.success(`Imported ${count} transaction${count === 1 ? '' : 's'}`);
+      }
     },
     onError: (err: unknown) => {
       const errorMsg =
