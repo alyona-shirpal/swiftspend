@@ -22,8 +22,7 @@ export const McpDocsPage: React.FC = () => {
         "/path/to/swiftspend/packages/mcp-server/dist/index.js"
       ],
       "env": {
-        "SWIFTSPEND_API_KEY": "sk_live_your_secret_api_key",
-        "SWIFTSPEND_API_URL": "https://swiftspend-api.vercel.app"
+        "SWIFTSPEND_API_KEY": "sk_live_your_secret_api_key"
       }
     }
   }
@@ -168,20 +167,23 @@ export const McpDocsPage: React.FC = () => {
               <thead className="bg-surface-container-low text-secondary border-b border-outline-variant/10">
                 <tr>
                   <th className="p-3 sm:p-4 font-semibold">Environment Variable</th>
+                  <th className="p-3 sm:p-4 font-semibold">Required</th>
                   <th className="p-3 sm:p-4 font-semibold">Description</th>
-                  <th className="p-3 sm:p-4 font-semibold">Example</th>
+                  <th className="p-3 sm:p-4 font-semibold">Default / Example</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-outline-variant/10">
                 <tr>
                   <td className="p-3 sm:p-4 font-mono font-semibold text-primary">SWIFTSPEND_API_KEY</td>
+                  <td className="p-3 sm:p-4 text-xs font-bold text-primary">Yes</td>
                   <td className="p-3 sm:p-4 text-secondary">Your secret API key created in Settings</td>
                   <td className="p-3 sm:p-4 font-mono text-on-surface-variant text-xs">sk_live_...</td>
                 </tr>
                 <tr>
                   <td className="p-3 sm:p-4 font-mono font-semibold text-primary">SWIFTSPEND_API_URL</td>
+                  <td className="p-3 sm:p-4 text-xs font-semibold text-secondary">No (optional)</td>
                   <td className="p-3 sm:p-4 text-secondary">Base URL of your SwiftSpend deployment</td>
-                  <td className="p-3 sm:p-4 font-mono text-on-surface-variant text-xs">https://swiftspend-api.vercel.app</td>
+                  <td className="p-3 sm:p-4 font-mono text-on-surface-variant text-xs">Defaults to https://swiftspend-api.vercel.app</td>
                 </tr>
               </tbody>
             </table>

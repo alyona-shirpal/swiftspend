@@ -10,7 +10,7 @@ import dotenv from 'dotenv';
 
 dotenv.config();
 
-const API_URL = process.env.SWIFTSPEND_API_URL || 'https://swiftspend.vercel.app';
+const API_URL = process.env.SWIFTSPEND_API_URL || 'https://swiftspend-api.vercel.app';
 const API_KEY = process.env.SWIFTSPEND_API_KEY;
 
 if (!API_KEY) {

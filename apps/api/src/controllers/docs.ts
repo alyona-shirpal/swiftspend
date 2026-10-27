@@ -137,9 +137,9 @@ export const serveMcpDocsHtml = (req: Request, res: Response) => {
     <h2>1. Configuration</h2>
     <p>Configure the following environment variables in your local MCP client:</p>
     <table>
-      <tr><th>Variable</th><th>Description</th><th>Example</th></tr>
-      <tr><td><code>SWIFTSPEND_API_KEY</code></td><td>Your secret API key from Settings</td><td><code>sk_live_...</code></td></tr>
-      <tr><td><code>SWIFTSPEND_API_URL</code></td><td>SwiftSpend backend base URL</td><td><code>https://your-domain.vercel.app</code></td></tr>
+      <tr><th>Variable</th><th>Required</th><th>Description</th><th>Default / Example</th></tr>
+      <tr><td><code>SWIFTSPEND_API_KEY</code></td><td><strong>Yes</strong></td><td>Your secret API key from Settings</td><td><code>sk_live_...</code></td></tr>
+      <tr><td><code>SWIFTSPEND_API_URL</code></td><td>No</td><td>SwiftSpend backend base URL (defaults to hosted API)</td><td><code>https://swiftspend-api.vercel.app</code></td></tr>
     </table>
 
     <h2>2. MCP Client Setup (mcp.json)</h2>
@@ -151,8 +151,7 @@ export const serveMcpDocsHtml = (req: Request, res: Response) => {
         "/path/to/swiftspend/packages/mcp-server/dist/index.js"
       ],
       "env": {
-        "SWIFTSPEND_API_KEY": "sk_live_your_secret_api_key",
-        "SWIFTSPEND_API_URL": "https://your-domain.vercel.app"
+        "SWIFTSPEND_API_KEY": "sk_live_your_secret_api_key"
       }
     }
   }
