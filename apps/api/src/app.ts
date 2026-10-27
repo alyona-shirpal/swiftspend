@@ -10,26 +10,38 @@ import monobankRoutes from './routes/monobankIntegrations';
 import integrationsRoutes from './routes/integrations';
 import apiKeysRoutes from './routes/apiKeys';
 import publicV1Routes from './routes/publicV1';
+import mcpRoutes from './routes/mcp';
+import oauthRoutes from './routes/oauth';
 import { serveDocsHtml, serveMcpDocsHtml, openApiSpec } from './controllers/docs';
+import { renderAuthorizePage } from './controllers/oauth';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp() {
   const app = express();
   const jsonParser = express.json();
+  const urlencodedParser = express.urlencoded({ extended: true });
 
   app.use(cors());
   app.use((req, res, next) => {
     if (req.path === '/expenses/document') return next();
-    return jsonParser(req, res, next);
+    return jsonParser(req, res, (err) => {
+      if (err) return next(err);
+      return urlencodedParser(req, res, next);
+    });
   });
 
-  // Docs
+  // Docs & Portals
   app.get('/docs', serveDocsHtml);
   app.get('/docs/mcp', serveMcpDocsHtml);
   app.get('/mcp/docs', serveMcpDocsHtml);
   app.get('/api/v1/docs', serveDocsHtml);
   app.get('/api/v1/openapi.json', (req, res) => res.json(openApiSpec));
+  app.get('/connect', renderAuthorizePage);
 
+  // MCP Remote Protocol & OAuth Endpoints
+  app.use('/mcp', mcpRoutes);
+  app.use('/api/v1/mcp', mcpRoutes);
+  app.use('/oauth', oauthRoutes);
 
   // Legacy internal API routes
   app.use('/categories', categoriesRoutes);

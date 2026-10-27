@@ -28,6 +28,17 @@ export const McpDocsPage: React.FC = () => {
   }
 }`;
 
+  const remoteMcpSnippet = `{
+  "mcpServers": {
+    "swiftspend": {
+      "url": "https://swiftspend-api.vercel.app/mcp/sse",
+      "headers": {
+        "Authorization": "Bearer sk_live_your_secret_api_key"
+      }
+    }
+  }
+}`;
+
   const curlExpenseSnippet = `curl -X POST https://swiftspend-api.vercel.app/api/v1/expenses \\
   -H "Content-Type: application/json" \\
   -H "X-API-Key: sk_live_your_key_here" \\
@@ -132,6 +143,51 @@ export const McpDocsPage: React.FC = () => {
                 Add the server configuration to your MCP client config file (e.g. `mcp.json` or Claude Desktop configuration).
               </p>
             </div>
+          </div>
+        </section>
+
+        {/* Remote MCP & 1-Click AI Connect Portal */}
+        <section className="bg-gradient-to-r from-blue-900/20 via-surface-container-lowest to-indigo-900/20 p-6 sm:p-8 rounded-2xl border border-primary/20 shadow-sm space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div className="space-y-1">
+              <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 bg-primary/10 text-primary rounded-full text-xs font-semibold">
+                <span className="material-symbols-outlined text-sm">cloud_sync</span>
+                Remote MCP & OAuth 2.0
+              </div>
+              <h2 className="font-display font-bold text-xl sm:text-2xl text-primary">
+                Connect Codex, ChatGPT, or Gemini
+              </h2>
+              <p className="font-body text-xs sm:text-sm text-secondary max-w-xl">
+                Use the remote MCP SSE endpoint or authorize your favorite AI assistant with a single click using our interactive portal.
+              </p>
+            </div>
+            <a
+              href="https://swiftspend-api.vercel.app/connect"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 bg-primary hover:bg-primary-hover text-on-primary font-semibold text-xs sm:text-sm rounded-xl shadow-md transition-all self-start sm:self-auto shrink-0"
+            >
+              <span>Authorize with Button</span>
+              <span className="material-symbols-outlined text-sm">open_in_new</span>
+            </a>
+          </div>
+
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-semibold text-secondary">Remote MCP URL Configuration (Cursor / Codex / Claude):</span>
+              <button
+                onClick={() => copyToClipboard(remoteMcpSnippet, 'remote-mcp')}
+                className="inline-flex items-center gap-1 px-2.5 py-1 bg-surface-container-high hover:bg-surface-container-highest rounded text-[11px] font-semibold text-primary transition-colors"
+              >
+                <span className="material-symbols-outlined text-xs">
+                  {copiedSection === 'remote-mcp' ? 'check' : 'content_copy'}
+                </span>
+                <span>{copiedSection === 'remote-mcp' ? 'Copied' : 'Copy'}</span>
+              </button>
+            </div>
+            <pre className="p-3 bg-surface-container-high rounded-xl text-xs font-mono text-primary overflow-x-auto">
+              <code>{remoteMcpSnippet}</code>
+            </pre>
           </div>
         </section>
 

@@ -15,7 +15,8 @@ export const openApiSpec = {
   ],
   security: [
     { ApiKeyAuth: [] },
-    { BearerAuth: [] }
+    { BearerAuth: [] },
+    { OAuth2: ['expenses:write', 'expenses:read'] }
   ],
   components: {
     securitySchemes: {
@@ -29,6 +30,20 @@ export const openApiSpec = {
         type: 'http',
         scheme: 'bearer',
         bearerFormat: 'API Key or JWT',
+      },
+      OAuth2: {
+        type: 'oauth2',
+        description: 'Authorize with SwiftSpend for ChatGPT / Gemini / Codex',
+        flows: {
+          authorizationCode: {
+            authorizationUrl: '/oauth/authorize',
+            tokenUrl: '/oauth/token',
+            scopes: {
+              'expenses:write': 'Log new expenses',
+              'expenses:read': 'View expenses and categories',
+            },
+          },
+        },
       },
     },
     schemas: {
@@ -134,15 +149,20 @@ export const serveMcpDocsHtml = (req: Request, res: Response) => {
     <h1>SwiftSpend Model Context Protocol (MCP) Server <span class="badge">v1.0.0</span></h1>
     <p>The SwiftSpend MCP Server allows AI clients (Claude Desktop, Cursor, Antigravity, etc.) to securely log expenses, retrieve history, and check categories using your API Key.</p>
     
-    <h2>1. Configuration</h2>
-    <p>Configure the following environment variables in your local MCP client:</p>
-    <table>
-      <tr><th>Variable</th><th>Required</th><th>Description</th><th>Default / Example</th></tr>
-      <tr><td><code>SWIFTSPEND_API_KEY</code></td><td><strong>Yes</strong></td><td>Your secret API key from Settings</td><td><code>sk_live_...</code></td></tr>
-      <tr><td><code>SWIFTSPEND_API_URL</code></td><td>No</td><td>SwiftSpend backend base URL (defaults to hosted API)</td><td><code>https://swiftspend-api.vercel.app</code></td></tr>
-    </table>
+    <h2>1. Connect with One-Click Button (Codex, ChatGPT, Gemini)</h2>
+    <p>Visit the interactive AI Connect Portal to authorize or test your connection:</p>
+    <p><a href="/connect" style="display:inline-block;background:#2563eb;color:white;padding:10px 18px;border-radius:8px;text-decoration:none;font-weight:bold;">🚀 Open AI Authorization Portal (/connect)</a></p>
 
-    <h2>2. MCP Client Setup (mcp.json)</h2>
+    <h2>2. Remote MCP Endpoints</h2>
+    <ul>
+      <li><strong>SSE Stream:</strong> <code>https://swiftspend-api.vercel.app/mcp/sse?apiKey=sk_live_...</code></li>
+      <li><strong>Direct HTTP JSON-RPC:</strong> <code>https://swiftspend-api.vercel.app/mcp</code> (with <code>Authorization: Bearer sk_live_...</code>)</li>
+      <li><strong>OAuth Authorize URL:</strong> <code>https://swiftspend-api.vercel.app/oauth/authorize</code></li>
+      <li><strong>OAuth Token URL:</strong> <code>https://swiftspend-api.vercel.app/oauth/token</code></li>
+      <li><strong>ChatGPT Action OpenAPI Spec:</strong> <code>https://swiftspend-api.vercel.app/api/v1/openapi.json</code></li>
+    </ul>
+
+    <h2>3. Local Stdio Setup (Alternative)</h2>
     <pre><code>{
   "mcpServers": {
     "swiftspend": {
@@ -157,7 +177,7 @@ export const serveMcpDocsHtml = (req: Request, res: Response) => {
   }
 }</code></pre>
 
-    <h2>3. Available Tools</h2>
+    <h2>4. Available Tools</h2>
     <ul>
       <li><strong><code>add_expense</code></strong>: Post a new expense (<code>amount</code>, <code>currency</code>, <code>category_name</code>, <code>merchant</code>, <code>description</code>, <code>date</code>).</li>
       <li><strong><code>list_expenses</code></strong>: Fetch recent user expenses (<code>limit</code>, <code>page</code>).</li>

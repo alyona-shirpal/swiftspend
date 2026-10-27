@@ -4,7 +4,42 @@ The SwiftSpend Model Context Protocol (MCP) server allows AI assistants (such as
 
 ---
 
-## Installation & Setup
+## Remote MCP Server & AI Authorization Hub
+
+SwiftSpend provides hosted remote MCP endpoints, eliminating the need to run local Node scripts:
+
+### 1. Interactive Authorization Portal (Codex, ChatGPT, Gemini)
+Authorize your AI assistant with a single click:
+👉 **`https://swiftspend-api.vercel.app/connect`** (or `/oauth/authorize`)
+
+### 2. Remote MCP Endpoints
+| Endpoint | Method | Description |
+| --- | --- | --- |
+| `/mcp/sse` | `GET` | Remote SSE connection endpoint (`?apiKey=sk_live_...`) |
+| `/mcp/messages` | `POST` | MCP JSON-RPC message endpoint for active SSE sessions |
+| `/mcp` | `GET` | Discovery endpoint with server metadata and status |
+| `/mcp` | `POST` | Direct JSON-RPC over HTTP (for HTTP MCP clients) |
+| `/oauth/authorize` | `GET/POST` | OAuth 2.0 Authorization Code flow with **Authorize Button** |
+| `/oauth/token` | `POST` | OAuth 2.0 Token exchange endpoint |
+| `/api/v1/openapi.json` | `GET` | OpenAPI 3.0 specification for ChatGPT Actions & Gemini Function Calling |
+
+### 3. Remote MCP Client Configuration (`mcp.json`)
+```json
+{
+  "mcpServers": {
+    "swiftspend-remote": {
+      "url": "https://swiftspend-api.vercel.app/mcp/sse",
+      "headers": {
+        "Authorization": "Bearer sk_live_your_secret_api_key"
+      }
+    }
+  }
+}
+```
+
+---
+
+## Installation & Setup (Local Stdio Alternative)
 
 ### 1. Build the Package locally
 ```bash
