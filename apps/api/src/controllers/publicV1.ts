@@ -4,10 +4,21 @@ import { supabaseAdmin, createSupabaseUserClient } from '../services/supabase';
 import { z } from 'zod';
 import { createExpenseRecord } from '../services/createExpense';
 import { createExpenseRecordAdmin } from '../services/createExpenseAdmin';
+import { updateExpenseRecord } from '../services/updateExpenseRecord';
 
 const PublicExpenseSchema = z.object({
   amount: z.number().positive(),
   currency: z.string().min(3).max(3),
+  category_id: z.string().uuid().nullable().optional(),
+  category_name: z.string().trim().optional(),
+  merchant: z.string().trim().max(120).nullable().optional(),
+  description: z.string().max(2000).nullable().optional(),
+  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/).optional(),
+});
+
+const PublicUpdateExpenseSchema = z.object({
+  amount: z.number().positive().optional(),
+  currency: z.string().min(3).max(3).optional(),
   category_id: z.string().uuid().nullable().optional(),
   category_name: z.string().trim().optional(),
   merchant: z.string().trim().max(120).nullable().optional(),
@@ -119,6 +130,56 @@ export const publicGetCategories = async (req: AuthRequest, res: Response, next:
 
     return res.json({ categories: data || [] });
   } catch (err) {
+    next(err);
+  }
+};
+
+export const publicUpdateExpense = async (req: AuthRequest, res: Response, next: NextFunction) => {
+  try {
+    const userId = req.user?.id;
+    if (!userId) {
+      return res.status(401).json({ error: 'Unauthorized' });
+    }
+
+    const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Expense ID is required' });
+    }
+
+    const validated = PublicUpdateExpenseSchema.parse(req.body);
+    let resolvedCategoryId = validated.category_id;
+
+    // If category_name was provided instead of category_id, try to resolve it
+    if (resolvedCategoryId === undefined && validated.category_name) {
+      const { data: cat } = await supabaseAdmin
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .ilike('name', validated.category_name.trim())
+        .maybeSingle();
+
+      if (cat) {
+        resolvedCategoryId = cat.id;
+      }
+    }
+
+    const client = req.accessToken ? createSupabaseUserClient(req.accessToken) : supabaseAdmin;
+
+    const payload = {
+      ...(validated.amount !== undefined ? { amount: validated.amount } : {}),
+      ...(validated.currency !== undefined ? { currency: validated.currency.toUpperCase() } : {}),
+      ...(resolvedCategoryId !== undefined ? { category_id: resolvedCategoryId } : {}),
+      ...(validated.merchant !== undefined ? { merchant: validated.merchant } : {}),
+      ...(validated.description !== undefined ? { description: validated.description } : {}),
+      ...(validated.date !== undefined ? { date: validated.date } : {}),
+    };
+
+    const data = await updateExpenseRecord(client, userId, id, payload);
+    return res.json(data);
+  } catch (err: any) {
+    if (err.status === 404 || err.message === 'Expense not found') {
+      return res.status(404).json({ error: 'Not found' });
+    }
     next(err);
   }
 };

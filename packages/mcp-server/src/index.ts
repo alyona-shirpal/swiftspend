@@ -77,6 +77,44 @@ server.setRequestHandler(ListToolsRequestSchema, async () => {
         },
       },
       {
+        name: 'update_expense',
+        description: 'Edit or update an existing expense entry in SwiftSpend',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            id: {
+              type: 'string',
+              description: 'The UUID of the expense entry to update',
+            },
+            amount: {
+              type: 'number',
+              description: 'New amount for the expense',
+            },
+            currency: {
+              type: 'string',
+              description: 'New 3-letter currency code (e.g. EUR, USD, UAH)',
+            },
+            category_name: {
+              type: 'string',
+              description: 'Optional category name to assign (e.g. Groceries, Restaurants)',
+            },
+            merchant: {
+              type: 'string',
+              description: 'Optional new merchant or place of purchase',
+            },
+            description: {
+              type: 'string',
+              description: 'Optional new description or note',
+            },
+            date: {
+              type: 'string',
+              description: 'Optional new date in YYYY-MM-DD format',
+            },
+          },
+          required: ['id'],
+        },
+      },
+      {
         name: 'list_expenses',
         description: 'Get list of recent expenses',
         inputSchema: {
@@ -117,6 +155,22 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           {
             type: 'text',
             text: `Expense logged successfully! ID: ${response.data.id}, Amount: ${response.data.amount} ${response.data.currency}`,
+          },
+        ],
+      };
+    }
+
+    if (name === 'update_expense') {
+      const { id, ...updateData } = args as { id: string; [key: string]: any };
+      if (!id) {
+        throw new Error('Expense ID is required to update');
+      }
+      const response = await apiClient.patch(`/expenses/${id}`, updateData);
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `Expense updated successfully! ID: ${response.data.id}, Amount: ${response.data.amount} ${response.data.currency}`,
           },
         ],
       };

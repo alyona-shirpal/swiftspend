@@ -9,6 +9,7 @@ import {
 import { z } from 'zod';
 import { Currency } from '../types';
 import { createExpenseRecord } from '../services/createExpense';
+import { updateExpenseRecord } from '../services/updateExpenseRecord';
 import type { RateSnapshot } from '@swiftspend/types';
 import { triggerSheetSync } from '../services/triggerSheetSync';
 
@@ -260,76 +261,17 @@ export const updateExpense = async (req: AuthRequest, res: Response, next: NextF
   try {
     const validated = ExpenseSchema.partial().parse(req.body);
     const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ error: 'Expense ID is required' });
+    }
     const supabase = createSupabaseUserClient(req.accessToken!);
 
-    const { data: existing } = await supabase
-      .from('expenses')
-      .select('*')
-      .eq('id', id)
-      .eq('user_id', req.user!.id)
-      .single();
-
-    if (!existing) return res.status(404).json({ error: 'Not found' });
-
-    let updatePayload: Record<string, unknown> = {
-      ...(validated.category_id !== undefined ? { category_id: validated.category_id } : {}),
-      ...(validated.merchant !== undefined ? { merchant: validated.merchant } : {}),
-      ...(validated.description !== undefined ? { description: validated.description } : {}),
-      ...(validated.date !== undefined ? { date: validated.date } : {}),
-      ...(validated.amount !== undefined ? { amount: validated.amount } : {}),
-      ...(validated.currency !== undefined ? { currency: validated.currency } : {}),
-    };
-
-    // Re-convert if amount or currency changed
-    if (validated.amount !== undefined || validated.currency !== undefined) {
-      const userId = req.user!.id;
-      const currencies = await ensureUserCurrencies(userId, supabase);
-      const userCurrencies = currencies.map((r) => r.currency as Currency);
-
-      const finalAmount = validated.amount ?? existing.amount;
-      const finalCurrency = (validated.currency ?? existing.currency) as Currency;
-
-      const snapshot = await ExchangeRateService.getCachedRates(supabase);
-      const amounts = await ExchangeRateService.convertToUserCurrencies(
-        finalAmount,
-        finalCurrency,
-        userCurrencies,
-        snapshot
-      );
-
-      updatePayload = {
-        ...updatePayload,
-        amounts,
-        exchange_rate_snapshot: snapshot,
-      };
-    }
-
-    const { data, error } = await supabase
-      .from('expenses')
-      .update(updatePayload)
-      .eq('id', id)
-      .select()
-      .single();
-
-    if (error) throw error;
-    if (
-      validated.category_id !== undefined &&
-      validated.category_id !== existing.category_id
-    ) {
-      await markCategoryLastUsed(supabase, req.user!.id, validated.category_id);
-    }
-
-    // SYNC_SPEC_V1: Trigger Google Sheets auto-sync for affected month(s) (fire-and-forget).
-    // If the expense date changed to a different month, sync both the new and old months.
-    const newMonth: string = (data as { date: string }).date.slice(0, 7);
-    const oldMonth: string | undefined = existing.date ? (existing.date as string).slice(0, 7) : undefined;
-    triggerSheetSync(req.user!.id, newMonth);
-    if (oldMonth && oldMonth !== newMonth) {
-      triggerSheetSync(req.user!.id, oldMonth);
-    }
-
+    const data = await updateExpenseRecord(supabase, req.user!.id, id, validated);
     res.json(data);
-  } catch (err) {
+  } catch (err: any) {
+    if (err.status === 404 || err.message === 'Expense not found') {
+      return res.status(404).json({ error: 'Not found' });
+    }
     next(err);
   }
 };

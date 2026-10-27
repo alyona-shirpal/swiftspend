@@ -5,6 +5,7 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import { supabaseAdmin } from './supabase';
 import { createExpenseRecordAdmin } from './createExpenseAdmin';
+import { updateExpenseRecord } from './updateExpenseRecord';
 
 export const MCP_TOOLS_DEFINITIONS = [
   {
@@ -43,6 +44,48 @@ export const MCP_TOOLS_DEFINITIONS = [
         },
       },
       required: ['amount', 'currency'],
+    },
+  },
+  {
+    name: 'update_expense',
+    description: 'Edit or update an existing expense entry (amount, category, merchant, description, date)',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        id: {
+          type: 'string',
+          description: 'The UUID of the expense entry to update',
+        },
+        amount: {
+          type: 'number',
+          description: 'New amount for the expense',
+        },
+        currency: {
+          type: 'string',
+          description: 'New 3-letter currency code (e.g. EUR, USD, UAH)',
+        },
+        category_name: {
+          type: 'string',
+          description: 'Optional category name to assign (e.g. Groceries, Restaurants)',
+        },
+        category_id: {
+          type: 'string',
+          description: 'Optional category UUID',
+        },
+        merchant: {
+          type: 'string',
+          description: 'Optional new merchant or place of purchase',
+        },
+        description: {
+          type: 'string',
+          description: 'Optional new description or note',
+        },
+        date: {
+          type: 'string',
+          description: 'Optional new date in YYYY-MM-DD format',
+        },
+      },
+      required: ['id'],
     },
   },
   {
@@ -113,6 +156,47 @@ export async function executeMcpTool(userId: string, name: string, args: Record<
         {
           type: 'text',
           text: `Expense logged successfully! ID: ${expense.id}, Amount: ${expense.amount} ${expense.currency}${expense.merchant ? ` at ${expense.merchant}` : ''}`,
+        },
+      ],
+    };
+  }
+
+  if (name === 'update_expense') {
+    const expenseId = String(args.id || '').trim();
+    if (!expenseId) {
+      throw new Error('Expense ID is required to update');
+    }
+
+    let categoryId = args.category_id !== undefined ? args.category_id : undefined;
+    if (categoryId === undefined && args.category_name) {
+      const { data: cat } = await supabaseAdmin
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .ilike('name', String(args.category_name).trim())
+        .limit(1)
+        .maybeSingle();
+
+      if (cat) {
+        categoryId = cat.id;
+      }
+    }
+
+    const payload: Record<string, any> = {};
+    if (args.amount !== undefined) payload.amount = Number(args.amount);
+    if (args.currency !== undefined) payload.currency = String(args.currency).toUpperCase();
+    if (categoryId !== undefined) payload.category_id = categoryId;
+    if (args.merchant !== undefined) payload.merchant = args.merchant ? String(args.merchant).trim() : null;
+    if (args.description !== undefined) payload.description = args.description ? String(args.description).trim() : null;
+    if (args.date !== undefined) payload.date = String(args.date);
+
+    const updated = await updateExpenseRecord(supabaseAdmin, userId, expenseId, payload);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `Expense updated successfully! ID: ${updated.id}, Amount: ${updated.amount} ${updated.currency}${updated.merchant ? ` at ${updated.merchant}` : ''}`,
         },
       ],
     };

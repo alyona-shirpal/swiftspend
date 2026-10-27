@@ -60,6 +60,18 @@ export const openApiSpec = {
           date: { type: 'string', format: 'date', example: '2026-10-10' },
         },
       },
+      ExpenseUpdateInput: {
+        type: 'object',
+        properties: {
+          amount: { type: 'number', example: 14.99 },
+          currency: { type: 'string', example: 'EUR' },
+          category_id: { type: 'string', format: 'uuid', nullable: true },
+          category_name: { type: 'string', example: 'Restaurants' },
+          merchant: { type: 'string', nullable: true, example: 'Starbucks' },
+          description: { type: 'string', nullable: true, example: 'Afternoon coffee' },
+          date: { type: 'string', format: 'date', example: '2026-10-10' },
+        },
+      },
     },
   },
   paths: {
@@ -87,6 +99,46 @@ export const openApiSpec = {
         ],
         responses: {
           '200': { description: 'List of expenses' },
+        },
+      },
+    },
+    '/expenses/{id}': {
+      patch: {
+        summary: 'Update / edit an existing expense entry',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ExpenseUpdateInput' },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Expense updated successfully' },
+          '404': { description: 'Expense not found' },
+          '401': { description: 'Unauthorized' },
+        },
+      },
+      put: {
+        summary: 'Update / edit an existing expense entry',
+        parameters: [
+          { name: 'id', in: 'path', required: true, schema: { type: 'string', format: 'uuid' } },
+        ],
+        requestBody: {
+          required: true,
+          content: {
+            'application/json': {
+              schema: { $ref: '#/components/schemas/ExpenseUpdateInput' },
+            },
+          },
+        },
+        responses: {
+          '200': { description: 'Expense updated successfully' },
+          '404': { description: 'Expense not found' },
+          '401': { description: 'Unauthorized' },
         },
       },
     },
@@ -183,6 +235,7 @@ export const serveMcpDocsHtml = (req: Request, res: Response) => {
     <h2>4. Available Tools</h2>
     <ul>
       <li><strong><code>add_expense</code></strong>: Post a new expense (<code>amount</code>, <code>currency</code>, <code>category_name</code>, <code>merchant</code>, <code>description</code>, <code>date</code>).</li>
+      <li><strong><code>update_expense</code></strong>: Edit an existing expense entry (<code>id</code>, <code>amount</code>, <code>currency</code>, <code>category_name</code>, <code>merchant</code>, <code>description</code>, <code>date</code>).</li>
       <li><strong><code>list_expenses</code></strong>: Fetch recent user expenses (<code>limit</code>, <code>page</code>).</li>
       <li><strong><code>list_categories</code></strong>: List active spending categories.</li>
     </ul>

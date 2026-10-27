@@ -137,6 +137,18 @@ Logs a new expense in SwiftSpend.
   - `description` *(string, optional)*
   - `date` *(string, optional, YYYY-MM-DD)*
 
+### `update_expense`
+Edits / updates an existing expense entry.
+- **Parameters**:
+  - `id` *(string, UUID, required)*: The expense ID to update
+  - `amount` *(number, optional)*
+  - `currency` *(string, optional, e.g. "EUR")*
+  - `category_name` *(string, optional)*
+  - `category_id` *(string, optional)*
+  - `merchant` *(string, optional)*
+  - `description` *(string, optional)*
+  - `date` *(string, optional, YYYY-MM-DD)*
+
 ### `list_expenses`
 Retrieves recent expenses.
 - **Parameters**:

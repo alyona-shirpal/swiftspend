@@ -27,6 +27,7 @@ router.get('/', getExpenses);
 router.get('/:id', getExpense);
 router.post('/', createExpense);
 router.put('/:id', updateExpense);
+router.patch('/:id', updateExpense);
 router.delete('/:id', deleteExpense);
 
 export default router;
