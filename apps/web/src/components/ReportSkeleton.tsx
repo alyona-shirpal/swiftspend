@@ -1,8 +1,9 @@
 import React from 'react';
+import { BottomNavigation } from './layout/BottomNavigation';
 
 export const ReportSkeleton: React.FC = () => {
   return (
-    <div className="bg-surface text-on-surface min-h-screen pb-24">
+    <div className="bg-surface text-on-surface min-h-screen pb-32">
       {/* Top Navigation Skeleton */}
       <header className="fixed top-0 left-0 right-0 z-50 bg-surface flex justify-between items-center w-full px-6 py-4">
         <div className="flex items-center gap-3">
@@ -110,14 +111,8 @@ export const ReportSkeleton: React.FC = () => {
         </section>
       </main>
 
-      {/* Bottom Navigation Skeleton */}
-      <nav className="fixed inset-x-0 bottom-0 z-50 px-4 pb-safe pt-2">
-        <div className="mx-auto grid h-[76px] max-w-md grid-cols-[1fr_auto_1fr] items-center rounded-[28px] border border-outline-variant/30 bg-surface-container-lowest/90 px-3 backdrop-blur-xl shadow-[0_-16px_40px_rgba(25,28,30,0.12)] dark:shadow-[0_-16px_40px_rgba(0,0,0,0.4)]">
-          <div className="mx-auto h-14 min-w-[96px] rounded-[22px] bg-surface-container-highest animate-pulse"></div>
-          <div className="mx-1 h-16 w-16 rounded-[24px] bg-surface-container-highest animate-pulse ring-4 ring-surface-container-lowest"></div>
-          <div className="mx-auto h-14 min-w-[96px] rounded-[22px] bg-surface-container-highest animate-pulse"></div>
-        </div>
-      </nav>
+      {/* Bottom Navigation */}
+      <BottomNavigation />
     </div>
   );
 };
