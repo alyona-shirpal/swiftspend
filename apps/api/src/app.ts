@@ -13,7 +13,11 @@ import publicV1Routes from './routes/publicV1';
 import mcpRoutes from './routes/mcp';
 import oauthRoutes from './routes/oauth';
 import { serveDocsHtml, serveMcpDocsHtml, openApiSpec } from './controllers/docs';
-import { renderAuthorizePage } from './controllers/oauth';
+import {
+  renderAuthorizePage,
+  getOAuthAuthorizationServerMetadata,
+  getOAuthProtectedResourceMetadata,
+} from './controllers/oauth';
 import { errorHandler } from './middleware/errorHandler';
 
 export function createApp() {
@@ -29,6 +33,11 @@ export function createApp() {
       return urlencodedParser(req, res, next);
     });
   });
+
+  // RFC 8414 & RFC 9728 Discovery Endpoints (standard locations)
+  app.get('/.well-known/oauth-authorization-server', getOAuthAuthorizationServerMetadata);
+  app.get('/.well-known/oauth-protected-resource', getOAuthProtectedResourceMetadata);
+  app.get('/.well-known/oauth-protected-resource/*', getOAuthProtectedResourceMetadata);
 
   // Docs & Portals
   app.get('/docs', serveDocsHtml);

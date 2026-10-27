@@ -159,6 +159,9 @@ export const serveMcpDocsHtml = (req: Request, res: Response) => {
       <li><strong>Direct HTTP JSON-RPC:</strong> <code>https://swiftspend-api.vercel.app/mcp</code> (with <code>Authorization: Bearer sk_live_...</code>)</li>
       <li><strong>OAuth Authorize URL:</strong> <code>https://swiftspend-api.vercel.app/oauth/authorize</code></li>
       <li><strong>OAuth Token URL:</strong> <code>https://swiftspend-api.vercel.app/oauth/token</code></li>
+      <li><strong>Dynamic Client Registration (DCR):</strong> <code>https://swiftspend-api.vercel.app/oauth/register</code></li>
+      <li><strong>OAuth Server Discovery:</strong> <code>https://swiftspend-api.vercel.app/.well-known/oauth-authorization-server</code></li>
+      <li><strong>Protected Resource Metadata:</strong> <code>https://swiftspend-api.vercel.app/.well-known/oauth-protected-resource</code></li>
       <li><strong>ChatGPT Action OpenAPI Spec:</strong> <code>https://swiftspend-api.vercel.app/api/v1/openapi.json</code></li>
     </ul>
 

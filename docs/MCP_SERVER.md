@@ -19,11 +19,39 @@ Authorize your AI assistant with a single click:
 | `/mcp/messages` | `POST` | MCP JSON-RPC message endpoint for active SSE sessions |
 | `/mcp` | `GET` | Discovery endpoint with server metadata and status |
 | `/mcp` | `POST` | Direct JSON-RPC over HTTP (for HTTP MCP clients) |
-| `/oauth/authorize` | `GET/POST` | OAuth 2.0 Authorization Code flow with **Authorize Button** |
-| `/oauth/token` | `POST` | OAuth 2.0 Token exchange endpoint |
+| `/oauth/authorize` | `GET/POST` | OAuth 2.0 Authorization Code flow with **Authorize Button** & PKCE |
+| `/oauth/token` | `POST` | OAuth 2.0 Token exchange endpoint (PKCE `code_verifier` support) |
+| `/oauth/register` | `POST` | RFC 7591 Dynamic Client Registration (DCR) for Gemini |
+| `/.well-known/oauth-authorization-server` | `GET` | RFC 8414 OAuth 2.0 Authorization Server Discovery |
+| `/.well-known/oauth-protected-resource` | `GET` | RFC 9728 OAuth 2.0 Protected Resource Metadata |
 | `/api/v1/openapi.json` | `GET` | OpenAPI 3.0 specification for ChatGPT Actions & Gemini Function Calling |
 
-### 3. Remote MCP Client Configuration (`mcp.json`)
+### 3. Connecting Custom Apps in Google Gemini
+Gemini Apps (Web & Mobile, per [Google Support Guide 17209137](https://support.google.com/gemini/answer/17209137)) allow connecting custom MCP apps:
+
+1. **Prerequisites**:
+   - Personal Google Account (18+).
+   - SwiftSpend API Key generated under **Settings → API Keys**.
+2. **Steps to Connect in Gemini**:
+   - Open [gemini.google.com](https://gemini.google.com) on desktop.
+   - Go to **Settings** (or user profile menu) → **Connected Apps** → **Custom Apps**.
+   - Click **Add a custom app**.
+   - In the **Server URL** / **MCP URL** field, enter:
+     ```
+     https://swiftspend-api.vercel.app/mcp
+     ```
+     *(Or your custom deployed backend URL).*
+   - When prompted for authentication, click **Connect / Authorize**. Gemini uses standard OAuth 2.1 discovery (`/.well-known/oauth-authorization-server`) and Dynamic Client Registration (DCR).
+   - Enter your SwiftSpend API key (`sk_live_...`) and click **Authorize & Connect with Button**.
+   - Gemini will finish the redirect handshake (`https://gemini.google.com/oauth-redirect`) and link your SwiftSpend tools.
+3. **Using in Gemini**:
+   - In any Gemini chat, mention or use SwiftSpend tools to log expenses or query your budget:
+     > *"Log an expense of 14 EUR for lunch at Bistro"*
+     > *"List my recent expenses from SwiftSpend"*
+
+---
+
+### 4. Remote MCP Client Configuration (`mcp.json`)
 ```json
 {
   "mcpServers": {

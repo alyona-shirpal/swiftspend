@@ -42,16 +42,26 @@ export const handleMcpDiscovery = (req: Request, res: Response) => {
       authorize_portal: `${baseUrl}/mcp/authorize`,
       oauth_authorize: `${baseUrl}/oauth/authorize`,
       oauth_token: `${baseUrl}/oauth/token`,
+      oauth_register: `${baseUrl}/oauth/register`,
+      oauth_authorization_server_metadata: `${baseUrl}/.well-known/oauth-authorization-server`,
+      oauth_protected_resource_metadata: `${baseUrl}/.well-known/oauth-protected-resource`,
       openapi: `${baseUrl}/api/v1/openapi.json`,
       docs: `${baseUrl}/docs/mcp`,
     },
     authentication: {
       methods: [
+        'OAuth 2.1 Authorization Code Flow with PKCE (/oauth/authorize, /oauth/token)',
+        'OAuth Dynamic Client Registration RFC 7591 (/oauth/register)',
         'Query Parameter: ?apiKey=sk_live_... or ?api_key=sk_live_...',
         'HTTP Header: Authorization: Bearer sk_live_...',
         'HTTP Header: X-API-Key: sk_live_...',
-        'OAuth 2.0 Authorization Code Flow (/oauth/authorize, /oauth/token)',
       ],
+      gemini_support: {
+        dcr_endpoint: `${baseUrl}/oauth/register`,
+        redirect_uris: ['https://gemini.google.com/oauth-redirect', 'https://vertexaisearch.cloud.google.com/oauth-redirect'],
+        code_challenge_methods: ['S256'],
+        issuer_response_parameter: true,
+      },
     },
     tools: MCP_TOOLS_DEFINITIONS.map((t) => ({ name: t.name, description: t.description })),
   });
@@ -61,14 +71,30 @@ export const handleMcpSse = async (req: Request, res: Response) => {
   try {
     const apiKey = extractApiKeyString(req);
     if (!apiKey) {
+      const host = req.get('host') || 'swiftspend-api.vercel.app';
+      const proto = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const baseUrl = `${proto}://${host}`;
+
+      res.setHeader(
+        'WWW-Authenticate',
+        `Bearer realm="SwiftSpend MCP", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`
+      );
       return res.status(401).json({
         error: 'Unauthorized',
-        message: 'API Key is required to connect to the MCP SSE endpoint. Provide via ?apiKey=sk_live_... or Authorization header.',
+        message: 'API Key or OAuth Bearer token is required. Provide via ?apiKey=sk_live_... or Authorization: Bearer <token>.',
       });
     }
 
     const auth = await validateApiKey(apiKey);
     if (!auth) {
+      const host = req.get('host') || 'swiftspend-api.vercel.app';
+      const proto = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const baseUrl = `${proto}://${host}`;
+
+      res.setHeader(
+        'WWW-Authenticate',
+        `Bearer error="invalid_token", error_description="Invalid or revoked API key or token", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`
+      );
       return res.status(401).json({
         error: 'Unauthorized',
         message: 'Invalid or revoked API key.',
@@ -127,24 +153,40 @@ export const handleMcpDirectPost = async (req: Request, res: Response) => {
   try {
     const apiKey = extractApiKeyString(req);
     if (!apiKey) {
+      const host = req.get('host') || 'swiftspend-api.vercel.app';
+      const proto = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const baseUrl = `${proto}://${host}`;
+
+      res.setHeader(
+        'WWW-Authenticate',
+        `Bearer realm="SwiftSpend MCP", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`
+      );
       return res.status(401).json({
         jsonrpc: '2.0',
         id: req.body?.id ?? null,
         error: {
           code: -32000,
-          message: 'Unauthorized: API Key required via Authorization Bearer or X-API-Key or ?apiKey=...',
+          message: 'Unauthorized: API Key or OAuth Bearer token required via Authorization Bearer or ?apiKey=...',
         },
       });
     }
 
     const auth = await validateApiKey(apiKey);
     if (!auth) {
+      const host = req.get('host') || 'swiftspend-api.vercel.app';
+      const proto = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
+      const baseUrl = `${proto}://${host}`;
+
+      res.setHeader(
+        'WWW-Authenticate',
+        `Bearer error="invalid_token", error_description="Invalid or revoked API key or token", resource_metadata="${baseUrl}/.well-known/oauth-protected-resource"`
+      );
       return res.status(401).json({
         jsonrpc: '2.0',
         id: req.body?.id ?? null,
         error: {
           code: -32000,
-          message: 'Unauthorized: Invalid or revoked API Key',
+          message: 'Unauthorized: Invalid or revoked API Key or OAuth token',
         },
       });
     }

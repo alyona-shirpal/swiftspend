@@ -7,10 +7,25 @@ interface AuthCodeData {
   apiKey: string;
   clientId?: string;
   redirectUri?: string;
+  codeChallenge?: string;
+  codeChallengeMethod?: string;
+  resource?: string;
   expiresAt: number;
 }
 
+interface DynamicClientData {
+  clientId: string;
+  clientSecret?: string;
+  clientName?: string;
+  redirectUris?: string[];
+  grantTypes?: string[];
+  responseTypes?: string[];
+  tokenEndpointAuthMethod?: string;
+  createdAt: number;
+}
+
 const authCodes = new Map<string, AuthCodeData>();
+const dynamicClients = new Map<string, DynamicClientData>();
 
 // Periodic cleanup of expired auth codes
 setInterval(() => {
@@ -22,15 +37,40 @@ setInterval(() => {
   }
 }, 60 * 1000).unref();
 
-export const renderAuthorizePage = (req: Request, res: Response) => {
+export const getBaseUrl = (req: Request): string => {
   const host = req.get('host') || 'swiftspend-api.vercel.app';
   const proto = req.protocol === 'https' || req.get('x-forwarded-proto') === 'https' ? 'https' : 'http';
-  const baseUrl = `${proto}://${host}`;
+  return `${proto}://${host}`;
+};
+
+export const verifyCodeVerifier = (
+  codeVerifier: string,
+  codeChallenge: string,
+  method: string = 'S256'
+): boolean => {
+  if (!codeChallenge) return true; // If no challenge was registered, no check needed
+  if (!codeVerifier) return false;
+
+  if (method === 'plain') {
+    return codeVerifier === codeChallenge;
+  }
+
+  // S256 standard PKCE: BASE64URL-ENCODE(SHA256(ASCII(code_verifier)))
+  const hash = crypto.createHash('sha256').update(codeVerifier, 'ascii').digest('base64url');
+  return hash === codeChallenge;
+};
+
+export const renderAuthorizePage = (req: Request, res: Response) => {
+  const baseUrl = getBaseUrl(req);
 
   const clientId = (req.query.client_id as string) || '';
   const redirectUri = (req.query.redirect_uri as string) || '';
   const state = (req.query.state as string) || '';
   const responseType = (req.query.response_type as string) || 'code';
+  const codeChallenge = (req.query.code_challenge as string) || '';
+  const codeChallengeMethod = (req.query.code_challenge_method as string) || 'S256';
+  const resource = (req.query.resource as string) || '';
+
   const clientName = clientId.toLowerCase().includes('chatgpt')
     ? 'ChatGPT'
     : clientId.toLowerCase().includes('gemini')
@@ -39,7 +79,7 @@ export const renderAuthorizePage = (req: Request, res: Response) => {
     ? 'Codex'
     : clientId.toLowerCase().includes('cursor')
     ? 'Cursor'
-    : (req.query.app_name as string) || (clientId ? clientId : 'AI Assistant (ChatGPT / Gemini / Codex)');
+    : (req.query.app_name as string) || (clientId ? clientId : 'AI Assistant (Gemini / ChatGPT / Codex)');
 
   const isOAuthFlow = Boolean(redirectUri);
 
@@ -327,6 +367,9 @@ export const renderAuthorizePage = (req: Request, res: Response) => {
       <input type="hidden" name="redirect_uri" value="${redirectUri}" />
       <input type="hidden" name="state" value="${state}" />
       <input type="hidden" name="response_type" value="${responseType}" />
+      <input type="hidden" name="code_challenge" value="${codeChallenge}" />
+      <input type="hidden" name="code_challenge_method" value="${codeChallengeMethod}" />
+      <input type="hidden" name="resource" value="${resource}" />
 
       <div class="form-group">
         <label for="apiKey">SwiftSpend API Key</label>
@@ -383,16 +426,24 @@ export const renderAuthorizePage = (req: Request, res: Response) => {
         </div>
 
         <div id="tab-gemini" class="tab-content" style="display:none;">
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">Gemini Function Calling Endpoint:</p>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">1. Remote MCP Endpoint (Custom Apps in Gemini):</p>
           <div class="code-box">
             <span>${baseUrl}/mcp</span>
             <button class="copy-btn" onclick="copyText('${baseUrl}/mcp')">Copy</button>
           </div>
-          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">OpenAPI Spec for Gemini Tools:</p>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">2. Dynamic Registration Endpoint (RFC 7591):</p>
           <div class="code-box">
-            <span>${baseUrl}/api/v1/openapi.json</span>
-            <button class="copy-btn" onclick="copyText('${baseUrl}/api/v1/openapi.json')">Copy</button>
+            <span>${baseUrl}/oauth/register</span>
+            <button class="copy-btn" onclick="copyText('${baseUrl}/oauth/register')">Copy</button>
           </div>
+          <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 8px;">3. OAuth Authorization Server Metadata:</p>
+          <div class="code-box">
+            <span>${baseUrl}/.well-known/oauth-authorization-server</span>
+            <button class="copy-btn" onclick="copyText('${baseUrl}/.well-known/oauth-authorization-server')">Copy</button>
+          </div>
+          <p style="font-size: 12px; color: var(--text-muted); margin-top: 6px;">
+            Supports Gemini Web & App OAuth redirect (<code style="color:#93c5fd;">https://gemini.google.com/oauth-redirect</code>) with PKCE (S256).
+          </p>
         </div>
 
         <div id="tab-codex" class="tab-content" style="display:none;">
@@ -507,10 +558,14 @@ export const renderAuthorizePage = (req: Request, res: Response) => {
 };
 
 export const handleOAuthAuthorize = async (req: Request, res: Response) => {
+  const baseUrl = getBaseUrl(req);
   const apiKey = (req.body?.api_key || req.query?.api_key || req.body?.apiKey || req.query?.apiKey || '') as string;
   const redirectUri = (req.body?.redirect_uri || req.query?.redirect_uri || '') as string;
   const state = (req.body?.state || req.query?.state || '') as string;
   const clientId = (req.body?.client_id || req.query?.client_id || '') as string;
+  const codeChallenge = (req.body?.code_challenge || req.query?.code_challenge || '') as string;
+  const codeChallengeMethod = (req.body?.code_challenge_method || req.query?.code_challenge_method || 'S256') as string;
+  const resource = (req.body?.resource || req.query?.resource || '') as string;
 
   if (!apiKey) {
     return res.status(400).send('API Key is required to authorize');
@@ -528,12 +583,17 @@ export const handleOAuthAuthorize = async (req: Request, res: Response) => {
     apiKey,
     clientId,
     redirectUri,
+    codeChallenge,
+    codeChallengeMethod,
+    resource,
     expiresAt: Date.now() + 10 * 60 * 1000,
   });
 
   if (redirectUri) {
     const redirectUrl = new URL(redirectUri);
     redirectUrl.searchParams.set('code', code);
+    // RFC 9207 Issuer Identification for mix-up attack mitigation (mandatory in modern MCP/Gemini)
+    redirectUrl.searchParams.set('iss', baseUrl);
     if (state) {
       redirectUrl.searchParams.set('state', state);
     }
@@ -545,11 +605,13 @@ export const handleOAuthAuthorize = async (req: Request, res: Response) => {
     message: 'Authorized successfully',
     code,
     state,
+    iss: baseUrl,
   });
 };
 
 export const handleOAuthToken = async (req: Request, res: Response) => {
   const code = (req.body?.code || req.query?.code) as string;
+  const codeVerifier = (req.body?.code_verifier || req.query?.code_verifier || '') as string;
   const grantType = req.body?.grant_type || req.query?.grant_type || 'authorization_code';
 
   if (grantType === 'authorization_code') {
@@ -562,13 +624,37 @@ export const handleOAuthToken = async (req: Request, res: Response) => {
       return res.status(400).json({ error: 'invalid_grant', error_description: 'Code is invalid or expired' });
     }
 
-    // Delete used code
+    // Verify PKCE if a code_challenge was provided during authorize
+    if (authData.codeChallenge) {
+      if (!codeVerifier) {
+        return res.status(400).json({
+          error: 'invalid_request',
+          error_description: 'Missing code_verifier for PKCE challenge',
+        });
+      }
+
+      const isValid = verifyCodeVerifier(
+        codeVerifier,
+        authData.codeChallenge,
+        authData.codeChallengeMethod || 'S256'
+      );
+
+      if (!isValid) {
+        return res.status(400).json({
+          error: 'invalid_grant',
+          error_description: 'PKCE verification failed',
+        });
+      }
+    }
+
+    // Delete used code (single use)
     authCodes.delete(code);
 
     return res.json({
       access_token: authData.apiKey,
       token_type: 'Bearer',
       expires_in: 31536000, // 1 year
+      scope: 'expenses:write expenses:read',
     });
   }
 
@@ -580,9 +666,93 @@ export const handleOAuthToken = async (req: Request, res: Response) => {
         access_token: clientSecret,
         token_type: 'Bearer',
         expires_in: 31536000,
+        scope: 'expenses:write expenses:read',
       });
     }
   }
 
   return res.status(400).json({ error: 'unsupported_grant_type' });
+};
+
+/**
+ * RFC 7591 Dynamic Client Registration (DCR) endpoint.
+ * Enables Gemini and other MCP OAuth clients to dynamically register a client ID.
+ */
+export const handleOAuthRegister = (req: Request, res: Response) => {
+  const body = req.body || {};
+  const clientId = `client_${crypto.randomBytes(12).toString('hex')}`;
+  const clientSecret = `sec_${crypto.randomBytes(24).toString('hex')}`;
+  const now = Math.floor(Date.now() / 1000);
+  const baseUrl = getBaseUrl(req);
+
+  const clientName = body.client_name || 'Gemini Custom MCP Client';
+  const redirectUris = Array.isArray(body.redirect_uris) && body.redirect_uris.length > 0
+    ? body.redirect_uris
+    : ['https://gemini.google.com/oauth-redirect', 'https://vertexaisearch.cloud.google.com/oauth-redirect'];
+  const grantTypes = body.grant_types || ['authorization_code', 'client_credentials'];
+  const responseTypes = body.response_types || ['code'];
+  const tokenEndpointAuthMethod = body.token_endpoint_auth_method || 'client_secret_post';
+
+  const clientRecord: DynamicClientData = {
+    clientId,
+    clientSecret,
+    clientName,
+    redirectUris,
+    grantTypes,
+    responseTypes,
+    tokenEndpointAuthMethod,
+    createdAt: Date.now(),
+  };
+
+  dynamicClients.set(clientId, clientRecord);
+
+  res.status(201).json({
+    client_id: clientId,
+    client_secret: clientSecret,
+    client_id_issued_at: now,
+    client_secret_expires_at: 0, // does not expire
+    client_name: clientName,
+    redirect_uris: redirectUris,
+    grant_types: grantTypes,
+    response_types: responseTypes,
+    token_endpoint_auth_method: tokenEndpointAuthMethod,
+    registration_client_uri: `${baseUrl}/oauth/register/${clientId}`,
+  });
+};
+
+/**
+ * RFC 8414 OAuth 2.0 Authorization Server Metadata
+ */
+export const getOAuthAuthorizationServerMetadata = (req: Request, res: Response) => {
+  const baseUrl = getBaseUrl(req);
+
+  res.json({
+    issuer: baseUrl,
+    authorization_endpoint: `${baseUrl}/oauth/authorize`,
+    token_endpoint: `${baseUrl}/oauth/token`,
+    registration_endpoint: `${baseUrl}/oauth/register`,
+    scopes_supported: ['expenses:write', 'expenses:read'],
+    response_types_supported: ['code'],
+    response_modes_supported: ['query'],
+    grant_types_supported: ['authorization_code', 'client_credentials'],
+    token_endpoint_auth_methods_supported: ['client_secret_post', 'client_secret_basic', 'none'],
+    code_challenge_methods_supported: ['S256', 'plain'],
+    authorization_response_iss_parameter_supported: true,
+    service_documentation: `${baseUrl}/docs/mcp`,
+  });
+};
+
+/**
+ * RFC 9728 OAuth 2.0 Protected Resource Metadata
+ */
+export const getOAuthProtectedResourceMetadata = (req: Request, res: Response) => {
+  const baseUrl = getBaseUrl(req);
+
+  res.json({
+    resource: baseUrl,
+    authorization_servers: [baseUrl],
+    scopes_supported: ['expenses:write', 'expenses:read'],
+    bearer_methods_supported: ['header', 'query'],
+    service_documentation: `${baseUrl}/docs/mcp`,
+  });
 };
