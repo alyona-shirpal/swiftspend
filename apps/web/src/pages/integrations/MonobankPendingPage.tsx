@@ -40,7 +40,7 @@ export const MonobankPendingPage: React.FC = () => {
   const imports = data?.imports || [];
   const primaryIntegration = statusData?.integrations?.[0];
 
-  const handleCopyJson = (payload: any) => {
+  const handleCopyJson = (payload: unknown) => {
     navigator.clipboard.writeText(JSON.stringify(payload, null, 2));
     setHasCopiedJson(true);
     setTimeout(() => setHasCopiedJson(false), 2000);
@@ -58,6 +58,10 @@ export const MonobankPendingPage: React.FC = () => {
 
   const handleDecline = (item: MonobankPendingImport) => {
     declineMutation.mutate({ id: item.id });
+  };
+
+  const handleMatch = (item: MonobankPendingImport, expenseId: string) => {
+    acceptMutation.mutate({ id: item.id, match_expense_id: expenseId });
   };
 
   const handleClearAll = () => {
@@ -207,6 +211,147 @@ export const MonobankPendingPage: React.FC = () => {
                       )}
                   </div>
                 </div>
+
+                {/* Similar Transactions Found on Day of Transaction (within ±€1) */}
+                {item.similar_expenses && item.similar_expenses.length > 0 && (
+                  <div className="rounded-xl border border-amber-500/25 bg-amber-500/5 p-3 sm:p-3.5 space-y-2.5">
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-1.5 font-label text-xs font-semibold text-amber-800 dark:text-amber-300">
+                        <span className="material-symbols-outlined text-[16px]">
+                          compare_arrows
+                        </span>
+                        <span>
+                          Similar transaction{item.similar_expenses.length > 1 ? 's' : ''} on this day (within ±€1):
+                        </span>
+                      </div>
+                      <span className="font-label text-[11px] font-medium text-secondary">
+                        {item.similar_expenses.length} found
+                      </span>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      {item.similar_expenses.map((sim) => {
+                        const isMatchingThis =
+                          acceptMutation.isPending &&
+                          acceptMutation.variables?.id === item.id &&
+                          acceptMutation.variables?.match_expense_id === sim.id;
+
+                        const formattedSimAmount = `-${formatCurrency(
+                          sim.amount,
+                          sim.currency as Currency
+                        )}`;
+
+                        return (
+                          <div
+                            key={sim.id}
+                            className="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5 p-2.5 rounded-lg bg-surface-container-lowest border border-outline-variant/15 hover:border-outline-variant/30 transition-colors"
+                          >
+                            {/* Short place and details */}
+                            <div className="flex items-center gap-2.5 min-w-0">
+                              <div className="w-7 h-7 rounded-md bg-surface-container-low flex items-center justify-center shrink-0 text-secondary">
+                                <span className="material-symbols-outlined text-[16px]">
+                                  {sim.category?.icon || 'receipt'}
+                                </span>
+                              </div>
+                              <div className="min-w-0">
+                                <div className="flex items-center gap-1.5">
+                                  <span
+                                    className="font-body font-semibold text-xs text-primary truncate max-w-[140px] sm:max-w-[200px]"
+                                    title={sim.place}
+                                  >
+                                    {sim.short_place || sim.place}
+                                  </span>
+                                  {sim.category && (
+                                    <span className="font-label text-[10px] bg-surface-container-high text-secondary px-1.5 py-0.2 rounded-full hidden sm:inline-block">
+                                      {sim.category.name}
+                                    </span>
+                                  )}
+                                </div>
+                                <p className="font-label text-[11px] text-secondary truncate">
+                                  {sim.description && sim.description !== sim.place
+                                    ? sim.description
+                                    : sim.date}
+                                </p>
+                              </div>
+                            </div>
+
+                            {/* Expense amount, diff, and actions */}
+                            <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0 pt-1.5 sm:pt-0 border-t sm:border-t-0 border-outline-variant/10">
+                              <div className="text-left sm:text-right">
+                                <span className="font-body font-bold text-xs text-primary block">
+                                  {formattedSimAmount}
+                                </span>
+                                {sim.diff_eur !== undefined && (
+                                  <span
+                                    className="font-label text-[10px] text-secondary block"
+                                    title="Difference in EUR"
+                                  >
+                                    {sim.diff_eur === 0
+                                      ? 'exact match'
+                                      : `diff: ±${sim.diff_eur.toFixed(2)}€`}
+                                  </span>
+                                )}
+                              </div>
+
+                              <div className="flex items-center gap-1.5">
+                                <button
+                                  type="button"
+                                  onClick={() => navigate(`/expenses/${sim.id}`)}
+                                  className="p-1 rounded-md text-secondary hover:text-primary hover:bg-surface-container-high transition-colors"
+                                  title="View existing expense details"
+                                >
+                                  <span className="material-symbols-outlined text-[16px]">
+                                    open_in_new
+                                  </span>
+                                </button>
+
+                                <button
+                                  type="button"
+                                  onClick={() => handleMatch(item, sim.id)}
+                                  disabled={isProcessing}
+                                  className="px-2.5 py-1 rounded-md bg-amber-500/15 hover:bg-amber-500/25 text-amber-800 dark:text-amber-300 font-body text-xs font-semibold transition-colors disabled:opacity-50 flex items-center gap-1"
+                                  title="Link this Monobank transaction to this existing expense without creating a duplicate"
+                                >
+                                  {isMatchingThis ? (
+                                    <>
+                                      <svg
+                                        className="w-3 h-3 animate-spin"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                      >
+                                        <circle
+                                          className="opacity-25"
+                                          cx="12"
+                                          cy="12"
+                                          r="10"
+                                          stroke="currentColor"
+                                          strokeWidth="4"
+                                        />
+                                        <path
+                                          className="opacity-75"
+                                          fill="currentColor"
+                                          d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                        />
+                                      </svg>
+                                      <span>Linking…</span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="material-symbols-outlined text-[14px]">
+                                        link
+                                      </span>
+                                      <span>Link</span>
+                                    </>
+                                  )}
+                                </button>
+                              </div>
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
 
                 {/* Suggested Category & Actions */}
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-3 border-t border-outline-variant/10">

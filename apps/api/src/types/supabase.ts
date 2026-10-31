@@ -25,6 +25,9 @@ export type RecentExpenseJoinRow = {
   currency: Currency;
   amounts: Record<string, number>;
   categories: CategoryRow | null;
+  provider?: string | null;
+  external_id?: string | null;
+  mcc?: number | null;
 };
 
 export type MonthlyAmountsRow = {

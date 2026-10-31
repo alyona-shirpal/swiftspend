@@ -12,18 +12,31 @@ export const MonobankPendingBanner: React.FC = () => {
   const [isDismissed, setIsDismissed] = useState(false);
 
   useEffect(() => {
+    // Clear any persistent suppression from previous versions so transactions show in all sessions
+    try {
+      localStorage.removeItem(DISMISSED_KEY);
+    } catch {
+      // ignore
+    }
+
     if (pendingCount <= 0) {
       setIsDismissed(false);
       return;
     }
-    const dismissedStr = localStorage.getItem(DISMISSED_KEY);
-    if (dismissedStr !== null) {
-      const dismissedCount = parseInt(dismissedStr, 10);
-      if (!isNaN(dismissedCount) && pendingCount <= dismissedCount) {
-        setIsDismissed(true);
-        return;
+
+    try {
+      const dismissedStr = sessionStorage.getItem(DISMISSED_KEY);
+      if (dismissedStr !== null) {
+        const dismissedCount = parseInt(dismissedStr, 10);
+        if (!isNaN(dismissedCount) && pendingCount <= dismissedCount) {
+          setIsDismissed(true);
+          return;
+        }
       }
+    } catch {
+      // ignore
     }
+
     setIsDismissed(false);
   }, [pendingCount]);
 
@@ -32,7 +45,11 @@ export const MonobankPendingBanner: React.FC = () => {
   }
 
   const handleDismiss = () => {
-    localStorage.setItem(DISMISSED_KEY, String(pendingCount));
+    try {
+      sessionStorage.setItem(DISMISSED_KEY, String(pendingCount));
+    } catch {
+      // ignore
+    }
     setIsDismissed(true);
   };
 

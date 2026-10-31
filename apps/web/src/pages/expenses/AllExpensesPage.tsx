@@ -8,6 +8,7 @@ import { useCategories } from '../../hooks/useCategories';
 import { useUserCurrencies } from '../../hooks/useUserCurrencies';
 import { useDeleteExpense } from '../../hooks/useDeleteExpense';
 import { ExpenseRow } from '../../components/dashboard/ExpenseRow';
+import { MonobankPendingBanner } from '../../components/dashboard/MonobankPendingBanner';
 import { DeleteExpenseDialog } from '../../components/expenses/DeleteExpenseDialog';
 import { EditExpenseDialog } from '../../components/expenses/EditExpenseDialog';
 import {
@@ -181,6 +182,9 @@ export const AllExpensesPage: React.FC = () => {
       width="3xl"
       mainClassName="space-y-4"
     >
+        {/* Monobank Pending Banner */}
+        <MonobankPendingBanner />
+
         {/* Total stats card */}
         <section className="bg-surface-container-lowest p-4 rounded-2xl border border-outline-variant/10 flex justify-between items-center shadow-sm">
           <div>

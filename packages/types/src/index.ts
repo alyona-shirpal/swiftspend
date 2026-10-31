@@ -46,6 +46,7 @@ export interface Expense {
   exchange_rate_snapshot: RateSnapshot
   provider?: string | null
   external_id?: string | null
+  mcc?: number | null
 }
 
 export interface ExpenseWithCategory extends Expense {
@@ -126,6 +127,25 @@ export interface MonobankIntegration {
   last_synced_at: string | null;
 }
 
+export interface SimilarExpense {
+  id: string;
+  date: string;
+  amount: number;
+  currency: string;
+  amount_eur?: number;
+  merchant: string | null;
+  description: string | null;
+  place: string;
+  short_place: string;
+  diff_eur?: number;
+  category: {
+    id: string;
+    name: string;
+    icon: string;
+    color?: string;
+  } | null;
+}
+
 export interface MonobankPendingImport {
   id: string;
   external_id: string;
@@ -140,7 +160,8 @@ export interface MonobankPendingImport {
   hold: boolean;
   status: 'pending' | 'accepted' | 'declined';
   suggested_category: { id: string; name: string; icon: string } | null;
-  raw_payload?: Record<string, any> | null;
+  similar_expenses?: SimilarExpense[];
+  raw_payload?: Record<string, unknown> | null;
   created_at: string;
 }
 

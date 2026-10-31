@@ -180,10 +180,12 @@ function ConnectForm({ onSuccess, onCancel, isExpandable }: ConnectFormProps) {
     connect.mutate(
       { token: token.trim(), displayName: displayName.trim() || undefined },
       {
-        onSuccess: (data: any) => {
+        onSuccess: (data: { id: string }) => {
           setToken('');
           setDisplayName('');
-          onSuccess?.(data?.id);
+          if (data?.id) {
+            onSuccess?.(data.id);
+          }
         },
       }
     );

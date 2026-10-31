@@ -14,6 +14,7 @@ export interface CreateExpenseInput {
   date?: string;
   provider?: string | null;
   external_id?: string | null;
+  mcc?: number | null;
 }
 
 export const createExpenseRecord = async (
@@ -46,6 +47,7 @@ export const createExpenseRecord = async (
       exchange_rate_snapshot: snapshot,
       provider: input.provider ?? null,
       external_id: input.external_id ?? null,
+      mcc: input.mcc ?? null,
     })
     .select()
     .single();

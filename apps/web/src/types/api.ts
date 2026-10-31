@@ -22,6 +22,7 @@ export interface RecentExpense {
   category: Category | null;
   provider?: string | null;
   external_id?: string | null;
+  mcc?: number | null;
 }
 
 export interface ExpenseDetail extends Expense {

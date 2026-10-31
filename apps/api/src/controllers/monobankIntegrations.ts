@@ -4,6 +4,8 @@ import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
 import { supabaseAdmin } from '../services/supabase';
 import { createExpenseRecordAdmin } from '../services/createExpenseAdmin';
+import { ExchangeRateService } from '../services/exchangeRate';
+import type { SimilarExpense } from '@swiftspend/types';
 import {
   fetchClientInfo,
   registerWebhook,
@@ -29,6 +31,7 @@ const AcceptImportBodySchema = z.object({
   merchant: z.string().optional().nullable(),
   description: z.string().optional().nullable(),
   date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Date must be in YYYY-MM-DD format').optional(),
+  match_expense_id: z.string().uuid().optional().nullable(),
 });
 
 const SyncBodySchema = z.object({
@@ -254,6 +257,208 @@ export const disconnectMonobank = async (
   }
 };
 
+function convertAmountToEur(
+  amount: number,
+  currency: string,
+  amounts?: Record<string, number> | null,
+  rates?: Record<string, number>,
+): number {
+  if (currency === 'EUR') return amount;
+  if (amounts && typeof amounts.EUR === 'number' && !isNaN(amounts.EUR)) {
+    return amounts.EUR;
+  }
+  if (rates && rates[currency] && rates[currency] > 0) {
+    return amount / rates[currency];
+  }
+  const fallbackRates: Record<string, number> = {
+    USD: 1.08,
+    UAH: 45.0,
+    ALL: 100.0,
+  };
+  if (fallbackRates[currency]) {
+    return amount / fallbackRates[currency];
+  }
+  return amount;
+}
+
+function formatExpensePlace(exp: {
+  merchant?: string | null;
+  description?: string | null;
+  categories?: { name: string } | { name: string }[] | null;
+}): { place: string; short_place: string } {
+  const cat = Array.isArray(exp.categories) ? exp.categories[0] : exp.categories;
+  const categoryName = cat?.name || null;
+  const place = (exp.merchant || exp.description || categoryName || 'Expense').trim();
+
+  let short = place;
+  const delimiterMatch = place.match(/^([^/,\-–—*]+)[/,\-–—*]/);
+  const matchedPrefix = delimiterMatch?.[1]?.trim();
+  if (matchedPrefix && matchedPrefix.length >= 2) {
+    short = matchedPrefix;
+  }
+  if (short.length > 22) {
+    short = short.slice(0, 21).trim() + '…';
+  }
+
+  return { place, short_place: short };
+}
+
+function getImportDates(timeStr?: string | null, createdStr?: string | null): string[] {
+  const dates: string[] = [];
+  const raw = timeStr || createdStr;
+  if (!raw) return dates;
+  try {
+    const d = new Date(raw);
+    if (!isNaN(d.getTime())) {
+      const utc = d.toISOString().split('T')[0];
+      if (utc) {
+        dates.push(utc);
+      }
+      const local = d.toLocaleDateString('en-CA');
+      if (local && !dates.includes(local)) {
+        dates.push(local);
+      }
+    }
+  } catch {
+    const part = raw.split('T')[0];
+    if (part && /^\d{4}-\d{2}-\d{2}$/.test(part)) {
+      dates.push(part);
+    }
+  }
+  return dates;
+}
+
+interface CandidateExpenseRow {
+  id: string;
+  date: string;
+  amount: number | string;
+  currency: string;
+  amounts: Record<string, number> | null;
+  merchant: string | null;
+  description: string | null;
+  category_id: string | null;
+  created_at: string;
+  provider: string | null;
+  external_id: string | null;
+  categories: { id: string; name: string; icon: string; color?: string } | { id: string; name: string; icon: string; color?: string }[] | null;
+}
+
+interface PendingImportDbRow {
+  id: string;
+  external_id: string;
+  account_id: string;
+  time: string;
+  description: string | null;
+  mcc: number | null;
+  amount: number | string;
+  currency_code: number;
+  operation_amount: number | string | null;
+  operation_currency_code: number | null;
+  hold: boolean;
+  raw_payload: Record<string, unknown> | null;
+  created_at: string;
+  suggested_category_id: string | null;
+  categories: { id: string; name: string; icon: string } | { id: string; name: string; icon: string }[] | null;
+}
+
+/**
+ * Auto-assign category for a Monobank transaction by learning from previous expenses.
+ * Priorities:
+ * 1. Match merchant - place by full lower case equality with previous expenses
+ * 2. Match MCC code with the closest previous expenses with the same MCC
+ * 3. Fallback to MCC dictionary category hint
+ */
+export async function autoAssignCategory(
+  userId: string,
+  merchantOrPlace?: string | null,
+  mcc?: number | null,
+): Promise<string | null> {
+  // Priority 1: Match merchant - place by full lower case equality with previous expenses
+  const normalizedPlace = merchantOrPlace ? merchantOrPlace.trim().toLowerCase() : '';
+  if (normalizedPlace) {
+    // 1a. Check previous expenses matching normalized_merchant
+    const { data: matchedByMerchant } = await supabaseAdmin
+      .from('expenses')
+      .select('category_id')
+      .eq('user_id', userId)
+      .eq('normalized_merchant', normalizedPlace)
+      .not('category_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (matchedByMerchant?.category_id) {
+      return matchedByMerchant.category_id;
+    }
+
+    // 1b. Check previous expenses matching normalized_description
+    const { data: matchedByDesc } = await supabaseAdmin
+      .from('expenses')
+      .select('category_id')
+      .eq('user_id', userId)
+      .eq('normalized_description', normalizedPlace)
+      .not('category_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (matchedByDesc?.category_id) {
+      return matchedByDesc.category_id;
+    }
+  }
+
+  // Priority 2: Match MCC code with closest previous expenses with the same MCC
+  if (mcc && typeof mcc === 'number') {
+    // 2a. Check closest previous expense with the same MCC
+    const { data: matchedMccExpense } = await supabaseAdmin
+      .from('expenses')
+      .select('category_id')
+      .eq('user_id', userId)
+      .eq('mcc', mcc)
+      .not('category_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (matchedMccExpense?.category_id) {
+      return matchedMccExpense.category_id;
+    }
+
+    // 2b. Check previous accepted/categorized monobank pending imports with the same MCC
+    const { data: matchedPending } = await supabaseAdmin
+      .from('monobank_pending_imports')
+      .select('suggested_category_id')
+      .eq('user_id', userId)
+      .eq('mcc', mcc)
+      .not('suggested_category_id', 'is', null)
+      .order('created_at', { ascending: false })
+      .limit(1)
+      .maybeSingle();
+
+    if (matchedPending?.suggested_category_id) {
+      return matchedPending.suggested_category_id;
+    }
+
+    // 2c. Fallback: mcc code dictionary hint to category name
+    const hint = mccToCategoryHint(mcc);
+    if (hint) {
+      const { data: matchedCat } = await supabaseAdmin
+        .from('categories')
+        .select('id')
+        .eq('user_id', userId)
+        .ilike('name', hint)
+        .limit(1)
+        .maybeSingle();
+
+      if (matchedCat?.id) {
+        return matchedCat.id;
+      }
+    }
+  }
+
+  return null;
+}
+
 // ---------------------------------------------------------------------------
 // GET /integrations/monobank/pending
 // ---------------------------------------------------------------------------
@@ -265,7 +470,7 @@ export const getPendingImports = async (
   try {
     const userId = req.user!.id;
 
-    const { data: rows, error } = await supabaseAdmin
+    const { data: rowsRaw, error } = await supabaseAdmin
       .from('monobank_pending_imports')
       .select(`
         id,
@@ -293,30 +498,171 @@ export const getPendingImports = async (
       .order('time', { ascending: false });
 
     if (error) throw error;
+    const rows = (rowsRaw ?? []) as unknown as PendingImportDbRow[];
 
-    const imports = (rows ?? []).map((row: any) => {
-      const resolved = resolveExpenseCurrency(
-        Number(row.amount),
-        row.currency_code,
-        row.operation_amount != null ? Number(row.operation_amount) : undefined,
-        row.operation_currency_code != null ? row.operation_currency_code : undefined,
-      );
+    // Collect all candidate dates for all pending imports
+    const allDatesSet = new Set<string>();
+    const importDatesMap = new Map<string, string[]>();
 
-      // Raw card amount is stored in row.amount (in minor units)
-      const rawCardAmount = Math.round(Math.abs(Number(row.amount))) / 100;
-      const cardCurrency = 'UAH'; // Default account currency in Monobank is UAH for standard cards
+    for (const row of rows) {
+      const dates = getImportDates(row.time, row.created_at);
+      importDatesMap.set(row.id, dates);
+      for (const d of dates) {
+        allDatesSet.add(d);
+      }
+    }
 
-      let suggestedCategory: { id: string; name: string; icon: string } | null = null;
-      if (row.categories) {
-        const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
-        if (cat && cat.id) {
-          suggestedCategory = {
-            id: cat.id,
-            name: cat.name,
-            icon: cat.icon,
-          };
+    // Query candidate expenses for matching dates
+    let candidateExpenses: CandidateExpenseRow[] = [];
+    if (allDatesSet.size > 0) {
+      try {
+        const { data: expRows, error: expError } = await supabaseAdmin
+          .from('expenses')
+          .select(`
+            id,
+            date,
+            amount,
+            currency,
+            amounts,
+            merchant,
+            description,
+            category_id,
+            created_at,
+            provider,
+            external_id,
+            categories:category_id (
+              id,
+              name,
+              icon,
+              color
+            )
+          `)
+          .eq('user_id', userId)
+          .in('date', Array.from(allDatesSet));
+
+        if (!expError && expRows) {
+          candidateExpenses = expRows as unknown as CandidateExpenseRow[];
+        }
+      } catch (err) {
+        console.warn('[getPendingImports] Failed to fetch candidate expenses:', err);
+      }
+    }
+
+    // Fetch exchange rates
+    let rates: Record<string, number> = {};
+    try {
+      const snapshot = await ExchangeRateService.getCachedRates(supabaseAdmin);
+      rates = snapshot?.rates || {};
+    } catch (err) {
+      console.warn('[getPendingImports] Failed to fetch exchange rates:', err);
+    }
+
+    const imports = await Promise.all(
+      rows.map(async (row) => {
+        const resolved = resolveExpenseCurrency(
+          Number(row.amount),
+          row.currency_code,
+          row.operation_amount != null ? Number(row.operation_amount) : undefined,
+          row.operation_currency_code != null ? row.operation_currency_code : undefined,
+        );
+
+        // Raw card amount is stored in row.amount (in minor units)
+        const rawCardAmount = Math.round(Math.abs(Number(row.amount))) / 100;
+        const cardCurrency = 'UAH'; // Default account currency in Monobank is UAH for standard cards
+
+        let suggestedCategory: { id: string; name: string; icon: string } | null = null;
+        if (row.categories) {
+          const cat = Array.isArray(row.categories) ? row.categories[0] : row.categories;
+          if (cat && cat.id) {
+            suggestedCategory = {
+              id: cat.id,
+              name: cat.name,
+              icon: cat.icon,
+            };
+          }
+        }
+
+        // Auto-assign category if missing: Priority 1 merchant equality, Priority 2 MCC code
+        if (!suggestedCategory) {
+          const autoCatId = await autoAssignCategory(userId, row.description, row.mcc);
+          if (autoCatId) {
+            const { data: catData } = await supabaseAdmin
+              .from('categories')
+              .select('id, name, icon')
+              .eq('id', autoCatId)
+              .maybeSingle();
+
+            if (catData) {
+              suggestedCategory = {
+                id: catData.id,
+                name: catData.name,
+                icon: catData.icon,
+              };
+              // Persist suggestion asynchronously
+              void supabaseAdmin
+                .from('monobank_pending_imports')
+                .update({ suggested_category_id: autoCatId })
+                .eq('id', row.id);
+            }
+          }
+        }
+
+      // Convert import amount to EUR
+      const importEur = convertAmountToEur(resolved.amount, resolved.currency, null, rates);
+      const rowDates = importDatesMap.get(row.id) || [];
+
+      // Find similar transactions on the day of transaction with threshold for up to 1 EUR
+      const similar_expenses: SimilarExpense[] = [];
+      for (const exp of candidateExpenses) {
+        // Must be on the day of transaction
+        if (!rowDates.includes(exp.date)) {
+          continue;
+        }
+
+        // Exclude if already linked to this exact external_id
+        if (exp.external_id && exp.external_id === row.external_id) {
+          continue;
+        }
+
+        const expEur = convertAmountToEur(
+          Number(exp.amount),
+          exp.currency,
+          exp.amounts,
+          rates,
+        );
+
+        const diffEur = Math.abs(importEur - expEur);
+        const diffRounded = Math.round(diffEur * 100) / 100;
+
+        // Threshold for up to 1 euro (<= 1.00 EUR)
+        if (diffRounded <= 1.00) {
+          const { place, short_place } = formatExpensePlace(exp);
+          const cat = Array.isArray(exp.categories) ? exp.categories[0] : exp.categories;
+          similar_expenses.push({
+            id: exp.id,
+            date: exp.date,
+            amount: Number(exp.amount),
+            currency: exp.currency,
+            amount_eur: Number(expEur.toFixed(2)),
+            merchant: exp.merchant ?? null,
+            description: exp.description ?? null,
+            place,
+            short_place,
+            diff_eur: diffRounded,
+            category: cat
+              ? {
+                  id: cat.id,
+                  name: cat.name,
+                  icon: cat.icon,
+                  color: cat.color,
+                }
+              : null,
+          });
         }
       }
+
+      // Sort by smallest difference first (closest match on top)
+      similar_expenses.sort((a, b) => (a.diff_eur ?? 0) - (b.diff_eur ?? 0));
 
       return {
         id: row.id,
@@ -332,9 +678,10 @@ export const getPendingImports = async (
         hold: row.hold,
         raw_payload: row.raw_payload ?? null,
         suggested_category: suggestedCategory,
+        similar_expenses,
         created_at: row.created_at,
       };
-    });
+    }));
 
     return res.json({ imports });
   } catch (err) {
@@ -366,6 +713,65 @@ export const acceptPendingImport = async (
     if (error) throw error;
     if (!pendingImport) {
       return res.status(404).json({ error: 'Pending import not found' });
+    }
+
+    // Match to existing expense if match_expense_id is supplied
+    if (overrides.match_expense_id) {
+      const { data: existingExp, error: findError } = await supabaseAdmin
+        .from('expenses')
+        .select(`
+          *,
+          categories:category_id (
+            id,
+            name,
+            icon,
+            color
+          )
+        `)
+        .eq('id', overrides.match_expense_id)
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (findError) throw findError;
+      if (!existingExp) {
+        return res.status(404).json({ error: 'Target expense to match not found' });
+      }
+
+      // Update existing expense with provider, external_id, and mcc
+      const { data: updatedExp, error: updateExpError } = await supabaseAdmin
+        .from('expenses')
+        .update({
+          provider: 'monobank',
+          external_id: pendingImport.external_id,
+          mcc: pendingImport.mcc ?? existingExp.mcc,
+        })
+        .eq('id', existingExp.id)
+        .select(`
+          *,
+          categories:category_id (
+            id,
+            name,
+            icon,
+            color
+          )
+        `)
+        .single();
+
+      if (updateExpError) throw updateExpError;
+
+      // Mark pending import as accepted and link to existing expense
+      const { error: updatePendingError } = await supabaseAdmin
+        .from('monobank_pending_imports')
+        .update({
+          status: 'accepted',
+          expense_id: existingExp.id,
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', pendingImport.id);
+
+      if (updatePendingError) throw updatePendingError;
+
+      return res.status(200).json({ expense: updatedExp, matched: true });
     }
 
     // Check if expense already exists with provider='monobank' and external_id=pendingImport.external_id
@@ -413,6 +819,7 @@ export const acceptPendingImport = async (
       date: expenseDate,
       provider: 'monobank',
       external_id: pendingImport.external_id,
+      mcc: pendingImport.mcc ?? null,
     });
 
     // Mark pending import as accepted
@@ -606,43 +1013,14 @@ export const handleMonobankWebhook = async (
       return;
     }
 
-    // Suggest category:
-    // 1. Check recent expense with matching merchant name
-    let suggestedCategoryId: string | null = null;
-    const trimmedDesc = item.description ? item.description.trim().toLowerCase() : '';
-    if (trimmedDesc) {
-      const { data: matchedExpense } = await supabaseAdmin
-        .from('expenses')
-        .select('category_id')
-        .eq('user_id', integration.user_id)
-        .eq('normalized_merchant', trimmedDesc)
-        .not('category_id', 'is', null)
-        .order('created_at', { ascending: false })
-        .limit(1)
-        .maybeSingle();
-
-      if (matchedExpense?.category_id) {
-        suggestedCategoryId = matchedExpense.category_id;
-      }
-    }
-
-    // 2. Fallback: mcc to category name hint
-    if (!suggestedCategoryId && item.mcc) {
-      const hint = mccToCategoryHint(item.mcc);
-      if (hint) {
-        const { data: matchedCat } = await supabaseAdmin
-          .from('categories')
-          .select('id')
-          .eq('user_id', integration.user_id)
-          .ilike('name', hint)
-          .limit(1)
-          .maybeSingle();
-
-        if (matchedCat?.id) {
-          suggestedCategoryId = matchedCat.id;
-        }
-      }
-    }
+    // Auto-assign category:
+    // Priority 1: match merchant/place by full lower case equality with previous expenses
+    // Priority 2: match MCC code with closest previous expenses with the same MCC
+    const suggestedCategoryId = await autoAssignCategory(
+      integration.user_id,
+      item.description,
+      item.mcc,
+    );
 
     // Insert pending import
     const { error: insertError } = await supabaseAdmin
@@ -757,7 +1135,7 @@ export const syncMonobankStatement = async (
     let importedCount = 0;
 
     for (const acc of accounts) {
-      let statementItems: MonobankStatementItem[] = [];
+      const statementItems: MonobankStatementItem[] = [];
 
       // Monobank allows max 31 days (2682000 seconds) per statement request.
       // Break the interval into <= 30 day chunks.
@@ -804,43 +1182,14 @@ export const syncMonobankStatement = async (
 
         if (existingPending) continue;
 
-        // Suggest category:
-        // 1. Check recent expense with matching merchant name
-        let suggestedCategoryId: string | null = null;
-        const trimmedDesc = item.description ? item.description.trim().toLowerCase() : '';
-        if (trimmedDesc) {
-          const { data: matchedExpense } = await supabaseAdmin
-            .from('expenses')
-            .select('category_id')
-            .eq('user_id', userId)
-            .eq('normalized_merchant', trimmedDesc)
-            .not('category_id', 'is', null)
-            .order('created_at', { ascending: false })
-            .limit(1)
-            .maybeSingle();
-
-          if (matchedExpense?.category_id) {
-            suggestedCategoryId = matchedExpense.category_id;
-          }
-        }
-
-        // 2. Fallback: mcc to category hint
-        if (!suggestedCategoryId && item.mcc) {
-          const hint = mccToCategoryHint(item.mcc);
-          if (hint) {
-            const { data: matchedCat } = await supabaseAdmin
-              .from('categories')
-              .select('id')
-              .eq('user_id', userId)
-              .ilike('name', hint)
-              .limit(1)
-              .maybeSingle();
-
-            if (matchedCat?.id) {
-              suggestedCategoryId = matchedCat.id;
-            }
-          }
-        }
+        // Auto-assign category:
+        // Priority 1: match merchant/place by full lower case equality with previous expenses
+        // Priority 2: match MCC code with closest previous expenses with the same MCC
+        const suggestedCategoryId = await autoAssignCategory(
+          userId,
+          item.description,
+          item.mcc,
+        );
 
         const { error: insertError } = await supabaseAdmin
           .from('monobank_pending_imports')

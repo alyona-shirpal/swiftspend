@@ -211,6 +211,21 @@ export const ExpenseDetailPage: React.FC = () => {
             <p className="mt-1">
               Recorded {createdAt.toLocaleDateString('en-US')}
             </p>
+            {expense.provider === 'monobank' && (
+              <div className="mt-2.5 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-surface-container-high text-[11px] font-semibold text-primary">
+                <img
+                  src="/monobank-logo.svg"
+                  alt="Monobank"
+                  className="w-3.5 h-3.5 rounded"
+                />
+                <span>Monobank transaction</span>
+                {expense.mcc && (
+                  <span className="font-mono text-[10px] text-secondary">
+                    (MCC {expense.mcc})
+                  </span>
+                )}
+              </div>
+            )}
           </div>
         </div>
         <div

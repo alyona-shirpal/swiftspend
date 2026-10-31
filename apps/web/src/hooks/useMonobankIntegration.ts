@@ -94,16 +94,21 @@ export function useAcceptMonobankImport() {
       merchant?: string;
       description?: string;
       date?: string;
+      match_expense_id?: string;
     }) => {
       const { data } = await api.post(`/integrations/monobank/pending/${id}/accept`, body);
       return data;
     },
-    onSuccess: () => {
+    onSuccess: (data: { matched?: boolean } | undefined) => {
       triggerSuccessfulTransactionHaptic();
       queryClient.invalidateQueries({ queryKey: MONOBANK_PENDING_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: MONOBANK_STATUS_QUERY_KEY });
       queryClient.invalidateQueries({ queryKey: ['expenses'] });
-      toast.success('Transaction accepted');
+      if (data?.matched) {
+        toast.success('Transaction matched with existing expense');
+      } else {
+        toast.success('Transaction accepted');
+      }
     },
     onError: (err: unknown) => {
       const errorMsg =
